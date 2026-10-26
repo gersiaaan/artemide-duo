@@ -578,7 +578,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(-2, -1);
         pp.leftMargin = dp(8);
         buttons.addView(profiles, pp);
-        View options = button("Options", "≡", false, v -> {
+        View options = button("Options", null, false, v -> {
             ComputerDetails c = selected();
             if (c != null) {
                 host.options(c);
@@ -640,7 +640,10 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         lastPanel.addView(actions, pa);
         playAgain = button("Play again", "X", false, null);
         actions.addView(playAgain, new LinearLayout.LayoutParams(-2, -1));
-        quitRunning = button("Quit", null, false, null);
+        quitRunning = button("Quit", "≡", false, null);
+        // Resume / Play again (X) and Quit (Menu ≡) are pressed on the controller, not selected.
+        playAgain.setFocusable(false);
+        quitRunning.setFocusable(false);
         LinearLayout.LayoutParams ql = new LinearLayout.LayoutParams(-2, -1);
         ql.leftMargin = dp(8);
         actions.addView(quitRunning, ql);
@@ -946,8 +949,8 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
                 host.exit();
                 return true;
             case KeyEvent.KEYCODE_BUTTON_START:
-                if (optionsBtn != null && optionsBtn.getVisibility() == VISIBLE) {
-                    optionsBtn.performClick();
+                if (quitRunning != null && quitRunning.getVisibility() == VISIBLE) {
+                    quitRunning.performClick();
                 }
                 return true;
             case KeyEvent.KEYCODE_BUTTON_A: {
