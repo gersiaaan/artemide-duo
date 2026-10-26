@@ -202,6 +202,11 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
 
         listScroll = new ScrollView(context);
         listScroll.setVerticalScrollBarEnabled(false);
+        // A scroll container must never show Android's grey focus tint.
+        listScroll.setFocusable(false);
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            listScroll.setDefaultFocusHighlightEnabled(false);
+        }
         list = new LinearLayout(context);
         list.setOrientation(LinearLayout.VERTICAL);
         listScroll.addView(list);

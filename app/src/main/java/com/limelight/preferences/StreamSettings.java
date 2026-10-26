@@ -148,6 +148,10 @@ public class StreamSettings extends AppCompatActivity {
 
         duoTabScroll = new android.widget.HorizontalScrollView(this);
         duoTabScroll.setHorizontalScrollBarEnabled(false);
+        duoTabScroll.setFocusable(false);
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            duoTabScroll.setDefaultFocusHighlightEnabled(false);
+        }
         android.widget.LinearLayout tabs = new android.widget.LinearLayout(this);
         tabs.setGravity(android.view.Gravity.CENTER_VERTICAL);
         tabs.setPadding(Math.round(16 * d), Math.round(10 * d), Math.round(16 * d), Math.round(6 * d));
@@ -401,6 +405,9 @@ public class StreamSettings extends AppCompatActivity {
             super.onViewCreated(view, savedInstanceState);
             view.setBackgroundColor(0);
             getListView().setClipToPadding(false);
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                getListView().setDefaultFocusHighlightEnabled(false);
+            }
             getListView().setPadding(0, 0, 0, Math.round(24 * getResources().getDisplayMetrics().density));
         }
 
