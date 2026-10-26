@@ -172,16 +172,20 @@ public class DuoController {
         float density = activity.getResources().getDisplayMetrics().density;
         int pad = Math.round(20 * density);
 
-        LinearLayout box = new LinearLayout(activity);
+        // Same look as Artemide's stream menu: the app theme, not the activity's.
+        final android.content.Context themed =
+                new android.view.ContextThemeWrapper(activity, activity.getApplicationInfo().theme);
+
+        LinearLayout box = new LinearLayout(themed);
         box.setOrientation(LinearLayout.HORIZONTAL);
         box.setGravity(Gravity.CENTER_VERTICAL);
         box.setPadding(pad, pad, pad, Math.round(8 * density));
 
-        final TextView value = new TextView(activity);
+        final TextView value = new TextView(themed);
         value.setTextSize(16);
         value.setGravity(Gravity.END);
 
-        SeekBar seek = new SeekBar(activity);
+        SeekBar seek = new SeekBar(themed);
         seek.setMax(9);
         int speed = DuoBridge.getSpeed(activity);
         seek.setProgress(speed - 1);
@@ -205,7 +209,7 @@ public class DuoController {
         box.addView(seek, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         box.addView(value, new LinearLayout.LayoutParams(Math.round(32 * density), ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        new AlertDialog.Builder(activity)
+        new AlertDialog.Builder(themed)
                 .setTitle("Trackpad-Tempo")
                 .setView(box)
                 .setPositiveButton(android.R.string.ok, null)
