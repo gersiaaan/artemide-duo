@@ -202,7 +202,7 @@ public class PreferenceConfiguration {
 
     private static final String CHECKBOX_ENABLE_COMMIT_TEXT = "checkbox_enable_commit_text";
 
-    static final String DEFAULT_RESOLUTION = "1280x720";
+    static final String DEFAULT_RESOLUTION = "1800x1350"; // Surface Duo upper screen
     static final String DEFAULT_FPS = "60";
     private static final boolean DEFAULT_ENABLE_ULTRA_LOW_LATENCY = false;
     private static final boolean DEFAULT_ENFORCE_DISPLAY_MODE = false;
@@ -518,6 +518,10 @@ public class PreferenceConfiguration {
         else if (width == 3840 && height == 2160) {
             return false;
         }
+        else if (width == 1800 && height == 1350) {
+            // Surface Duo upper screen
+            return false;
+        }
 
         return true;
     }
@@ -601,6 +605,11 @@ public class PreferenceConfiguration {
     public static int getDefaultBitrate(String resString, String fpsString) {
         int width = getWidthFromResolutionString(resString);
         int height = getHeightFromResolutionString(resString);
+
+        // Surface Duo build: 50 Mbps for the upper-screen resolution
+        if (width == 1800 && height == 1350) {
+            return 50000;
+        }
         int fps = Math.round(Float.parseFloat(fpsString));
 
         // This logic is shamelessly stolen from Moonlight Qt:

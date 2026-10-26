@@ -328,7 +328,8 @@ public class GameMenu implements Game.GameMenuCallbacks {
         options.add(new MenuOption(getString(R.string.game_menu_advanced), true,
                 () -> showAdvancedMenu(device)));
 
-        options.add(new MenuOption(getString(R.string.game_menu_cancel), null));
+        // Duo build: performance overlay toggle instead of "Cancel" (tap outside to close)
+        options.add(new MenuOption(getString(R.string.game_menu_toggle_hud), true, game::toggleHUD));
 
         showMenuDialog(getString(R.string.quick_menu_title), options.toArray(new MenuOption[options.size()]));
     }

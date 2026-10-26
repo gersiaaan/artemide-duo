@@ -22,12 +22,16 @@ import static com.limelight.duo.DuoKeys.*;
  */
 public class DuoKeyboardView extends DuoTouchSurface {
 
-    private static final int COLOR_KEY = 0xFF262A30;
-    private static final int COLOR_KEY_FN = 0xFF2E333A;
-    private static final int COLOR_KEY_PRESSED = 0xFF3A4048;
-    private static final int COLOR_TEXT = 0xFFE8EAED;
-    private static final int COLOR_TEXT_DARK = 0xFF0B0D10;
-    private static final int COLOR_HINT = 0xFF9AA3AE;
+    private static final int COLOR_KEY = DuoColors.KEY;
+    private static final int COLOR_KEY_FN = DuoColors.KEY_FN;
+    private static final int COLOR_KEY_PRESSED = DuoColors.PRESSED;
+    private static final int COLOR_TEXT = DuoColors.TEXT;
+    private static final int COLOR_TEXT_DARK = DuoColors.ON_ACCENT;
+    private static final int COLOR_HINT = DuoColors.MUTED;
+
+    /** Preferred (flat) row heights in dp; rows shrink if the panel is smaller. */
+    private static final float FN_ROW_DP = 38f;
+    private static final float ROW_DP = 52f;
 
     private static final class Key {
         final String label;
@@ -55,17 +59,21 @@ public class DuoKeyboardView extends DuoTouchSurface {
     private final int[] modState = new int[256];
 
     private final Paint keyPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint hintPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint lockPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    private int accent = 0xFF4C8DFF;
+    private int accent = DuoColors.ACCENT;
     private Key pressed;
     private final float hintHeight;
 
     public DuoKeyboardView(Context context) {
         super(context);
         hintHeight = 18 * density;
+        borderPaint.setStyle(Paint.Style.STROKE);
+        borderPaint.setStrokeWidth(density);
+        borderPaint.setColor(DuoColors.BORDER);
         textPaint.setColor(COLOR_TEXT);
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -167,16 +175,20 @@ public class DuoKeyboardView extends DuoTouchSurface {
 
     private void layoutKeys(int width, int height) {
         float gap = 5 * density;
-        float usableH = height - hintHeight - gap * (rows.size() - 1);
-        float weightSum = 0;
+        float available = height - hintHeight - gap * (rows.size() - 1);
+        float wanted = 0;
         for (float wgt : rowWeights) {
-            weightSum += wgt;
+            wanted += (wgt < 1f ? FN_ROW_DP : ROW_DP) * density;
         }
+        // Flat keys anchored at the bottom; the space above stays free (still trackpad).
+        float scale = Math.min(1f, available / wanted);
+        float total = wanted * scale + gap * (rows.size() - 1);
+        float y = height - hintHeight - total;
 
-        float y = 0;
+        float rowH = ROW_DP * density * scale;
         for (int ri = 0; ri < rows.size(); ri++) {
             List<Key> row = rows.get(ri);
-            float rowH = usableH * rowWeights[ri] / weightSum;
+            float h = (rowWeights[ri] < 1f ? FN_ROW_DP : ROW_DP) * density * scale;
             float units = 0;
             for (Key key : row) {
                 units += key.units;
@@ -185,13 +197,12 @@ public class DuoKeyboardView extends DuoTouchSurface {
             float x = 0;
             for (Key key : row) {
                 float kw = unitW * key.units;
-                key.rect.set(x, y, x + kw, y + rowH);
+                key.rect.set(x + density / 2, y + density / 2, x + kw - density / 2, y + h - density / 2);
                 x += kw + gap;
             }
-            y += rowH + gap;
+            y += h + gap;
         }
-        float base = Math.min(usableH / weightSum * 0.36f, 20 * density);
-        textPaint.setTextSize(base);
+        textPaint.setTextSize(Math.min(rowH * 0.34f, 18 * density));
     }
 
     // ---------------- drawing ----------------
@@ -199,7 +210,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
     @Override
     protected void onDraw(Canvas canvas) {
         boolean shift = modState[VK_LSHIFT] > 0;
-        float radius = 8 * density;
+        float radius = 7 * density;
         float smallText = textPaint.getTextSize() * 0.7f;
         float normalText = textPaint.getTextSize();
 
@@ -218,6 +229,8 @@ public class DuoKeyboardView extends DuoTouchSurface {
                 }
                 keyPaint.setColor(bg);
                 canvas.drawRoundRect(key.rect, radius, radius, keyPaint);
+                borderPaint.setColor(state > 0 ? accent : DuoColors.BORDER);
+                canvas.drawRoundRect(key.rect, radius, radius, borderPaint);
 
                 String text = key.label;
                 if (shift && key.shiftLabel != null) {

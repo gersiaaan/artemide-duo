@@ -1873,7 +1873,9 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         // flag. It will cause us to collide with the system UI.
         // This function will also be called for PiP so we can cover
         // that case here too.
-        if (isInMultiWindowMode) {
+        // On Surface Duo the panel on the other screen can count as multi-window;
+        // keep the stream fullscreen there.
+        if (isInMultiWindowMode && !com.limelight.duo.DuoController.isDuoDevice()) {
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
             decoderRenderer.notifyVideoBackground();
         }
@@ -1889,6 +1891,11 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+        if (duoController != null) {
+            duoController.destroy();
+            duoController = null;
+        }
 
         instance = null;
         if (compositorHeartbeat != null) {

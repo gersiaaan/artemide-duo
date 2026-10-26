@@ -18,15 +18,15 @@ public class DuoTrackpadView extends DuoTouchSurface {
 
     public DuoTrackpadView(Context context) {
         super(context);
-        bg.setColor(0xFF1B1F24);
-        border.setColor(0xFF2F343B);
+        bg.setColor(DuoColors.BG);
+        border.setColor(DuoColors.BORDER);
         border.setStyle(Paint.Style.STROKE);
         border.setStrokeWidth(density);
-        title.setColor(0xFFC9CED6);
+        title.setColor(DuoColors.TEXT);
         title.setTextAlign(Paint.Align.CENTER);
         title.setTextSize(15 * density);
         title.setFakeBoldText(true);
-        hint.setColor(0xFF8C96A3);
+        hint.setColor(DuoColors.MUTED);
         hint.setTextAlign(Paint.Align.CENTER);
         hint.setTextSize(12 * density);
     }

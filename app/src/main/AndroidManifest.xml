@@ -215,6 +215,16 @@
                 android:value="true" />
         </activity>
 
+        <!-- Surface Duo: keyboard/trackpad panel on the other screen -->
+        <activity
+            android:name=".duo.DuoPanelActivity"
+            android:exported="false"
+            android:taskAffinity="com.limelight.duo.panel"
+            android:excludeFromRecents="true"
+            android:resizeableActivity="true"
+            android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|screenLayout|fontScale|uiMode|orientation|screenSize|smallestScreenSize|layoutDirection"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
+
         <service
             android:name=".discovery.DiscoveryService"
             android:label="mDNS PC Auto-Discovery Service" />

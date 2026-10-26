@@ -1,6 +1,7 @@
 package com.limelight.duo;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.HapticFeedbackConstants;
@@ -39,6 +40,8 @@ public abstract class DuoTouchSurface extends View {
     private long downTime;
     private int maxPointers;
     private float remX, remY, scrollRemV, scrollRemH;
+    private long lastMoveTime;
+    private float smoothVelocity;
 
     private final Runnable longPress = new Runnable() {
         @Override
@@ -103,8 +106,14 @@ public abstract class DuoTouchSurface extends View {
                 downX = lastX = event.getX();
                 downY = lastY = event.getY();
                 downTime = event.getEventTime();
+                lastMoveTime = downTime;
+                smoothVelocity = 0;
                 maxPointers = 1;
                 remX = remY = 0;
+                // Deliver touch samples as soon as they arrive instead of once per frame.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    requestUnbufferedDispatch(event);
+                }
                 handler.postDelayed(longPress, LONG_PRESS_MS);
                 onPress(downX, downY);
                 return true;
@@ -174,20 +183,29 @@ public abstract class DuoTouchSurface extends View {
                     cancelTimers();
                     onCancelPress();
                     mode = Mode.MOUSE;
-                    lastX = downX;
-                    lastY = downY;
-                    moveMouse(x - lastX, y - lastY);
+                    // Start from here (no jump by the slop distance).
                     lastX = x;
                     lastY = y;
+                    lastMoveTime = event.getEventTime();
                 }
                 break;
 
             case MOUSE:
-            case DRAG:
-                moveMouse(x - lastX, y - lastY);
+            case DRAG: {
+                // Walk through batched samples so acceleration sees the real finger speed.
+                int history = event.getHistorySize();
+                for (int i = 0; i < history; i++) {
+                    float hx = event.getHistoricalX(0, i);
+                    float hy = event.getHistoricalY(0, i);
+                    moveMouse(hx - lastX, hy - lastY, event.getHistoricalEventTime(i));
+                    lastX = hx;
+                    lastY = hy;
+                }
+                moveMouse(x - lastX, y - lastY, event.getEventTime());
                 lastX = x;
                 lastY = y;
                 break;
+            }
 
             case MULTI:
             case SCROLL: {
@@ -224,13 +242,20 @@ public abstract class DuoTouchSurface extends View {
         }
     }
 
-    private void moveMouse(float dx, float dy) {
-        if (sink == null) {
+    private void moveMouse(float dx, float dy, long time) {
+        if (sink == null || (dx == 0 && dy == 0)) {
             return;
         }
-        // Mild acceleration: faster swipes travel further.
-        float speed = (float) Math.hypot(dx, dy) / density;
-        float gain = sensitivity * (1f + Math.min(speed / 14f, 1.5f));
+        // Speed in dp per millisecond, smoothed to avoid jitter in the acceleration.
+        long dt = Math.max(1, time - lastMoveTime);
+        lastMoveTime = time;
+        float v = (float) Math.hypot(dx, dy) / density / dt;
+        smoothVelocity = smoothVelocity * 0.6f + v * 0.4f;
+
+        // Pointer-precision curve: slow = precise (0.8x), fast = far (2.4x).
+        float t = Math.max(0f, Math.min(1f, (smoothVelocity - 0.1f) / 1.1f));
+        float gain = sensitivity * (0.8f + 1.6f * t * t * (3f - 2f * t));
+
         remX += dx * gain;
         remY += dy * gain;
         int ix = (int) remX;
