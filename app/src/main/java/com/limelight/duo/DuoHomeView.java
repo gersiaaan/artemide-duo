@@ -77,6 +77,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     private final boolean landscape;
     private final List<ComputerDetails> computers = new ArrayList<>();
     private final List<View> glyphs = new ArrayList<>();
+    private final java.util.Map<View, View> focusA = new java.util.HashMap<>();
     private String selectedUuid;
 
     private final LinearLayout content;
@@ -148,10 +149,10 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         clockCol.setOrientation(LinearLayout.VERTICAL);
         clockCol.setGravity(Gravity.END);
         header.addView(clockCol);
-        clock = text("", 24, DuoTheme.TEXT, false);
+        clock = text("", 34, DuoTheme.TEXT, false);
         clock.setGravity(Gravity.END);
         clockCol.addView(clock);
-        dateLine = text("", 10.5f, DuoTheme.TEXT2, false);
+        dateLine = text("", 13.5f, DuoTheme.TEXT2, false);
         dateLine.setGravity(Gravity.END);
         clockCol.addView(dateLine);
 
@@ -521,6 +522,9 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         HorizontalScrollView cs = new HorizontalScrollView(getContext());
         cs.setHorizontalScrollBarEnabled(false);
         cs.addView(chips);
+        // Info only: never takes focus.
+        cs.setFocusable(false);
+        cs.setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
         LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(-1, -2);
         cl.topMargin = dp(6);
         card.addView(cs, cl);
@@ -672,9 +676,21 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         LinearLayout b = row();
         b.setGravity(Gravity.CENTER);
         b.setPadding(dp(primaryStyle ? 18 : 16), 0, dp(primaryStyle ? 18 : 16), 0);
-        int bg = primaryStyle ? DuoTheme.focus(accent) : DuoTheme.CARD_HIGH;
-        b.setBackground(focusable(bg, primaryStyle ? 0 : DuoTheme.LINE, 10));
-        if (glyph != null) {
+        // Secondary buttons: light, see-through, so the waves show.
+        int bg = primaryStyle ? DuoTheme.focus(accent) : 0x17FFFFFF;
+        b.setBackground(focusable(bg, primaryStyle ? 0 : 0x29FFFFFF, 10));
+        // Card buttons: the A glyph follows focus; X etc. show while not focused.
+        boolean follow = glyph == null || "A".equals(glyph) || "X".equals(glyph);
+        if (follow) {
+            View a = glyph("A");
+            LinearLayout.LayoutParams ap = new LinearLayout.LayoutParams(dp(23), dp(23));
+            ap.leftMargin = -dp(3);
+            ap.rightMargin = dp(5);
+            b.addView(a, ap);
+            focusA.put(b, a);
+            b.setOnFocusChangeListener((v, f) -> updateGlyphs());
+        }
+        if (glyph != null && !"A".equals(glyph)) {
             View g = glyph(glyph);
             // 3 dp of glow around the 17 dp button.
             LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(dp(23), dp(23));
@@ -812,6 +828,17 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         boolean pad = hasGamepad();
         for (View g : glyphs) {
             g.setVisibility(pad ? VISIBLE : GONE);
+        }
+        for (java.util.Map.Entry<View, View> e : focusA.entrySet()) {
+            boolean f = e.getKey().hasFocus() || e.getKey().isFocused();
+            e.getValue().setVisibility(pad && f ? VISIBLE : GONE);
+            ViewGroup b = (ViewGroup) e.getKey();
+            for (int i = 0; i < b.getChildCount(); i++) {
+                View ch = b.getChildAt(i);
+                if (ch != e.getValue() && glyphs.contains(ch)) {
+                    ch.setVisibility(pad && !f ? VISIBLE : GONE);
+                }
+            }
         }
     }
 

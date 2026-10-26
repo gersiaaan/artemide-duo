@@ -75,8 +75,18 @@ public final class DuoPadNav {
         }
         // focusSearch lets lists (RecyclerView, ScrollView) scroll to the next item.
         View next = f.focusSearch(dir);
-        if (next != null) {
+        // Stay inside the Duo screen: never hand focus to the hidden grid behind it.
+        if (next != null && isInside(root, next)) {
             next.requestFocus(dir);
         }
+    }
+
+    private static boolean isInside(ViewGroup root, View v) {
+        for (android.view.ViewParent p = v.getParent(); p != null; p = p.getParent()) {
+            if (p == root) {
+                return true;
+            }
+        }
+        return false;
     }
 }

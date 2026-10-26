@@ -1,10 +1,22 @@
-Install the file with **arm64-v8a** in its name on the Surface Duo (or Galaxy Tab S6).
+## Artemide Duo v0.21
 
-## What's new in v0.20
-- **Keyboard tab toggle**: tap the active Keyboard tab again to switch between the PC keyboard and a phone-style layout (narrower, same key height, swipe = mouse).
-- **Controller navigation** everywhere (D-pad, hat and left stick), also on the Galaxy Tab S6; D-pad now reaches all buttons on the host page and in the app list. **Y** = Settings, **X** = Play again / Options, **B** = back.
-- **True full screen**: no empty strip where the hidden navigation bar was.
-- **Shortcuts** tab in Settings: Ctrl + Alt + Shift + key for Quick menu, Keyboard & trackpad panel, Performance overlay, Disconnect, mouse capture and local cursor (letters configurable).
-- Bigger UI and cover art on large 16:10 screens (Galaxy Tab S6).
-- Slightly darker accent for highlights and Play / Resume / Open buttons.
-- Desktop apps: the keyboard & trackpad panel opens on the other screen once the stream is connected (also on first launch).
+**Keyboard**
+- Keyboard tab now has three masks — tap the active tab to cycle: **1** full PC keyboard, **2** Slim (phone keys, centred), **3** Wide (phone keys, full width, taller). The last one is remembered.
+- Slim and Wide work as a trackpad too (swipe = mouse, 2/3 fingers) and show the hint line; they sit at the same height as the full keyboard.
+
+**Home / host page**
+- New **Add a host** tab next to your PCs (LB/RB cycle through all of them): searches the network, *Add a host* by address, *Refresh*. A newly found PC opens right away.
+- The **A** glyph follows the focused button (Open, Profiles, Options, Resume, Quit); X still resumes / plays again.
+
+**App list**
+- Star / favourites removed, Profiles removed from the bottom bar.
+- Apps that aren't running show **Open**; only the running one shows Resume (outlined, no accent fill).
+
+**Controller**
+- Focus can no longer leave the Duo screens (no more grey window when pushing the stick past the edge).
+- Info rows (resolution, FPS, host…) are no longer selectable.
+
+**Look**
+- Inter font everywhere (Duo screens, settings, keyboard).
+- Glowing A/B/X/Y glyphs, lighter see-through secondary buttons, bigger right-aligned clock/date/battery.
+- Bigger covers and list thumbnails on the Surface Duo.

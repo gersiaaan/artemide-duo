@@ -148,9 +148,9 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         clockCol.setOrientation(LinearLayout.VERTICAL);
         clockCol.setGravity(Gravity.END);
         header.addView(clockCol);
-        clock = text("", 24, DuoTheme.TEXT, false);
+        clock = text("", 34, DuoTheme.TEXT, false);
         clockCol.addView(clock);
-        dateLine = text("", 10.5f, DuoTheme.TEXT2, false);
+        dateLine = text("", 13.5f, DuoTheme.TEXT2, false);
         clockCol.addView(dateLine);
 
         // ---------- host + stream chips ----------
@@ -158,6 +158,9 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         cs.setHorizontalScrollBarEnabled(false);
         chips = row();
         cs.addView(chips);
+        // Info only: never takes focus.
+        cs.setFocusable(false);
+        cs.setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
         LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-1, -2);
         cp.topMargin = dp(8);
         content.addView(cs, cp);
@@ -224,9 +227,6 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams b2 = new LinearLayout.LayoutParams(-2, -1);
         b2.leftMargin = dp(8);
         bottom.addView(button("Settings", "Y", false, v -> host.settings()), b2);
-        LinearLayout.LayoutParams b3 = new LinearLayout.LayoutParams(-2, -1);
-        b3.leftMargin = dp(8);
-        bottom.addView(button("Profiles", null, false, v -> host.profiles()), b3);
         optionsButton = button("Options", "X", false, v -> {
             App a = selectedApp();
             if (a != null) {
@@ -292,8 +292,6 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             }
             if (last != null && a.id == last.appId && lastApp == null) {
                 lastApp = a;
-            } else if (c != null && DuoPlayStats.isPinned(getContext(), c.uuid, a.id)) {
-                pinned.add(a);
             } else {
                 rest.add(a);
             }
@@ -434,10 +432,6 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             texts.addView(s);
         }
 
-        if (c != null && DuoPlayStats.isPinned(getContext(), c.uuid, a.id)) {
-            TextView star = text("★", 14, accent, false);
-            r.addView(star);
-        }
         r.setOnLongClickListener(v -> {
             togglePin(a);
             return true;
@@ -529,7 +523,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(-1, dp(36));
         bl.topMargin = dp(12);
         info.addView(buttons, bl);
-        playButton = button("Play", "A", true, v -> {
+        // Outline only (no accent fill), like the other buttons.
+        playButton = button("Open", "A", false, v -> {
             App a = selectedApp();
             if (a != null) {
                 host.start(a);
@@ -554,7 +549,6 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         pinButton.setContentDescription("Favourite");
         LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(-2, -1);
         pl.leftMargin = dp(8);
-        buttons.addView(pinButton, pl);
         return p;
     }
 
@@ -578,7 +572,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         boolean has = a != null;
         playButton.setVisibility(has ? VISIBLE : INVISIBLE);
         quitButton.setVisibility(has && a.running ? VISIBLE : GONE);
-        pinButton.setVisibility(has ? VISIBLE : GONE);
+        pinButton.setVisibility(GONE);
         if (has && c != null) {
             boolean pinned = DuoPlayStats.isPinned(getContext(), c.uuid, a.id);
             TextView pt = (TextView) pinButton.getTag();
@@ -597,7 +591,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             return;
         }
         bigName.setText(a.name);
-        ((TextView) playButton.getTag()).setText(a.running ? "Resume" : "Play");
+        ((TextView) playButton.getTag()).setText(a.running ? "Resume" : "Open");
         long ms = c == null ? 0 : DuoPlayStats.time(getContext(), c.uuid, a.id);
         int sessions = c == null ? 0 : DuoPlayStats.sessions(getContext(), c.uuid, a.id);
         statTime.setText(ms > 0 ? DuoPlayStats.duration(ms) : "–");
@@ -687,13 +681,14 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout b = row();
         b.setGravity(Gravity.CENTER);
         b.setPadding(dp(16), 0, dp(16), 0);
-        int bg = primaryStyle ? DuoTheme.focus(accent) : DuoTheme.CARD_HIGH;
+        // Secondary buttons: light, see-through, so the waves show.
+        int bg = primaryStyle ? DuoTheme.focus(accent) : 0x17FFFFFF;
         StateListDrawable s = new StateListDrawable();
         GradientDrawable ring = rounded(bg, 0, 10);
         ring.setStroke(Math.round(2 * d), primaryStyle ? DuoTheme.TEXT : DuoTheme.focus(accent));
         s.addState(new int[]{android.R.attr.state_focused}, ring);
         s.addState(new int[]{android.R.attr.state_pressed}, rounded(DuoTheme.mix(Color.WHITE, bg, 0.08f), 0, 10));
-        s.addState(new int[]{}, rounded(bg, primaryStyle ? 0 : DuoTheme.LINE, 10));
+        s.addState(new int[]{}, rounded(bg, primaryStyle ? 0 : 0x29FFFFFF, 10));
         b.setBackground(s);
         if (glyph != null) {
             View g = glyph(glyph);
