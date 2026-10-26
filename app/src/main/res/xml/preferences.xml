@@ -121,8 +121,15 @@
     <PreferenceCategory
         android:key="category_video_settings"
         android:title="@string/category_video_settings"
-        app:initialExpandedChildrenCount="3"
         app:iconSpaceReserved="false">
+        <ListPreference
+            android:defaultValue="auto"
+            android:entries="@array/video_format_names"
+            android:entryValues="@array/video_format_values"
+            android:key="video_format"
+            android:summary="@string/summary_video_format"
+            android:title="@string/title_video_format"
+            app:iconSpaceReserved="false" />
         <ListPreference
             android:defaultValue="1800x1350"
             android:entries="@array/resolution_names"
@@ -331,7 +338,6 @@
     <PreferenceCategory
         android:key="category_artemide_tweaks"
         android:title="Artemide Tweaks"
-        app:initialExpandedChildrenCount="3"
         app:iconSpaceReserved="false">
 
         <CheckBoxPreference
@@ -535,7 +541,6 @@
     <PreferenceCategory
         android:key="category_gamepad_settings"
         android:title="@string/category_gamepad_settings"
-        app:initialExpandedChildrenCount="1"
         app:iconSpaceReserved="false">
         <com.limelight.preferences.SeekBarPreference
             android:defaultValue="5"
@@ -659,7 +664,6 @@
     <PreferenceCategory
         android:key="category_input_settings"
         android:title="@string/category_input_settings"
-        app:initialExpandedChildrenCount="1"
         app:iconSpaceReserved="false">
         <ListPreference
             android:defaultValue="0"
@@ -799,7 +803,6 @@
     <PreferenceCategory
         android:key="category_general_settings"
         android:title="@string/category_general_settings"
-        app:initialExpandedChildrenCount="1"
         app:iconSpaceReserved="false">
 
         <CheckBoxPreference
@@ -825,7 +828,6 @@
     <PreferenceCategory
         android:key="category_ui_settings"
         android:title="@string/category_ui_settings"
-        app:initialExpandedChildrenCount="3"
         app:iconSpaceReserved="false">
         <CheckBoxPreference
             android:defaultValue="false"
@@ -946,7 +948,6 @@
     <PreferenceCategory
         android:key="category_onscreen_controls"
         android:title="@string/category_on_screen_controls_settings"
-        app:initialExpandedChildrenCount="1"
         app:iconSpaceReserved="false">
         <CheckBoxPreference
             android:defaultValue="false"
@@ -1036,7 +1037,6 @@
     <PreferenceCategory
         android:key="category_special_key_layout"
         android:title="@string/title_special_key_layout"
-        app:initialExpandedChildrenCount="1"
         app:iconSpaceReserved="false">
 
         <CheckBoxPreference
@@ -1106,7 +1106,6 @@
     <PreferenceCategory
         android:key="category_virtual_trackpad_settings"
         android:title="@string/title_virtual_trackpad_settings"
-        app:initialExpandedChildrenCount="1"
         app:iconSpaceReserved="false">
 
         <CheckBoxPreference
@@ -1183,7 +1182,6 @@
     <PreferenceCategory
         android:key="category_perf_monitor_settings"
         android:title="@string/category_perf_monitor_settings"
-        app:initialExpandedChildrenCount="3"
         app:iconSpaceReserved="false">
         <ListPreference
             android:key="duo_overlay_style"
@@ -1278,27 +1276,12 @@
             android:title="@string/title_share_performance_logs_button"
             android:dependency="checkbox_enable_perf_logging"
             app:iconSpaceReserved="false" />
-        <com.limelight.preferences.WebLauncherPreference
-            url="https://github.com/ClassicOldSong/moonlight-android/wiki/Performance-Statistics-Collection"
-            android:key="option_view_shared_pref_logs"
-            android:summary="@string/summary_performance_link"
-            android:title="@string/title_performance_link"
-            app:iconSpaceReserved="false" />
     </PreferenceCategory>
 
     <PreferenceCategory
         android:key="category_advanced_settings"
         android:title="@string/category_advanced_settings"
-        app:initialExpandedChildrenCount="1"
         app:iconSpaceReserved="false">
-        <ListPreference
-            android:defaultValue="auto"
-            android:entries="@array/video_format_names"
-            android:entryValues="@array/video_format_values"
-            android:key="video_format"
-            android:summary="@string/summary_video_format"
-            android:title="@string/title_video_format"
-            app:iconSpaceReserved="false" />
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="checkbox_unlock_fps"
@@ -1328,7 +1311,6 @@
     <PreferenceCategory
         android:key="category_settings_misc"
         android:title="@string/title_settings_misc"
-        app:initialExpandedChildrenCount="1"
         app:iconSpaceReserved="false">
 
         <com.limelight.preferences.LanguagePreference
@@ -1346,31 +1328,10 @@
             android:title="@string/title_import_special_button"
             app:iconSpaceReserved="false" />
 
-        <com.limelight.preferences.WebLauncherPreference
-            url="https://github.com/ClassicOldSong/moonlight-android/wiki/Custom-Special-Keys"
-            android:key="option_help_custom_keys"
-            android:summary="@string/summary_special_key_help"
-            android:title="@string/title_special_key_help"
-            app:iconSpaceReserved="false" />
-
         <Preference
             android:key="pref_debug_info"
             android:summary="@string/summary_debug_info"
             android:title="@string/title_debug_info"
-            app:iconSpaceReserved="false" />
-
-        <com.limelight.preferences.WebLauncherPreference
-            url="https://github.com/ClassicOldSong/moonlight-android/releases"
-            android:key="option_software_release"
-            android:summary="@string/summary_software_update"
-            android:title="@string/title_software_update"
-            app:iconSpaceReserved="false" />
-
-        <com.limelight.preferences.WebLauncherPreference
-            url="@string/obtainium_app_url"
-            android:key="option_follow_update"
-            android:summary="@string/summary_follow_update"
-            android:title="@string/title_follow_update"
             app:iconSpaceReserved="false" />
     </PreferenceCategory>
 </PreferenceScreen>

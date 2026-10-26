@@ -26,8 +26,8 @@ import com.limelight.R;
 public final class DuoSettingsDecor {
     private DuoSettingsDecor() {}
 
-    public static final String[] TABS = {"Duo", "Video", "Decoder", "Audio", "Input", "Controller",
-            "On-screen", "Overlay", "Interface", "Shortcuts", "General"};
+    public static final String[] TABS = {"Duo", "Video", "Audio", "Input", "Controller", "Shortcuts",
+            "On-screen", "Overlay", "Interface", "Advanced", "General"};
 
     /** Which tab a top-level category belongs to (unknown ones go to General). */
     public static int tabFor(String key) {
@@ -37,17 +37,17 @@ public final class DuoSettingsDecor {
         switch (key) {
             case "category_duo": return 0;
             case "category_video_settings": return 1;
-            case "category_artemide_tweaks":
-            case "category_advanced_settings": return 2;
-            case "category_audio_settings": return 3;
+            case "category_audio_settings": return 2;
             case "category_input_settings":
-            case "category_virtual_trackpad_settings": return 4;
-            case "category_gamepad_settings": return 5;
+            case "category_virtual_trackpad_settings": return 3;
+            case "category_gamepad_settings": return 4;
+            case "category_shortcuts": return 5;
             case "category_onscreen_controls":
             case "category_special_key_layout": return 6;
             case "category_perf_monitor_settings": return 7;
             case "category_ui_settings": return 8;
-            case "category_shortcuts": return 9;
+            case "category_artemide_tweaks":
+            case "category_advanced_settings": return 9;
             default: return 10;
         }
     }
