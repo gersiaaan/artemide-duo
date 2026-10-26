@@ -2039,7 +2039,12 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
 
             @Override
             public void showStreamMenu() {
-                showGameMenu(null);
+                // The ⋯ button toggles: pressing it again closes the menu.
+                if (gameMenuCallbacks != null && gameMenuCallbacks.isMenuOpen()) {
+                    hideGameMenu();
+                } else {
+                    showGameMenu(null);
+                }
             }
 
             @Override
