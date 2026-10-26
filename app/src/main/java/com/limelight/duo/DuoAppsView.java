@@ -361,22 +361,28 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         r.setClickable(true);
 
         FrameLayout thumb = new FrameLayout(getContext());
-        thumb.setBackground(rounded(0xFF1A1E22, 0, 5));
+        thumb.setBackground(DuoCovers.placeholderBackground(accent, 5 * d));
         thumb.setClipToOutline(true);
-        TextView ph = text(placeholderText(a), 7, DuoTheme.TEXT2, true);
-        ph.setGravity(Gravity.CENTER);
+        View ph;
+        if (DuoPlayStats.isApp(a.name)) {
+            ImageView icon = new ImageView(getContext());
+            icon.setImageDrawable(tinted(R.drawable.ic_duo_monitor, DuoTheme.TEXT));
+            icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            icon.setPadding(dp(6), dp(6), dp(6), dp(6));
+            ph = icon;
+        } else {
+            TextView t = text(placeholderText(a), 9, DuoTheme.TEXT, true);
+            t.setGravity(Gravity.CENTER);
+            ph = t;
+        }
         thumb.addView(ph, match());
         ImageView iv = new ImageView(getContext());
         iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
         thumb.addView(iv, match());
-        if (!DuoPlayStats.isApp(a.name)) {
-            host.loadCover(a, iv);
-        } else {
-            iv.setImageDrawable(tinted(R.drawable.ic_duo_monitor, DuoTheme.TEXT));
-            iv.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-            iv.setPadding(dp(6), dp(6), dp(6), dp(6));
+        if (c != null) {
+            DuoCovers.into(getContext(), c.uuid, a.id, iv, ph, dp(64));
         }
-        r.addView(thumb, new LinearLayout.LayoutParams(dp(32), dp(42)));
+        r.addView(thumb, new LinearLayout.LayoutParams(dp(30), dp(42)));
 
         LinearLayout texts = new LinearLayout(getContext());
         texts.setOrientation(LinearLayout.VERTICAL);
@@ -438,11 +444,12 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         p.setGravity(landscape ? Gravity.CENTER_HORIZONTAL : Gravity.CENTER_VERTICAL);
 
         FrameLayout cover = new FrameLayout(getContext());
-        cover.setBackground(rounded(0xFF1A1E22, DuoTheme.LINE, 12));
+        cover.setBackground(DuoCovers.placeholderBackground(accent, 12 * d));
+        cover.setForeground(rounded(0, DuoTheme.LINE, 12));
         cover.setClipToOutline(true);
         cover.setElevation(dp(10));
-        int cw = landscape ? 130 : 96;
-        LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(dp(cw), dp(cw * 4 / 3f));
+        int cw = landscape ? 124 : 92;
+        LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(dp(cw), dp(cw * 1.41f));
         if (landscape) {
             cl.topMargin = dp(10);
         }
@@ -533,6 +540,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             bigName.setText("");
             statTime.setText("–");
             statSessions.setText("–");
+            bigCover.setTag(null);
             bigCover.setImageDrawable(null);
             bigPlaceholder.setText("");
             return;
@@ -545,11 +553,11 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         statSessions.setText(String.valueOf(sessions));
         boolean desk = DuoPlayStats.isApp(a.name);
         bigPlaceholder.setText(desk ? a.name.toUpperCase() : placeholderText(a));
+        bigPlaceholder.setTextSize(desk ? 13 : 28);
         bigPlaceholder.setCompoundDrawablesWithIntrinsicBounds(null,
                 desk ? tinted(R.drawable.ic_duo_monitor, DuoTheme.TEXT) : null, null, null);
-        bigCover.setImageDrawable(null);
-        if (!desk) {
-            host.loadCover(a, bigCover);
+        if (c != null) {
+            DuoCovers.into(getContext(), c.uuid, a.id, bigCover, bigPlaceholder, dp(240));
         }
     }
 

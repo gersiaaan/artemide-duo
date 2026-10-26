@@ -58,6 +58,8 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         void open(ComputerDetails c);
         void options(ComputerDetails c);
         void playAgain(ComputerDetails c, DuoPlayStats.Last last);
+        void resume(ComputerDetails c);
+        void quit(ComputerDetails c);
         void addHost();
         void profiles();
         void settings();
@@ -86,7 +88,8 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     private TextView lastInfo, lastName;
     private ImageView lastCover;
     private TextView lastPlaceholder;
-    private View playAgain;
+    private View playAgain, quitRunning;
+    private int coverWidthDp;
     private int batteryPct = -1;
     private boolean charging;
 
@@ -353,6 +356,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             lastName.setText("");
             setCover(c, null);
             playAgain.setVisibility(INVISIBLE);
+            quitRunning.setVisibility(GONE);
         } else {
             lastInfo.setText(("Last played " + DuoPlayStats.ago(last.when)
                     + (last.totalMs > 0 ? "  ·  " + DuoPlayStats.duration(last.totalMs) + " total" : "")).toUpperCase());
@@ -362,7 +366,17 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             boolean ready = c.state == ComputerDetails.State.ONLINE && c.pairState == PairingManager.PairState.PAIRED;
             playAgain.setEnabled(ready);
             playAgain.setAlpha(ready ? 1f : 0.45f);
-            playAgain.setOnClickListener(v -> host.playAgain(c, last));
+            boolean running = ready && c.runningGameId != 0;
+            ((TextView) playAgain.getTag()).setText(running ? "Resume" : "Play again");
+            playAgain.setOnClickListener(v -> {
+                if (running) {
+                    host.resume(c);
+                } else {
+                    host.playAgain(c, last);
+                }
+            });
+            quitRunning.setVisibility(running ? VISIBLE : GONE);
+            quitRunning.setOnClickListener(v -> host.quit(c));
         }
     }
 
@@ -406,30 +420,20 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     }
 
     private void setCover(ComputerDetails c, DuoPlayStats.Last last) {
-        Bitmap bmp = null;
-        if (last != null) {
-            File f = new File(new File(new File(getContext().getCacheDir(), "boxart"), c.uuid), last.appId + ".png");
-            if (f.exists()) {
-                try {
-                    BitmapFactory.Options o = new BitmapFactory.Options();
-                    o.inSampleSize = 2;
-                    bmp = BitmapFactory.decodeFile(f.getAbsolutePath(), o);
-                } catch (Throwable ignored) {
-                }
-            }
-        }
-        if (bmp != null && (last == null || !DuoPlayStats.isApp(last.name))) {
-            lastCover.setImageBitmap(bmp);
-            lastCover.setVisibility(VISIBLE);
-            lastPlaceholder.setVisibility(GONE);
-        } else {
-            lastCover.setVisibility(GONE);
+        boolean desk = last == null || DuoPlayStats.isApp(last.name);
+        lastPlaceholder.setText(last == null ? "" : desk ? last.name.toUpperCase() : initials(last.name));
+        lastPlaceholder.setTextSize(desk ? 11 : 26);
+        lastPlaceholder.setCompoundDrawablesWithIntrinsicBounds(null,
+                desk && last != null ? tinted(R.drawable.ic_duo_monitor) : null, null, null);
+        if (last == null) {
+            lastCover.setTag(null);
+            lastCover.setImageDrawable(null);
+            lastCover.setVisibility(INVISIBLE);
             lastPlaceholder.setVisibility(VISIBLE);
-            boolean desk = last == null || DuoPlayStats.isApp(last.name);
-            lastPlaceholder.setText(last == null ? "" : desk ? last.name.toUpperCase() : initials(last.name));
-            lastPlaceholder.setCompoundDrawablesWithIntrinsicBounds(null,
-                    desk ? tinted(R.drawable.ic_duo_monitor) : null, null, null);
+            return;
         }
+        // Real box art for every app (Desktop too, when the host provides one).
+        DuoCovers.into(getContext(), c.uuid, last.appId, lastCover, lastPlaceholder, dp(coverWidthDp));
     }
 
     private static String initials(String n) {
@@ -524,11 +528,14 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         lastPanel.addView(lastInfo, new LinearLayout.LayoutParams(-2, -2));
 
         FrameLayout coverBox = new FrameLayout(getContext());
-        int cw = landscape ? 132 : 110;
-        LinearLayout.LayoutParams cb = new LinearLayout.LayoutParams(dp(cw), dp(cw * 4 / 3f));
+        int cw = landscape ? 128 : 108;
+        coverWidthDp = cw;
+        // Box art proportions (about 1 : 1.41, like Moonlight's covers).
+        LinearLayout.LayoutParams cb = new LinearLayout.LayoutParams(dp(cw), dp(cw * 1.41f));
         cb.topMargin = dp(14);
         lastPanel.addView(coverBox, cb);
-        coverBox.setBackground(rounded(0xFF1A1E22, DuoTheme.LINE, 12));
+        coverBox.setBackground(DuoCovers.placeholderBackground(accent, 12 * d));
+        coverBox.setForeground(rounded(0, DuoTheme.LINE, 12));
         coverBox.setClipToOutline(true);
         coverBox.setElevation(dp(10));
         lastCover = new ImageView(getContext());
@@ -548,10 +555,18 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         ln.topMargin = dp(14);
         lastPanel.addView(lastName, ln);
 
-        playAgain = button("Play again", "Y", false, null);
+        LinearLayout actions = row();
+        actions.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams pa = new LinearLayout.LayoutParams(-2, dp(36));
         pa.topMargin = dp(12);
-        lastPanel.addView(playAgain, pa);
+        lastPanel.addView(actions, pa);
+        playAgain = button("Play again", "Y", false, null);
+        actions.addView(playAgain, new LinearLayout.LayoutParams(-2, -1));
+        quitRunning = button("Quit", null, false, null);
+        LinearLayout.LayoutParams ql = new LinearLayout.LayoutParams(-2, -1);
+        ql.leftMargin = dp(8);
+        actions.addView(quitRunning, ql);
+        quitRunning.setVisibility(GONE);
         return lastPanel;
     }
 

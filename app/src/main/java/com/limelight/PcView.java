@@ -306,6 +306,23 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
             }
 
             @Override
+            public void resume(ComputerDetails c) {
+                if (managerBinder == null) {
+                    return;
+                }
+                ServerHelper.doStart(PcView.this, new NvApp("app", null, c.runningGameId, false), c, managerBinder, false);
+            }
+
+            @Override
+            public void quit(ComputerDetails c) {
+                if (managerBinder == null) {
+                    return;
+                }
+                UiHelper.displayQuitConfirmationDialog(PcView.this,
+                        () -> ServerHelper.doQuit(PcView.this, c, new NvApp("app", null, 0, false), managerBinder, null), null);
+            }
+
+            @Override
             public void addHost() {
                 startActivity(new Intent(PcView.this, AddComputerManually.class));
             }
