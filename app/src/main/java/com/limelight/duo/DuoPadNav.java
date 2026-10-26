@@ -1,7 +1,6 @@
 package com.limelight.duo;
 
 import android.os.SystemClock;
-import android.view.FocusFinder;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -74,7 +73,8 @@ public final class DuoPadNav {
             }
             return;
         }
-        View next = FocusFinder.getInstance().findNextFocus(root, f, dir);
+        // focusSearch lets lists (RecyclerView, ScrollView) scroll to the next item.
+        View next = f.focusSearch(dir);
         if (next != null) {
             next.requestFocus(dir);
         }
