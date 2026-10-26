@@ -152,6 +152,8 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
                 paint.run();
             });
             paint.run();
+            // Also follow the toggle in the stream menu.
+            DuoGamepadMouse.setListener(() -> post(paint));
             addBarView(bar, pad, dp(44), true);
         }
 
