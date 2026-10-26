@@ -56,8 +56,6 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
     private int mode;
     private boolean swapped;
 
-    // Swipe up from the bottom edge hides the panel (panel on the other screen only).
-    private float swipeStartY = -1;
 
     /**
      * @param onHide if not null, the panel runs on the other screen; it then gets a
@@ -73,7 +71,8 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         setOrientation(VERTICAL);
         setBackgroundColor(DuoColors.BG);
         int pad8 = dp(8);
-        setPadding(pad8, pad8, pad8, pad8);
+        // On the other screen the home indicator sits at the bottom instead of the padding.
+        setPadding(pad8, pad8, pad8, onHide != null ? 0 : pad8);
         // Swallow touches so nothing falls through to the stream below.
         setClickable(true);
 
@@ -181,6 +180,10 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
                     FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         }
 
+        if (onHide != null) {
+            addView(homeIndicator(context), new LayoutParams(LayoutParams.MATCH_PARENT, dp(20)));
+        }
+
         onSpeedChanged(DuoBridge.getSpeed(context));
         swapped = DuoBridge.isCompactSwapped(context);
         applySwap();
@@ -210,31 +213,45 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         compactPad.setSensitivity(gain);
     }
 
-    // ---------- swipe up from the bottom edge ----------
+    // ---------- Apple-style home indicator: swipe it up to hide the panel ----------
 
-    @Override
-    public boolean onInterceptTouchEvent(MotionEvent e) {
-        if (onHide == null) {
-            return false;
-        }
-        switch (e.getActionMasked()) {
-            case MotionEvent.ACTION_DOWN:
-                swipeStartY = e.getY() >= getHeight() - dp(28) ? e.getY() : -1;
-                break;
-            case MotionEvent.ACTION_MOVE:
-                if (swipeStartY >= 0 && swipeStartY - e.getY() > dp(70)) {
-                    swipeStartY = -1;
-                    performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
-                    onHide.run();
+    @SuppressLint("ClickableViewAccessibility")
+    private View homeIndicator(Context context) {
+        FrameLayout strip = new FrameLayout(context);
+        strip.setContentDescription("Swipe up to hide keyboard and trackpad");
+        View bar = new View(context);
+        GradientDrawable g = new GradientDrawable();
+        g.setColor(0x52FFFFFF);
+        g.setCornerRadius(dp(3));
+        bar.setBackground(g);
+        strip.addView(bar, new FrameLayout.LayoutParams(dp(120), dp(5), Gravity.CENTER));
+        final float[] start = {0};
+        strip.setOnTouchListener((v, e) -> {
+            switch (e.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    start[0] = e.getRawY();
+                    animate().cancel();
+                    return true;
+                case MotionEvent.ACTION_MOVE: {
+                    float dy = Math.min(0, e.getRawY() - start[0]);
+                    setTranslationY(dy * 0.6f);   // the panel follows the finger, a little damped
                     return true;
                 }
-                break;
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_CANCEL:
-                swipeStartY = -1;
-                break;
-        }
-        return false;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL: {
+                    float dy = e.getRawY() - start[0];
+                    if (e.getActionMasked() == MotionEvent.ACTION_UP && dy < -dp(40)) {
+                        performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+                        onHide.run();
+                    } else {
+                        animate().translationY(0).setDuration(180).start();
+                    }
+                    return true;
+                }
+            }
+            return true;
+        });
+        return strip;
     }
 
     // ---------- modes ----------

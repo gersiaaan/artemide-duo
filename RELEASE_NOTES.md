@@ -22,4 +22,5 @@ Install the file with **arm64-v8a** in its name on the Surface Duo (or Galaxy Ta
 - You can also mark any entry as **Game** or **App**; this overrides the automatic detection.
 
 ### Surface Duo panel
+- Apple-style home indicator at the bottom of Keyboard, Trackpad and Compact: swipe it up to hide the panel (replaces the old swipe from the screen edge).
 - Desktop / Remote Desktop: the keyboard & trackpad panel opens on the other screen automatically when the stream starts (follows the "Keyboard button in the stream" setting).
