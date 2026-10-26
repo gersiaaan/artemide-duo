@@ -351,7 +351,7 @@ public abstract class DuoTouchSurface extends View {
                     break;
                 }
                 if (mode == Mode.MULTI && maxPointers == 2 && event.getPointerCount() == 2
-                        && Math.abs(span - startSpan) > slop * 1.5f
+                        && Math.abs(span - startSpan) > slop * 2.5f
                         && Math.abs(span - startSpan) > Math.hypot(dx, dy)) {
                     // Two fingers apart/together: zoom like a laptop trackpad (Ctrl + wheel).
                     mode = Mode.PINCH;
@@ -456,12 +456,17 @@ public abstract class DuoTouchSurface extends View {
         if (sink == null) {
             return;
         }
-        // About one wheel notch per 30dp of finger spread; apart = zoom in.
-        zoomRem += dSpan * 120f / (30f * density);
-        short v = (short) zoomRem;
-        zoomRem -= v;
-        if (v != 0) {
-            sink.sendScroll(v, (short) 0);
+        // One full wheel notch per 70dp of finger spread; apart = zoom in.
+        // Only whole notches: browsers zoom one step per wheel event, however small,
+        // so fine-grained deltas made pinching far too jumpy.
+        zoomRem += dSpan / (70f * density);
+        while (zoomRem >= 1f) {
+            sink.sendScroll((short) 120, (short) 0);
+            zoomRem -= 1f;
+        }
+        while (zoomRem <= -1f) {
+            sink.sendScroll((short) -120, (short) 0);
+            zoomRem += 1f;
         }
     }
 
