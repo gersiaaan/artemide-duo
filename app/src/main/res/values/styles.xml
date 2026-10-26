@@ -7,6 +7,9 @@
 
     -->
     <style name="AppBaseTheme" parent="Theme.MaterialComponents.NoActionBar">
+        <!-- Duo look for every dialog and loading spinner (see DuoAlertDialog) -->
+        <item name="android:alertDialogTheme">@style/DuoAlertDialog</item>
+        <item name="alertDialogTheme">@style/DuoAlertDialog.Compat</item>
         <!--
             Theme customizations available in newer API levels can go in
             res/values-vXX/styles.xml, while customizations related to
@@ -61,6 +64,26 @@
         <item name="android:navigationBarColor">@android:color/black</item>
         <item name="android:colorBackground">@android:color/black</item>
         <item name="android:windowBackground">@android:color/black</item>
+    </style>
+
+    <!-- Surface Duo dialogs: black, slightly see-through, rounded, blue accent -->
+    <style name="DuoAlertDialog" parent="@android:style/Theme.Material.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/duo_dialog_bg</item>
+        <item name="android:colorAccent">#FFA9C1F0</item>
+        <item name="android:colorControlActivated">#FFA9C1F0</item>
+        <item name="android:textColorPrimary">#FFE6E8EB</item>
+        <item name="android:textColorSecondary">#FFC4C8CE</item>
+        <item name="android:backgroundDimAmount">0.35</item>
+    </style>
+
+    <style name="DuoAlertDialog.Compat" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/duo_dialog_bg</item>
+        <item name="colorAccent">#FFA9C1F0</item>
+        <item name="android:colorAccent">#FFA9C1F0</item>
+        <item name="colorControlActivated">#FFA9C1F0</item>
+        <item name="android:textColorPrimary">#FFE6E8EB</item>
+        <item name="android:textColorSecondary">#FFC4C8CE</item>
+        <item name="android:backgroundDimAmount">0.35</item>
     </style>
 
     <declare-styleable name="ApertureViewGroup">

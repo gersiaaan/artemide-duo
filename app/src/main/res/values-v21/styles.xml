@@ -6,6 +6,9 @@
         res/values-v21/styles.xml on API 21+ devices.
     -->
     <style name="AppBaseTheme" parent="Theme.MaterialComponents.NoActionBar">
+        <!-- Duo look for every dialog and loading spinner (see DuoAlertDialog) -->
+        <item name="android:alertDialogTheme">@style/DuoAlertDialog</item>
+        <item name="alertDialogTheme">@style/DuoAlertDialog.Compat</item>
         <!-- API 21 theme customizations can go here. -->
     </style>
 
