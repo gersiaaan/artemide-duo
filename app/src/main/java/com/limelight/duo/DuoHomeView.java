@@ -329,7 +329,8 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
             lp.leftMargin = dp(8);
             chip.addView(t, lp);
-            chip.setFocusable(true);
+            // Host tabs switch with LB/RB (or touch); the stick never lands on them.
+            chip.setFocusable(false);
             chip.setOnClickListener(v -> select(pc));
             LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-2, -1);
             cp.rightMargin = dp(6);
@@ -341,7 +342,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         add.setPadding(dp(10), 0, dp(10), 0);
         add.setBackground(focusable(addSel ? DuoTheme.mix(accent, DuoTheme.CARD, 0.16f) : 0,
                 addSel ? DuoTheme.withAlpha(accent, 0.45f) : 0, 9));
-        add.setFocusable(true);
+        add.setFocusable(false);
         add.setOnClickListener(v -> {
             addMode = true;
             render();
