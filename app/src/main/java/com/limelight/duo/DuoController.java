@@ -225,6 +225,19 @@ public class DuoController {
         DuoDialogs.style(dialog);
     }
 
+    /** The stream is connected: desktop apps get the panel on the other screen right away. */
+    public void onStreamConnected() {
+        if (!desktopApp || autoOpened || split) {
+            return;
+        }
+        autoOpened = true;
+        root.postDelayed(() -> {
+            if (!split && !DuoBridge.isPanelOpen() && !activity.isFinishing()) {
+                DuoPanelActivity.open(activity);
+            }
+        }, 400);
+    }
+
     public boolean isSplit() {
         return split;
     }
@@ -292,14 +305,6 @@ public class DuoController {
             setFrame(backgroundTouch, ViewGroup.LayoutParams.MATCH_PARENT, backgroundGravity);
             panel.setVisibility(View.GONE);
             updateToggleButton();
-            if (desktopApp && !autoOpened) {
-                autoOpened = true;
-                root.postDelayed(() -> {
-                    if (!split && !DuoBridge.isPanelOpen() && !activity.isFinishing()) {
-                        DuoPanelActivity.open(activity);
-                    }
-                }, 700);
-            }
             LimeLog.info("Duo: single screen mode, toggle button " + (desktopApp ? "shown" : "hidden"));
         }
     }

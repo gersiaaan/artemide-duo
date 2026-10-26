@@ -4076,6 +4076,9 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                 // Update GameManager state to indicate we're in game
                 UiHelper.notifyStreamConnected(Game.this);
 
+                if (duoController != null) {
+                    duoController.onStreamConnected();
+                }
                 // Artemide Duo start screen: last played app, play time and sessions.
                 com.limelight.duo.DuoPlayStats.started(Game.this,
                         getIntent().getStringExtra(EXTRA_PC_UUID),
