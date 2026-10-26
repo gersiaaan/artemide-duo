@@ -87,7 +87,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     private final ScrollView listScroll;
     private ImageView bigCover;
     private TextView bigPlaceholder, bigName, statTime, statSessions;
-    private View playButton, quitButton, optionsButton;
+    private View playButton, quitButton, optionsButton, pinButton;
     private int batteryPct = -1;
     private boolean charging;
 
@@ -280,6 +280,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         DuoPlayStats.Last last = c == null ? null : DuoPlayStats.last(getContext(), c.uuid);
 
         App lastApp = null;
+        List<App> pinned = new ArrayList<>();
         List<App> rest = new ArrayList<>();
         for (App a : apps) {
             if (!inTab(a)) {
@@ -287,29 +288,50 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             }
             if (last != null && a.id == last.appId && lastApp == null) {
                 lastApp = a;
+            } else if (c != null && DuoPlayStats.isPinned(getContext(), c.uuid, a.id)) {
+                pinned.add(a);
             } else {
                 rest.add(a);
             }
         }
         if (selectedId == -1 || !contains(apps, selectedId)) {
-            selectedId = lastApp != null ? lastApp.id : rest.isEmpty() ? -1 : rest.get(0).id;
+            selectedId = lastApp != null ? lastApp.id : !pinned.isEmpty() ? pinned.get(0).id
+                    : rest.isEmpty() ? -1 : rest.get(0).id;
         }
         if (lastApp != null) {
             list.addView(section("LAST PLAYED", accent));
             list.addView(rowFor(lastApp, c));
         }
+        if (!pinned.isEmpty()) {
+            list.addView(section("FAVOURITES", DuoTheme.TEXT2));
+            for (App a : pinned) {
+                list.addView(rowFor(a, c));
+            }
+        }
         if (!rest.isEmpty()) {
-            list.addView(section(lastApp != null ? "ALL" : (tab == 0 ? "ALL" : TABS[tab]), DuoTheme.TEXT2));
+            list.addView(section(tab == 0 ? "ALL" : TABS[tab], DuoTheme.TEXT2));
             for (App a : rest) {
                 list.addView(rowFor(a, c));
             }
         }
-        if (lastApp == null && rest.isEmpty()) {
+        if (lastApp == null && rest.isEmpty() && pinned.isEmpty()) {
             TextView empty = text(apps.isEmpty() ? "Loading apps…" : "Nothing here", 13, DuoTheme.TEXT2, false);
             empty.setPadding(0, dp(18), 0, 0);
             list.addView(empty);
         }
         renderDetail();
+    }
+
+    /** Favourite on/off (star button or long press on a row). */
+    private void togglePin(App a) {
+        ComputerDetails c = host.computer();
+        if (c == null) {
+            return;
+        }
+        DuoPlayStats.setPinned(getContext(), c.uuid, a.id, !DuoPlayStats.isPinned(getContext(), c.uuid, a.id));
+        performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+        selectedId = a.id;
+        renderList();
     }
 
     private static boolean contains(List<App> apps, int id) {
@@ -408,6 +430,14 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             texts.addView(s);
         }
 
+        if (c != null && DuoPlayStats.isPinned(getContext(), c.uuid, a.id)) {
+            TextView star = text("★", 14, accent, false);
+            r.addView(star);
+        }
+        r.setOnLongClickListener(v -> {
+            togglePin(a);
+            return true;
+        });
         r.setOnFocusChangeListener((v, has) -> {
             if (has) {
                 select(a);
@@ -511,6 +541,16 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams ol = new LinearLayout.LayoutParams(-2, -1);
         ol.leftMargin = dp(8);
         buttons.addView(quitButton, ol);
+        pinButton = button("☆", null, false, v -> {
+            App a = selectedApp();
+            if (a != null) {
+                togglePin(a);
+            }
+        });
+        pinButton.setContentDescription("Favourite");
+        LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(-2, -1);
+        pl.leftMargin = dp(8);
+        buttons.addView(pinButton, pl);
         return p;
     }
 
@@ -534,6 +574,13 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         boolean has = a != null;
         playButton.setVisibility(has ? VISIBLE : INVISIBLE);
         quitButton.setVisibility(has && a.running ? VISIBLE : GONE);
+        pinButton.setVisibility(has ? VISIBLE : GONE);
+        if (has && c != null) {
+            boolean pinned = DuoPlayStats.isPinned(getContext(), c.uuid, a.id);
+            TextView pt = (TextView) pinButton.getTag();
+            pt.setText(pinned ? "★" : "☆");
+            pt.setTextColor(pinned ? accent : DuoTheme.TEXT);
+        }
         optionsButton.setEnabled(has);
         optionsButton.setAlpha(has ? 1f : 0.45f);
         if (!has) {

@@ -118,12 +118,34 @@ public final class DuoPlayStats {
         return (d / 1440) + " d ago";
     }
 
-    /** Desktop-like apps (vs. games) — same rule as the stream button. */
+    /** Words that mark a tool / app rather than a game (tabs GAMES / APPS). */
+    private static final String[] APP_WORDS = {"desktop", "virtual display", "remote", "reboot", "restart",
+            "shutdown", "shut down", "power off", "sleep", "hibernate", "log off", "logoff", "sign out", "lock",
+            "big picture", "steam", "playnite", "launcher", "explorer", "browser", "chrome", "firefox", "edge",
+            "spotify", "youtube", "netflix", "plex", "kodi", "vlc", "terminal", "cmd", "powershell", "settings",
+            "task manager", "obs", "discord", "monitor", "display", "screen"};
+
+    /** Tools and apps (Desktop, PC Reboot, Steam Big Picture …) vs. games. */
     public static boolean isApp(String name) {
         if (name == null) {
             return false;
         }
         String n = name.toLowerCase();
-        return n.contains("desktop") || n.contains("virtual display") || n.contains("remote");
+        for (String w : APP_WORDS) {
+            if (n.contains(w)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ---------------- favourites (pinned apps) ----------------
+
+    public static boolean isPinned(Context c, String pcUuid, int appId) {
+        return prefs(c).getBoolean(pcUuid + "|" + appId + "|pinned", false);
+    }
+
+    public static void setPinned(Context c, String pcUuid, int appId, boolean pinned) {
+        prefs(c).edit().putBoolean(pcUuid + "|" + appId + "|pinned", pinned).apply();
     }
 }
