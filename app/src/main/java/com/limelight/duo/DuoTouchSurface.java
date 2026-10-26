@@ -25,6 +25,8 @@ public abstract class DuoTouchSurface extends View {
     private static final long LONG_PRESS_MS = 450;
     private static final long REPEAT_DELAY_MS = 55;
     private static final long MULTI_TAP_MAX_MS = 350;
+    /** A second finger landing later than this is fast typing, not a 2-finger gesture. */
+    private static final long ROLLOVER_MS = 70;
 
     protected DuoInputSink sink;
     protected final float density;
@@ -38,6 +40,7 @@ public abstract class DuoTouchSurface extends View {
     private float lastCx, lastCy;
     private boolean resetCentroid;
     private long downTime;
+    private int activeId;
     private int maxPointers;
     private float remX, remY, scrollRemV, scrollRemH;
     private long lastMoveTime;
@@ -56,6 +59,7 @@ public abstract class DuoTouchSurface extends View {
             } else {
                 mode = Mode.DRAG;
                 onCancelPress();
+                onPointerAction();
                 performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                 if (sink != null) {
                     sink.sendMouseButton(MouseButtonPacket.BUTTON_LEFT, true);
@@ -97,28 +101,48 @@ public abstract class DuoTouchSurface extends View {
     protected boolean isRepeatable(float x, float y) { return false; }
     protected abstract void onTwoFingerTap();
     protected abstract void onThreeFingerTap();
+    /** Keyboards return true so overlapping taps from two thumbs are typed, not treated as gestures. */
+    protected boolean supportsRollover() { return false; }
+    /** Called when the touch turns into mouse movement, dragging or scrolling. */
+    protected void onPointerAction() {}
+
+    private void beginPending(MotionEvent event, int index) {
+        mode = Mode.PENDING;
+        activeId = event.getPointerId(index);
+        downX = lastX = event.getX(index);
+        downY = lastY = event.getY(index);
+        downTime = event.getEventTime();
+        lastMoveTime = downTime;
+        smoothVelocity = 0;
+        maxPointers = 1;
+        remX = remY = 0;
+        handler.postDelayed(longPress, LONG_PRESS_MS);
+        onPress(downX, downY);
+    }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
-                mode = Mode.PENDING;
-                downX = lastX = event.getX();
-                downY = lastY = event.getY();
-                downTime = event.getEventTime();
-                lastMoveTime = downTime;
-                smoothVelocity = 0;
-                maxPointers = 1;
-                remX = remY = 0;
                 // Deliver touch samples as soon as they arrive instead of once per frame.
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     requestUnbufferedDispatch(event);
                 }
-                handler.postDelayed(longPress, LONG_PRESS_MS);
-                onPress(downX, downY);
+                beginPending(event, 0);
                 return true;
 
             case MotionEvent.ACTION_POINTER_DOWN:
+                if (supportsRollover()
+                        && (mode == Mode.PENDING || mode == Mode.NONE)
+                        && (mode == Mode.NONE || event.getEventTime() - downTime > ROLLOVER_MS)) {
+                    // Fast typing: commit the first key now, the new finger is the next key.
+                    cancelTimers();
+                    if (mode == Mode.PENDING) {
+                        onTap(downX, downY);
+                    }
+                    beginPending(event, event.getActionIndex());
+                    return true;
+                }
                 maxPointers = Math.max(maxPointers, event.getPointerCount());
                 if (mode == Mode.PENDING || mode == Mode.MOUSE || mode == Mode.REPEAT) {
                     cancelTimers();
@@ -132,9 +156,22 @@ public abstract class DuoTouchSurface extends View {
                 handleMove(event);
                 return true;
 
-            case MotionEvent.ACTION_POINTER_UP:
+            case MotionEvent.ACTION_POINTER_UP: {
+                int upId = event.getPointerId(event.getActionIndex());
+                if (supportsRollover() && mode == Mode.PENDING) {
+                    if (upId == activeId) {
+                        // The newest finger lifted first: type it, ignore the rest.
+                        cancelTimers();
+                        onTap(downX, downY);
+                        mode = Mode.NONE;
+                        onCancelPress();
+                    }
+                    // An older, already typed finger lifted: nothing to do.
+                    return true;
+                }
                 resetCentroid = true;
                 return true;
+            }
 
             case MotionEvent.ACTION_UP:
                 cancelTimers();
@@ -174,8 +211,12 @@ public abstract class DuoTouchSurface extends View {
     }
 
     private void handleMove(MotionEvent event) {
-        float x = event.getX();
-        float y = event.getY();
+        int index = event.findPointerIndex(activeId);
+        if (index < 0) {
+            index = 0;
+        }
+        float x = event.getX(index);
+        float y = event.getY(index);
 
         switch (mode) {
             case PENDING:
@@ -183,6 +224,7 @@ public abstract class DuoTouchSurface extends View {
                     cancelTimers();
                     onCancelPress();
                     mode = Mode.MOUSE;
+                    onPointerAction();
                     // Start from here (no jump by the slop distance).
                     lastX = x;
                     lastY = y;
@@ -195,8 +237,8 @@ public abstract class DuoTouchSurface extends View {
                 // Walk through batched samples so acceleration sees the real finger speed.
                 int history = event.getHistorySize();
                 for (int i = 0; i < history; i++) {
-                    float hx = event.getHistoricalX(0, i);
-                    float hy = event.getHistoricalY(0, i);
+                    float hx = event.getHistoricalX(index, i);
+                    float hy = event.getHistoricalY(index, i);
                     moveMouse(hx - lastX, hy - lastY, event.getHistoricalEventTime(i));
                     lastX = hx;
                     lastY = hy;
@@ -226,6 +268,7 @@ public abstract class DuoTouchSurface extends View {
                 if (mode == Mode.MULTI) {
                     if (Math.hypot(dx, dy) > slop) {
                         mode = Mode.SCROLL;
+                        onPointerAction();
                         lastCx = cx;
                         lastCy = cy;
                     }

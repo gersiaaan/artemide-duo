@@ -36,6 +36,17 @@ public final class DuoKeys {
     private static final Handler HANDLER = new Handler(Looper.getMainLooper());
     private static final long KEY_UP_DELAY_MS = 25;
 
+    /** Presses and releases one key immediately (keeps ordering with text events). */
+    public static void tap(DuoInputSink sink, int vk, int times) {
+        if (sink == null) {
+            return;
+        }
+        for (int i = 0; i < times; i++) {
+            sink.sendKey(vk, true, (byte) 0);
+            sink.sendKey(vk, false, (byte) 0);
+        }
+    }
+
     /** Presses all keys in order, then releases them in reverse order. */
     public static void sendCombo(final DuoInputSink sink, final int... vks) {
         if (sink == null || vks.length == 0) {

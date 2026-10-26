@@ -4,6 +4,22 @@
     xmlns:seekbar="http://schemas.moonlight-stream.com/apk/res/seekbar"
     app:iconSpaceReserved="false">
 
+    <!-- Surface Duo build -->
+    <PreferenceCategory
+        android:key="category_duo"
+        android:title="Surface Duo"
+        app:iconSpaceReserved="false">
+        <SeekBarPreference
+            android:key="duo_trackpad_speed"
+            android:title="Trackpad-Tempo"
+            android:summary="Geschwindigkeit von Tastatur-Trackpad und Trackpad (1 bis 10)"
+            android:defaultValue="5"
+            android:max="10"
+            app:min="1"
+            app:showSeekBarValue="true"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
+
     <PreferenceCategory
         android:key="category_video_settings"
         android:title="@string/category_video_settings"

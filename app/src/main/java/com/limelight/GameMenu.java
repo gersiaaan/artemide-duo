@@ -325,6 +325,11 @@ public class GameMenu implements Game.GameMenuCallbacks {
                     game::rotateScreen));
         }
 
+        if (com.limelight.duo.DuoController.isDuoDevice()) {
+            options.add(new MenuOption("Trackpad-Tempo", false,
+                    () -> com.limelight.duo.DuoController.showSpeedDialog(game)));
+        }
+
         options.add(new MenuOption(getString(R.string.game_menu_advanced), true,
                 () -> showAdvancedMenu(device)));
 

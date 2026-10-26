@@ -15,45 +15,53 @@ import java.util.List;
 import static com.limelight.duo.DuoKeys.*;
 
 /**
- * German QWERTZ keyboard that doubles as a trackpad.
+ * German QWERTZ keyboard (Gboard-style stagger, no umlaut keys) that doubles as a trackpad.
  * Tap = key, swipe = mouse, 2-finger tap = left click, 3-finger tap = right click,
  * 2-finger swipe = scroll, long press + move = drag.
  * Modifiers: tap once = next key only, tap twice = locked, tap again = off.
  */
 public class DuoKeyboardView extends DuoTouchSurface {
 
-    private static final int COLOR_KEY = DuoColors.KEY;
-    private static final int COLOR_KEY_FN = DuoColors.KEY_FN;
-    private static final int COLOR_KEY_PRESSED = DuoColors.PRESSED;
-    private static final int COLOR_TEXT = DuoColors.TEXT;
-    private static final int COLOR_TEXT_DARK = DuoColors.ON_ACCENT;
-    private static final int COLOR_HINT = DuoColors.MUTED;
+    private static final int COLOR_SUBTLE_BG = 0xFF08090A;
+    private static final int COLOR_SUBTLE_BORDER = 0xFF1A1C20;
 
-    /** Preferred (flat) row heights in dp; rows shrink if the panel is smaller. */
-    private static final float FN_ROW_DP = 38f;
-    private static final float ROW_DP = 52f;
+    /** Row heights in dp; rows shrink if the panel is smaller. */
+    private static final float FN_ROW_DP = 24f;
+    private static final float ROW_DP = 58f;
 
     private static final class Key {
         final String label;
-        final String shiftLabel;
+        String shiftLabel;
+        String altLabel;
         final int vk;
         final float units;
-        final boolean modifier;
-        final boolean repeatable;
+        boolean modifier;
+        boolean repeatable;
+        boolean subtle;
+        /** 0 = normal, 1 = upper half of a stacked pair, 2 = lower half. */
+        int stack;
         final RectF rect = new RectF();
 
-        Key(String label, String shiftLabel, int vk, float units, boolean modifier, boolean repeatable) {
+        Key(String label, int vk, float units) {
             this.label = label;
-            this.shiftLabel = shiftLabel;
             this.vk = vk;
             this.units = units;
-            this.modifier = modifier;
-            this.repeatable = repeatable;
+        }
+
+        Key shift(String s) { shiftLabel = s; return this; }
+        Key alt(String s) { altLabel = s; return this; }
+        Key mod() { modifier = true; return this; }
+        Key rep() { repeatable = true; return this; }
+        Key quiet() { subtle = true; return this; }
+        Key stacked(int s) { stack = s; return this; }
+
+        boolean isLetter() {
+            return label.length() == 1 && Character.isLetter(label.charAt(0));
         }
     }
 
     private final List<List<Key>> rows = new ArrayList<>();
-    private final float[] rowWeights = {0.8f, 1f, 1f, 1f, 1f, 1f};
+    private final List<Boolean> fnRow = new ArrayList<>();
 
     /** 0 = off, 1 = next key only, 2 = locked. Indexed by VK. */
     private final int[] modState = new int[256];
@@ -61,110 +69,134 @@ public class DuoKeyboardView extends DuoTouchSurface {
     private final Paint keyPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint altPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint hintPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint lockPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    private int accent = DuoColors.ACCENT;
     private Key pressed;
     private final float hintHeight;
+    private float letterTextSize;
+    private DuoAutocorrect autocorrect;
 
     public DuoKeyboardView(Context context) {
         super(context);
         hintHeight = 18 * density;
         borderPaint.setStyle(Paint.Style.STROKE);
         borderPaint.setStrokeWidth(density);
-        borderPaint.setColor(DuoColors.BORDER);
-        textPaint.setColor(COLOR_TEXT);
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        hintPaint.setColor(COLOR_HINT);
+        altPaint.setTextAlign(Paint.Align.RIGHT);
+        altPaint.setColor(DuoColors.MUTED);
+        altPaint.setTextSize(10 * density);
+        hintPaint.setColor(DuoColors.MUTED);
         hintPaint.setTextAlign(Paint.Align.CENTER);
         hintPaint.setTextSize(10.5f * density);
-        lockPaint.setColor(COLOR_TEXT_DARK);
+        lockPaint.setColor(DuoColors.ON_ACCENT);
         buildLayout();
     }
 
-    public void setAccent(int color) {
-        accent = color;
-        invalidate();
+    public void setAutocorrect(DuoAutocorrect autocorrect) {
+        this.autocorrect = autocorrect;
     }
 
     // ---------------- layout ----------------
 
-    private static Key k(String l, String s, int vk) { return new Key(l, s, vk, 1f, false, false); }
-    private static Key w(String l, int vk, float u) { return new Key(l, null, vk, u, false, false); }
-    private static Key r(String l, int vk, float u) { return new Key(l, null, vk, u, false, true); }
-    private static Key mod(String l, int vk, float u) { return new Key(l, null, vk, u, true, false); }
+    private static Key k(String l, int vk) { return new Key(l, vk, 1f); }
+    private static Key k(String l, int vk, float u) { return new Key(l, vk, u); }
+
+    private void addRow(boolean fn, Key... keys) {
+        List<Key> row = new ArrayList<>();
+        for (Key key : keys) {
+            row.add(key);
+        }
+        rows.add(row);
+        fnRow.add(fn);
+    }
+
+    private static Key[] letters(String labels, String usPositions) {
+        Key[] out = new Key[labels.length()];
+        for (int i = 0; i < labels.length(); i++) {
+            out[i] = k(String.valueOf(labels.charAt(i)), vk(usPositions.charAt(i)));
+        }
+        return out;
+    }
+
+    private static Key[] concat(Object... parts) {
+        List<Key> list = new ArrayList<>();
+        for (Object p : parts) {
+            if (p instanceof Key) {
+                list.add((Key) p);
+            } else {
+                for (Key key : (Key[]) p) {
+                    list.add(key);
+                }
+            }
+        }
+        return list.toArray(new Key[0]);
+    }
 
     private void buildLayout() {
-        List<Key> fn = new ArrayList<>();
-        fn.add(w("Esc", VK_ESCAPE, 1f));
+        // Function row: compact and subtle.
+        Key[] fn = new Key[14];
+        fn[0] = k("Esc", VK_ESCAPE).quiet();
         for (int i = 0; i < 12; i++) {
-            fn.add(w("F" + (i + 1), VK_F1 + i, 1f));
+            fn[i + 1] = k("F" + (i + 1), VK_F1 + i).quiet();
         }
-        fn.add(r("Entf", VK_DELETE, 1.5f));
-        rows.add(fn);
+        fn[13] = k("Entf", VK_DELETE, 2f).rep().quiet();
+        addRow(true, fn);
 
-        List<Key> num = new ArrayList<>();
-        num.add(k("^", "°", VK_OEM_3));
-        String[] digits = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"};
+        // Number row (units: 1 + 10 + 1 + 1 + 2 = 15)
         String[] shifted = {"!", "\"", "§", "$", "%", "&", "/", "(", ")", "="};
+        String[] alts = {null, "²", "³", null, null, null, "{", "[", "]", "}"};
+        Key[] digits = new Key[10];
         for (int i = 0; i < 10; i++) {
-            num.add(k(digits[i], shifted[i], vk(digits[i].charAt(0))));
+            char d = (char) ('0' + (i + 1) % 10);
+            digits[i] = k(String.valueOf(d), vk(d)).shift(shifted[i]).alt(alts[i]).quiet();
         }
-        num.add(k("ß", "?", VK_OEM_MINUS));
-        num.add(k("´", "`", VK_OEM_PLUS));
-        num.add(r("⌫", VK_BACK, 1.6f));
-        rows.add(num);
+        addRow(false, concat(
+                k("^", VK_OEM_3).shift("°").quiet(),
+                digits,
+                k("ß", VK_OEM_MINUS).shift("?").alt("\\").quiet(),
+                k("´", VK_OEM_PLUS).shift("`").quiet(),
+                k("⌫", VK_BACK, 2f).rep()));
 
-        // German labels, US positional VKs (z and y are swapped on QWERTZ).
-        List<Key> top = new ArrayList<>();
-        top.add(w("Tab", VK_TAB, 1.5f));
-        String topLetters = "qwertzuiop";
-        String topUs = "qwertyuiop";
-        for (int i = 0; i < topLetters.length(); i++) {
-            top.add(k(String.valueOf(topLetters.charAt(i)), null, vk(topUs.charAt(i))));
-        }
-        top.add(k("ü", null, VK_OEM_4));
-        top.add(k("+", "*", VK_OEM_6));
-        top.add(k("#", "'", VK_OEM_5));
-        rows.add(top);
+        // Letters, Gboard-style stagger: A row +0.5, Y row starts under S.
+        // German labels with US positional VKs (z and y are swapped on QWERTZ).
+        Key[] top = letters("qwertzuiop", "qwertyuiop");
+        top[0].alt("@");
+        top[2].alt("€");
+        addRow(false, concat(
+                k("Tab", VK_TAB, 2f).quiet(),
+                top,
+                k("+", VK_OEM_6, 1.5f).shift("*").alt("~").quiet(),
+                k("#", VK_OEM_5, 1.5f).shift("'").quiet()));
 
-        List<Key> home = new ArrayList<>();
-        home.add(w("Caps", VK_CAPITAL, 1.8f));
-        for (char c : "asdfghjkl".toCharArray()) {
-            home.add(k(String.valueOf(c), null, vk(c)));
-        }
-        home.add(k("ö", null, VK_OEM_1));
-        home.add(k("ä", null, VK_OEM_7));
-        home.add(w("↵", VK_RETURN, 1.7f));
-        rows.add(home);
+        addRow(false, concat(
+                k("Caps", VK_CAPITAL, 2.5f).quiet(),
+                letters("asdfghjkl", "asdfghjkl"),
+                k("↵", VK_RETURN, 3.5f)));
 
-        List<Key> bottom = new ArrayList<>();
-        bottom.add(mod("⇧", VK_LSHIFT, 1.3f));
-        bottom.add(k("<", ">", VK_OEM_102));
-        String botLetters = "yxcvbnm";
-        String botUs = "zxcvbnm";
-        for (int i = 0; i < botLetters.length(); i++) {
-            bottom.add(k(String.valueOf(botLetters.charAt(i)), null, vk(botUs.charAt(i))));
-        }
-        bottom.add(k(",", ";", VK_OEM_COMMA));
-        bottom.add(k(".", ":", VK_OEM_PERIOD));
-        bottom.add(k("-", "_", VK_OEM_2));
-        bottom.add(mod("⇧", VK_LSHIFT, 2.2f));
-        rows.add(bottom);
+        Key[] bottom = letters("yxcvbnm", "zxcvbnm");
+        bottom[6].alt("µ");
+        addRow(false, concat(
+                k("⇧", VK_LSHIFT, 2.5f).mod(),
+                k("<", VK_OEM_102).shift(">").alt("|").quiet(),
+                bottom,
+                k(",", VK_OEM_COMMA).shift(";"),
+                k(".", VK_OEM_PERIOD).shift(":"),
+                k("-", VK_OEM_2).shift("_"),
+                k("⇧", VK_LSHIFT, 1.5f).mod()));
 
-        List<Key> space = new ArrayList<>();
-        space.add(mod("Alt", VK_LMENU, 1.3f));
-        space.add(mod("Win", VK_LWIN, 1.2f));
-        space.add(mod("Strg", VK_LCONTROL, 1.2f));
-        space.add(r("Leertaste", VK_SPACE, 5.6f));
-        space.add(mod("AltGr", VK_RMENU, 1.2f));
-        space.add(r("←", VK_LEFT, 1f));
-        space.add(r("↑", VK_UP, 1f));
-        space.add(r("↓", VK_DOWN, 1f));
-        space.add(r("→", VK_RIGHT, 1f));
-        rows.add(space);
+        addRow(false,
+                k("Alt", VK_LMENU, 1.3f).mod().quiet(),
+                k("Win", VK_LWIN, 1.2f).mod().quiet(),
+                k("Strg", VK_LCONTROL, 1.2f).mod().quiet(),
+                k("Leertaste", VK_SPACE, 7.1f).rep().quiet(),
+                k("AltGr", VK_RMENU, 1.2f).mod().quiet(),
+                k("←", VK_LEFT).rep().quiet(),
+                k("↑", VK_UP).rep().quiet().stacked(1),
+                k("↓", VK_DOWN, 0f).rep().quiet().stacked(2),
+                k("→", VK_RIGHT).rep().quiet());
     }
 
     @Override
@@ -175,34 +207,50 @@ public class DuoKeyboardView extends DuoTouchSurface {
 
     private void layoutKeys(int width, int height) {
         float gap = 5 * density;
-        float available = height - hintHeight - gap * (rows.size() - 1);
         float wanted = 0;
-        for (float wgt : rowWeights) {
-            wanted += (wgt < 1f ? FN_ROW_DP : ROW_DP) * density;
+        for (Boolean fn : fnRow) {
+            wanted += (fn ? FN_ROW_DP : ROW_DP) * density;
         }
-        // Flat keys anchored at the bottom; the space above stays free (still trackpad).
+        float available = height - hintHeight - gap * (rows.size() - 1);
         float scale = Math.min(1f, available / wanted);
         float total = wanted * scale + gap * (rows.size() - 1);
+        // Keys anchored at the bottom; any space above stays free (still trackpad).
         float y = height - hintHeight - total;
 
-        float rowH = ROW_DP * density * scale;
         for (int ri = 0; ri < rows.size(); ri++) {
             List<Key> row = rows.get(ri);
-            float h = (rowWeights[ri] < 1f ? FN_ROW_DP : ROW_DP) * density * scale;
+            float h = (fnRow.get(ri) ? FN_ROW_DP : ROW_DP) * density * scale;
             float units = 0;
+            int visible = 0;
             for (Key key : row) {
                 units += key.units;
+                if (key.stack != 2) {
+                    visible++;
+                }
             }
-            float unitW = (width - gap * (row.size() - 1)) / units;
+            float unitW = (width - gap * (visible - 1)) / units;
             float x = 0;
+            float prevX = 0, prevW = 0;
+            float half = (h - 3 * density) / 2f;
             for (Key key : row) {
+                float inset = density / 2;
+                if (key.stack == 2) {
+                    key.rect.set(prevX + inset, y + h - half + inset, prevX + prevW - inset, y + h - inset);
+                    continue;
+                }
                 float kw = unitW * key.units;
-                key.rect.set(x + density / 2, y + density / 2, x + kw - density / 2, y + h - density / 2);
+                if (key.stack == 1) {
+                    key.rect.set(x + inset, y + inset, x + kw - inset, y + half - inset);
+                } else {
+                    key.rect.set(x + inset, y + inset, x + kw - inset, y + h - inset);
+                }
+                prevX = x;
+                prevW = kw;
                 x += kw + gap;
             }
             y += h + gap;
         }
-        textPaint.setTextSize(Math.min(rowH * 0.34f, 18 * density));
+        letterTextSize = Math.min(ROW_DP * density * scale * 0.36f, 20 * density);
     }
 
     // ---------------- drawing ----------------
@@ -210,38 +258,55 @@ public class DuoKeyboardView extends DuoTouchSurface {
     @Override
     protected void onDraw(Canvas canvas) {
         boolean shift = modState[VK_LSHIFT] > 0;
+        boolean altGr = modState[VK_RMENU] > 0;
         float radius = 7 * density;
-        float smallText = textPaint.getTextSize() * 0.7f;
-        float normalText = textPaint.getTextSize();
+        float subtleText = Math.min(letterTextSize * 0.62f, 12 * density);
 
         for (List<Key> row : rows) {
             for (Key key : row) {
                 int state = key.modifier ? modState[key.vk] : 0;
-                int bg;
+                boolean quiet = key.subtle && state == 0;
+
+                int bg, border, fg;
                 if (state > 0) {
-                    bg = accent;
-                } else if (key == pressed) {
-                    bg = COLOR_KEY_PRESSED;
-                } else if (key.modifier || key.label.length() > 2) {
-                    bg = COLOR_KEY_FN;
+                    bg = DuoColors.ACCENT;
+                    border = DuoColors.ACCENT;
+                    fg = DuoColors.ON_ACCENT;
+                } else if (quiet) {
+                    bg = key == pressed ? DuoColors.PRESSED : COLOR_SUBTLE_BG;
+                    border = COLOR_SUBTLE_BORDER;
+                    fg = DuoColors.MUTED;
                 } else {
-                    bg = COLOR_KEY;
+                    bg = key == pressed ? DuoColors.PRESSED : (key.modifier || key.label.length() > 1 ? DuoColors.KEY_FN : DuoColors.KEY);
+                    border = DuoColors.BORDER;
+                    fg = DuoColors.TEXT;
                 }
+
+                float r = key.stack != 0 ? radius * 0.8f : radius;
                 keyPaint.setColor(bg);
-                canvas.drawRoundRect(key.rect, radius, radius, keyPaint);
-                borderPaint.setColor(state > 0 ? accent : DuoColors.BORDER);
-                canvas.drawRoundRect(key.rect, radius, radius, borderPaint);
+                canvas.drawRoundRect(key.rect, r, r, keyPaint);
+                borderPaint.setColor(border);
+                canvas.drawRoundRect(key.rect, r, r, borderPaint);
 
                 String text = key.label;
-                if (shift && key.shiftLabel != null) {
+                if (altGr && key.altLabel != null) {
+                    text = key.altLabel;
+                } else if (shift && key.shiftLabel != null) {
                     text = key.shiftLabel;
-                } else if (shift && text.length() == 1 && Character.isLetter(text.charAt(0))) {
+                } else if (shift && key.isLetter()) {
                     text = text.toUpperCase();
                 }
-                textPaint.setTextSize(text.length() > 2 ? smallText : normalText);
-                textPaint.setColor(state > 0 ? COLOR_TEXT_DARK : COLOR_TEXT);
+                boolean small = quiet || text.length() > 2;
+                textPaint.setTextSize(small ? subtleText : letterTextSize);
+                textPaint.setColor(fg);
                 float ty = key.rect.centerY() - (textPaint.descent() + textPaint.ascent()) / 2f;
                 canvas.drawText(text, key.rect.centerX(), ty, textPaint);
+
+                // Small AltGr character in the corner (e.g. @ on Q).
+                if (!altGr && key.altLabel != null && key.rect.height() > 30 * density) {
+                    canvas.drawText(key.altLabel, key.rect.right - 5 * density,
+                            key.rect.top + 12 * density, altPaint);
+                }
 
                 if (state == 2) {
                     // Small bar marks a locked modifier.
@@ -252,7 +317,6 @@ public class DuoKeyboardView extends DuoTouchSurface {
                 }
             }
         }
-        textPaint.setTextSize(normalText);
 
         canvas.drawText("Tippen = Taste · Wischen = Maus · 2 Finger: Klick / Scrollen · 3 Finger: Rechtsklick · Lang drücken = Ziehen",
                 getWidth() / 2f, getHeight() - 5 * density, hintPaint);
@@ -282,8 +346,17 @@ public class DuoKeyboardView extends DuoTouchSurface {
     }
 
     @Override
+    protected boolean supportsRollover() {
+        return true;
+    }
+
+    @Override
     protected void onPress(float x, float y) {
         pressed = keyAt(x, y);
+        if (pressed != null) {
+            // Immediate feedback on touch-down, like Gboard.
+            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+        }
         invalidate();
     }
 
@@ -292,6 +365,13 @@ public class DuoKeyboardView extends DuoTouchSurface {
         if (pressed != null) {
             pressed = null;
             invalidate();
+        }
+    }
+
+    @Override
+    protected void onPointerAction() {
+        if (autocorrect != null) {
+            autocorrect.onBoundary();
         }
     }
 
@@ -307,7 +387,6 @@ public class DuoKeyboardView extends DuoTouchSurface {
         if (key == null) {
             return;
         }
-        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
 
         if (key.modifier) {
             modState[key.vk] = (modState[key.vk] + 1) % 3;
@@ -315,18 +394,43 @@ public class DuoKeyboardView extends DuoTouchSurface {
             return;
         }
 
-        List<Integer> combo = new ArrayList<>();
-        for (int vk : new int[]{VK_LCONTROL, VK_LMENU, VK_RMENU, VK_LWIN, VK_LSHIFT}) {
-            if (modState[vk] > 0) {
-                combo.add(vk);
+        boolean shortcutMods = modState[VK_LCONTROL] > 0 || modState[VK_LMENU] > 0 || modState[VK_LWIN] > 0;
+        boolean altGr = modState[VK_RMENU] > 0;
+        boolean shift = modState[VK_LSHIFT] > 0;
+        boolean plain = !shortcutMods && !altGr;
+
+        boolean handled = false;
+        if (autocorrect != null) {
+            if (plain && key.vk == VK_SPACE) {
+                handled = autocorrect.onSpace();
+            } else if (plain && key.vk == VK_BACK) {
+                handled = autocorrect.onBackspace();
             }
         }
-        combo.add(key.vk);
-        int[] vks = new int[combo.size()];
-        for (int i = 0; i < vks.length; i++) {
-            vks[i] = combo.get(i);
+
+        if (!handled) {
+            List<Integer> combo = new ArrayList<>();
+            for (int vk : new int[]{VK_LCONTROL, VK_LMENU, VK_RMENU, VK_LWIN, VK_LSHIFT}) {
+                if (modState[vk] > 0) {
+                    combo.add(vk);
+                }
+            }
+            combo.add(key.vk);
+            int[] vks = new int[combo.size()];
+            for (int i = 0; i < vks.length; i++) {
+                vks[i] = combo.get(i);
+            }
+            DuoKeys.sendCombo(sink, vks);
+
+            if (autocorrect != null && key.vk != VK_SPACE && key.vk != VK_BACK) {
+                if (plain && key.isLetter()) {
+                    char c = key.label.charAt(0);
+                    autocorrect.onLetter(shift ? Character.toUpperCase(c) : c);
+                } else {
+                    autocorrect.onBoundary();
+                }
+            }
         }
-        DuoKeys.sendCombo(sink, vks);
 
         // Release one-shot modifiers.
         boolean changed = false;
@@ -355,6 +459,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
         if (sink == null) {
             return;
         }
+        onPointerAction();
         performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
         sink.sendMouseButton(button, true);
         sink.sendMouseButton(button, false);

@@ -1,14 +1,20 @@
 package com.limelight.duo;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
-import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.SeekBar;
+import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.util.Consumer;
@@ -78,6 +84,7 @@ public class DuoController {
         float density = activity.getResources().getDisplayMetrics().density;
 
         DuoBridge.setSink(sink);
+        DuoBridge.setPanelListener(() -> root.post(this::updateToggleButton));
 
         panel = new DuoInputPanel(activity, sink, null);
         panel.setVisibility(View.GONE);
@@ -85,15 +92,19 @@ public class DuoController {
         root.addView(panel, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.BOTTOM));
 
-        // Small button bottom-left, at Windows taskbar height.
+        // Small button bottom-left, at Windows taskbar height: icon only, transparent,
+        // with a soft dark shadow so it stays visible on light backgrounds.
         toggleButton = new ImageButton(activity);
-        toggleButton.setImageResource(R.drawable.ic_duo_keyboard);
+        Drawable shadow = ContextCompat.getDrawable(activity, R.drawable.ic_duo_keyboard).mutate();
+        shadow.setColorFilter(0xB0000000, PorterDuff.Mode.SRC_IN);
+        Drawable icon = ContextCompat.getDrawable(activity, R.drawable.ic_duo_keyboard).mutate();
+        LayerDrawable layered = new LayerDrawable(new Drawable[]{shadow, icon});
+        int off = Math.max(1, Math.round(density));
+        layered.setLayerInset(0, off, off, 0, 0);
+        layered.setLayerInset(1, 0, 0, off, off);
+        toggleButton.setImageDrawable(layered);
         toggleButton.setContentDescription("Tastatur und Trackpad");
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(0xB3000000);
-        bg.setCornerRadius(8 * density);
-        bg.setStroke(Math.max(1, Math.round(density)), DuoColors.BORDER);
-        toggleButton.setBackground(bg);
+        toggleButton.setBackground(null);
         int p = Math.round(5 * density);
         toggleButton.setPadding(p, p, p, p);
         toggleButton.setFocusable(false);
@@ -145,8 +156,60 @@ public class DuoController {
     /** Call from the stream's onDestroy. */
     public void destroy() {
         stop();
+        DuoBridge.setPanelListener(null);
         DuoBridge.closePanel();
         DuoBridge.setSink(null);
+    }
+
+    /** The stream button is hidden while split or while the panel is open on the other screen. */
+    private void updateToggleButton() {
+        boolean show = desktopApp && applied && !split && !DuoBridge.isPanelOpen();
+        toggleButton.setVisibility(show ? View.VISIBLE : View.GONE);
+    }
+
+    /** Trackpad speed dialog for the stream menu (1..10, shared with the settings). */
+    public static void showSpeedDialog(Activity activity) {
+        float density = activity.getResources().getDisplayMetrics().density;
+        int pad = Math.round(20 * density);
+
+        LinearLayout box = new LinearLayout(activity);
+        box.setOrientation(LinearLayout.HORIZONTAL);
+        box.setGravity(Gravity.CENTER_VERTICAL);
+        box.setPadding(pad, pad, pad, Math.round(8 * density));
+
+        final TextView value = new TextView(activity);
+        value.setTextSize(16);
+        value.setGravity(Gravity.END);
+
+        SeekBar seek = new SeekBar(activity);
+        seek.setMax(9);
+        int speed = DuoBridge.getSpeed(activity);
+        seek.setProgress(speed - 1);
+        value.setText(String.valueOf(speed));
+        seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar s, int progress, boolean fromUser) {
+                int sp = progress + 1;
+                value.setText(String.valueOf(sp));
+                if (fromUser) {
+                    DuoBridge.setSpeed(activity, sp);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar s) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar s) {}
+        });
+        box.addView(seek, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        box.addView(value, new LinearLayout.LayoutParams(Math.round(32 * density), ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        new AlertDialog.Builder(activity)
+                .setTitle("Trackpad-Tempo")
+                .setView(box)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
     }
 
     public boolean isSplit() {
@@ -207,15 +270,15 @@ public class DuoController {
             setFrame(backgroundTouch, top, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
             setFrame(panel, rh - bottom, Gravity.BOTTOM);
             panel.setVisibility(View.VISIBLE);
-            toggleButton.setVisibility(View.GONE);
             // The panel is built in, so the one on the other screen is not needed.
             DuoBridge.closePanel();
+            updateToggleButton();
             LimeLog.info("Duo: split mode, stream height " + top + ", panel height " + (rh - bottom));
         } else {
             setFrame(stream, ViewGroup.LayoutParams.MATCH_PARENT, streamGravity);
             setFrame(backgroundTouch, ViewGroup.LayoutParams.MATCH_PARENT, backgroundGravity);
             panel.setVisibility(View.GONE);
-            toggleButton.setVisibility(desktopApp ? View.VISIBLE : View.GONE);
+            updateToggleButton();
             LimeLog.info("Duo: single screen mode, toggle button " + (desktopApp ? "shown" : "hidden"));
         }
     }

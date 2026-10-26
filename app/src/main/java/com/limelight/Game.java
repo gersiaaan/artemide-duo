@@ -1984,6 +1984,13 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
             }
 
             @Override
+            public void sendText(String text) {
+                if (conn != null && text != null && !text.isEmpty()) {
+                    conn.sendUtf8Text(text);
+                }
+            }
+
+            @Override
             public void sendMouseMove(int dx, int dy) {
                 if (conn != null) {
                     conn.sendMouseMove((short) dx, (short) dy);

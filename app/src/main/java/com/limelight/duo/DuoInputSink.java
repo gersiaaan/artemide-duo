@@ -8,6 +8,9 @@ public interface DuoInputSink {
     /** vk is a Windows virtual key code (0x00-0xFF), positional on a US layout. */
     void sendKey(int vk, boolean down, byte modifiers);
 
+    /** Types text as Unicode (used for autocorrect replacements). */
+    void sendText(String text);
+
     void sendMouseMove(int dx, int dy);
 
     void sendMouseButton(byte button, boolean down);
