@@ -442,7 +442,7 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
             // Session closed: back to the host overview.
             duoStreamStarted = false;
             finish();
-            overridePendingTransition(0, 0);
+            overridePendingTransition(R.anim.duo_host_in, 0);
             return;
         }
 
