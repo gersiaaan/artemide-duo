@@ -62,6 +62,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         List<App> apps();
         ComputerDetails computer();
         void start(App app);
+        void quit(App app);
         void options(App app);
         void loadCover(App app, ImageView into);
         void profiles();
@@ -86,7 +87,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     private final ScrollView listScroll;
     private ImageView bigCover;
     private TextView bigPlaceholder, bigName, statTime, statSessions;
-    private View playButton, optionsButton;
+    private View playButton, quitButton, optionsButton;
     private int batteryPct = -1;
     private boolean charging;
 
@@ -216,13 +217,22 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams bt = new LinearLayout.LayoutParams(-1, dp(36));
         bt.topMargin = dp(12);
         content.addView(bottom, bt);
-        bottom.addView(button("Settings", "X", false, v -> host.settings()), new LinearLayout.LayoutParams(-2, -1));
+        bottom.addView(button("‹  Back", "B", false, v -> host.back()), new LinearLayout.LayoutParams(-2, -1));
         LinearLayout.LayoutParams b2 = new LinearLayout.LayoutParams(-2, -1);
         b2.leftMargin = dp(8);
-        bottom.addView(button("Hosts", "B", false, v -> host.back()), b2);
+        bottom.addView(button("Settings", "X", false, v -> host.settings()), b2);
         LinearLayout.LayoutParams b3 = new LinearLayout.LayoutParams(-2, -1);
         b3.leftMargin = dp(8);
         bottom.addView(button("Profiles", null, false, v -> host.profiles()), b3);
+        optionsButton = button("Options", "Y", false, v -> {
+            App a = selectedApp();
+            if (a != null) {
+                host.options(a);
+            }
+        });
+        LinearLayout.LayoutParams b4 = new LinearLayout.LayoutParams(-2, -1);
+        b4.leftMargin = dp(8);
+        bottom.addView(optionsButton, b4);
 
         setTab(0);
         updateGlyphs();
@@ -441,7 +451,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         bigPlaceholder.setLetterSpacing(0.15f);
         bigPlaceholder.setGravity(Gravity.CENTER);
         bigPlaceholder.setCompoundDrawablePadding(dp(8));
-        cover.addView(bigPlaceholder, match());
+        cover.addView(bigPlaceholder, new FrameLayout.LayoutParams(-2, -2, Gravity.CENTER));
         bigCover = new ImageView(getContext());
         bigCover.setScaleType(ImageView.ScaleType.CENTER_CROP);
         cover.addView(bigCover, match());
@@ -485,15 +495,15 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             }
         });
         buttons.addView(playButton, new LinearLayout.LayoutParams(-2, -1));
-        optionsButton = button("Options", "Y", false, v -> {
+        quitButton = button("Quit", null, false, v -> {
             App a = selectedApp();
             if (a != null) {
-                host.options(a);
+                host.quit(a);
             }
         });
         LinearLayout.LayoutParams ol = new LinearLayout.LayoutParams(-2, -1);
         ol.leftMargin = dp(8);
-        buttons.addView(optionsButton, ol);
+        buttons.addView(quitButton, ol);
         return p;
     }
 
@@ -516,7 +526,9 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         ComputerDetails c = host.computer();
         boolean has = a != null;
         playButton.setVisibility(has ? VISIBLE : INVISIBLE);
-        optionsButton.setVisibility(has ? VISIBLE : INVISIBLE);
+        quitButton.setVisibility(has && a.running ? VISIBLE : GONE);
+        optionsButton.setEnabled(has);
+        optionsButton.setAlpha(has ? 1f : 0.45f);
         if (!has) {
             bigName.setText("");
             statTime.setText("–");

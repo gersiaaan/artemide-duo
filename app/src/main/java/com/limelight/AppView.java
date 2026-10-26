@@ -820,6 +820,19 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
                 }
     }
 
+    /** Quit the running session (with the usual confirmation). */
+    private void quitApp(AppObject app) {
+        UiHelper.displayQuitConfirmationDialog(this, () -> {
+            suspendGridUpdates = true;
+            ServerHelper.doQuit(AppView.this, computer, app.app, managerBinder, () -> {
+                suspendGridUpdates = false;
+                if (poller != null) {
+                    poller.pollNow();
+                }
+            });
+        }, null);
+    }
+
     /** The grid's context menu (resume, quit, hide, shortcut, details …) for one app. */
     private void openMenuFor(AppObject app) {
         if (appListView == null || appGridAdapter == null) {
@@ -874,6 +887,13 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
                     return;
                 }
                 startApp((AppObject) app.key, null);
+            }
+
+            @Override
+            public void quit(com.limelight.duo.DuoAppsView.App app) {
+                if (managerBinder != null && computer != null) {
+                    quitApp((AppObject) app.key);
+                }
             }
 
             @Override

@@ -538,7 +538,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         lastPlaceholder.setLetterSpacing(0.15f);
         lastPlaceholder.setGravity(Gravity.CENTER);
         lastPlaceholder.setCompoundDrawablePadding(dp(8));
-        coverBox.addView(lastPlaceholder, match());
+        coverBox.addView(lastPlaceholder, new FrameLayout.LayoutParams(-2, -2, Gravity.CENTER));
 
         lastName = text("", 19, DuoTheme.TEXT, true);
         lastName.setGravity(Gravity.CENTER);
