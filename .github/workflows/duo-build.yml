@@ -1,0 +1,54 @@
+name: Artemide Duo APK
+
+on:
+  push:
+    branches: [duo]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleNonRoot_gameDuo --stacktrace
+
+      - name: Collect APKs
+        run: |
+          mkdir -p out
+          find app/build/outputs/apk -name '*.apk' -exec cp {} out/ \;
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: artemide-duo-apks
+          path: out/*.apk
+
+      # A release is easier to download on the phone than a zipped artifact.
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: duo-build-${{ github.run_number }}
+          name: Artemide Duo – Build ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          body: |
+            Für den Surface Duo die Datei mit **arm64-v8a** im Namen installieren.
+            Commit: ${{ github.sha }}
+          files: out/*arm64-v8a*.apk

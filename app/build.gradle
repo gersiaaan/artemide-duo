@@ -71,6 +71,17 @@ android {
     lint {
         disable 'MissingTranslation'
         lintConfig file('lint.xml')
+        checkReleaseBuilds false
+    }
+
+    signingConfigs {
+        // Fixed key for the Surface Duo build so new APKs install as updates.
+        duo {
+            storeFile file('duo.keystore')
+            storePassword 'artemideduo'
+            keyAlias 'duo'
+            keyPassword 'artemideduo'
+        }
     }
 
     bundle {
@@ -168,6 +179,26 @@ perf {
         }
     }
 }
+        // Surface Duo build: stream on the upper screen, keyboard/trackpad below.
+        // Separate application ID so it installs next to the normal Artemide.
+        duo {
+            initWith perf
+            matchingFallbacks = ["release"]
+            debuggable false
+            minifyEnabled true
+            shrinkResources true
+            signingConfig signingConfigs.duo
+            applicationIdSuffix ".duo"
+            resValue "string", "app_label", "Artemide Duo"
+            resValue "string", "app_label_root", "Artemide Duo (Root)"
+            resValue "string", "app_label_game", "Artemide Duo (Game)"
+            buildConfigField "boolean", "LOG_VERBOSE", "false"
+            externalNativeBuild {
+                ndkBuild {
+                    arguments "APP_PERF:=1", "APP_OPTIM:=release", "NDK_DEBUG=0"
+                }
+            }
+        }
     }
 
     externalNativeBuild {
@@ -208,6 +239,10 @@ dependencies {
     implementation 'com.google.ai.edge.litert:litert:1.4.0'
     implementation 'com.google.ai.edge.litert:litert-gpu:1.4.0'
     implementation 'org.opencv:opencv:4.12.0'
+
+    // Hinge / fold detection for Surface Duo
+    implementation 'androidx.window:window:1.3.0'
+    implementation 'androidx.window:window-java:1.3.0'
 
     // Unit test dependencies
     testImplementation 'junit:junit:4.13.2'

@@ -383,6 +383,7 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
     private ArrayList<String> serverCommands;
 
     private ViewParent rootView;
+    private com.limelight.duo.DuoController duoController;
     private ClipboardManager clipboardManager;
     private boolean clipboardSyncRunning = false;
 
@@ -594,6 +595,12 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         // allows proper touch splitting, which the OSC relies upon.
         View backgroundTouchView = findViewById(R.id.backgroundTouchView);
         backgroundTouchView.setOnTouchListener(this);
+
+        // Surface Duo: stream on the upper screen, keyboard/trackpad on the lower screen
+        if (com.limelight.duo.DuoController.isDuoDevice()) {
+            duoController = new com.limelight.duo.DuoController(this, (FrameLayout) rootView,
+                    streamContainer, backgroundTouchView, createDuoInputSink());
+        }
 
 
         panZoomHandler = new PanZoomHandler(
@@ -1214,6 +1221,13 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
     }
 
     private void setPreferredOrientationForActivity() {
+        // Surface Duo: allow every orientation so the spanned app can be used in
+        // laptop posture (hinge horizontal) as well as in book posture.
+        if (com.limelight.duo.DuoController.isDuoDevice()) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
+            return;
+        }
+
         Display display = getActiveDisplay(Game.this, prefConfig);
 
         // For semi-square displays, we use more complex logic to determine which orientation to use (if any)
@@ -1946,10 +1960,69 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
             compositorHeartbeat.start();
         }
         try { if (fsrSizer != null) fsrSizer.start(); } catch (Throwable ignored) {}
+
+        if (duoController != null) {
+            duoController.start();
+        }
+    }
+
+    private com.limelight.duo.DuoInputSink createDuoInputSink() {
+        return new com.limelight.duo.DuoInputSink() {
+            @Override
+            public void sendKey(int vk, boolean down, byte modifiers) {
+                if (conn != null) {
+                    conn.sendKeyboardInput((short) (0x8000 | (vk & 0xFF)),
+                            down ? KeyboardPacket.KEY_DOWN : KeyboardPacket.KEY_UP, modifiers, (byte) 0);
+                }
+            }
+
+            @Override
+            public void sendMouseMove(int dx, int dy) {
+                if (conn != null) {
+                    conn.sendMouseMove((short) dx, (short) dy);
+                }
+            }
+
+            @Override
+            public void sendMouseButton(byte button, boolean down) {
+                if (conn != null) {
+                    if (down) {
+                        conn.sendMouseButtonDown(button);
+                    } else {
+                        conn.sendMouseButtonUp(button);
+                    }
+                }
+            }
+
+            @Override
+            public void sendScroll(short vertical, short horizontal) {
+                if (conn != null) {
+                    if (vertical != 0) {
+                        conn.sendMouseHighResScroll(vertical);
+                    }
+                    if (horizontal != 0) {
+                        conn.sendMouseHighResHScroll(horizontal);
+                    }
+                }
+            }
+
+            @Override
+            public void toggleSystemKeyboard() {
+                toggleKeyboard();
+            }
+
+            @Override
+            public void showStreamMenu() {
+                showGameMenu(null);
+            }
+        };
     }
 
     @Override
     protected void onStop() {
+        if (duoController != null) {
+            duoController.stop();
+        }
 
         if (compositorHeartbeat != null) {
             compositorHeartbeat.stop();
