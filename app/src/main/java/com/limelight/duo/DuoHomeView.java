@@ -300,6 +300,14 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     /** Re-reads the last played app (e.g. after returning from a stream). */
     public void refresh() {
         render();
+        // Coming back (from the app list or a stream): start on the main button.
+        if (!addMode && primary != null) {
+            primary.post(() -> {
+                if (!primary.requestFocus() && DuoPadNav.hasGamepad()) {
+                    primary.requestFocusFromTouch();
+                }
+            });
+        }
     }
 
     private void render() {

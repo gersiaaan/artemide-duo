@@ -81,6 +81,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     private final TextView[] tabViews = new TextView[3];
     private int tab;
     private int selectedId = -1;
+    private boolean opened;
 
     private final TextView hostName, badge, clock, dateLine;
     private final LinearLayout chips;
@@ -305,6 +306,11 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             } else {
                 rest.add(a);
             }
+        }
+        // Opening the list starts on the last played app (or the first one).
+        if (!opened && !apps.isEmpty()) {
+            opened = true;
+            selectedId = -1;
         }
         if (selectedId == -1 || !contains(apps, selectedId)) {
             selectedId = lastApp != null ? lastApp.id : !pinned.isEmpty() ? pinned.get(0).id
