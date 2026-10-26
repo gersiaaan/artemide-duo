@@ -89,7 +89,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     private TextView lastInfo, lastName;
     private ImageView lastCover;
     private TextView lastPlaceholder;
-    private View playAgain, quitRunning;
+    private View playAgain, quitRunning, settingsBtn;
     private int coverWidthDp;
     private int batteryPct = -1;
     private boolean charging;
@@ -198,6 +198,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         bt.topMargin = dp(14);
         content.addView(bottom, bt);
         View settings = button("Settings", "Y", false, v -> host.settings());
+        settingsBtn = settings;
         bottom.addView(settings, new LinearLayout.LayoutParams(-2, -1));
         View exit = button("Exit", "B", false, v -> host.exit());
         LinearLayout.LayoutParams ep = new LinearLayout.LayoutParams(-2, -1);
@@ -802,6 +803,20 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
 
     /** Controller shortcuts; returns true if handled. */
     public boolean handleKey(KeyEvent e) {
+        if (e.getAction() == KeyEvent.ACTION_DOWN && settingsBtn != null) {
+            View f = findFocus();
+            // Card buttons / play again → down to the bottom row; bottom row → up to Open.
+            if (e.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN && f != null && f != settingsBtn
+                    && f.getParent() != settingsBtn.getParent() && (f.getParent() == primary.getParent()
+                    || f == playAgain || f == quitRunning)) {
+                settingsBtn.requestFocus();
+                return true;
+            }
+            if (e.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP && f != null && f.getParent() == settingsBtn.getParent()) {
+                primary.requestFocus();
+                return true;
+            }
+        }
         if (DuoPadNav.onKey(this, e, primary)) {
             return true;
         }
