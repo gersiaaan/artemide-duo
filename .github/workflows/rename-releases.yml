@@ -11,16 +11,17 @@ jobs:
   rename:
     runs-on: ubuntu-latest
     steps:
-      - name: duo-build-N -> v0.N
+      - name: duo-build-N -> v0.0N / v0.NN
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
           for n in $(seq 1 14); do
             old="duo-build-$n"
+            v="v0.$(printf '%02d' "$n")"
             if gh release view "$old" -R "$REPO" >/dev/null 2>&1; then
-              echo "Renaming $old -> v0.$n"
-              gh release edit "$old" -R "$REPO" --tag "v0.$n" --title "Artemide Duo v0.$n" --prerelease=false --latest=false
+              echo "Renaming $old -> $v"
+              gh release edit "$old" -R "$REPO" --tag "$v" --title "Artemide Duo $v" --prerelease=false --latest=false
               gh api -X DELETE "repos/$REPO/git/refs/tags/$old" || true
             fi
           done
