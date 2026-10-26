@@ -2248,6 +2248,25 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
     };
 
     // Returns true if the key stroke was consumed
+    private String duoPendingShortcut;
+
+    /** Ctrl+Alt+Shift + letter → action, as set in Settings → Shortcuts. */
+    private String duoShortcutFor(int keyCode) {
+        String name = KeyEvent.keyCodeToString(keyCode);
+        if (name == null || !name.startsWith("KEYCODE_") || name.length() != 9) {
+            return null;
+        }
+        String letter = name.substring(8);
+        android.content.SharedPreferences p = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
+        String[][] actions = {{"menu", "M"}, {"panel", "K"}, {"perf", "P"}, {"disconnect", "Q"}, {"grab", "Z"}, {"cursor", "C"}};
+        for (String[] a : actions) {
+            if (letter.equals(p.getString("duo_sc_" + a[0], a[1]))) {
+                return a[0];
+            }
+        }
+        return null;
+    }
+
     private boolean handleSpecialKeys(int androidKeyCode, boolean down) {
         int modifierMask = 0;
         int nonModifierKeyCode = KeyEvent.KEYCODE_UNKNOWN;
@@ -2291,9 +2310,18 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
             }
             else {
                 // When all modifiers are up, perform the special action
-                switch (specialKeyCode) {
+                switch (duoPendingShortcut == null ? "" : duoPendingShortcut) {
+                    case "menu":
+                        showGameMenu(null);
+                        break;
+                    case "panel":
+                        toggleDuoPanel();
+                        break;
+                    case "perf":
+                        toggleHUD();
+                        break;
                     // Toggle input grab
-                    case KeyEvent.KEYCODE_Z:
+                    case "grab":
                         Handler h = getWindow().getDecorView().getHandler();
                         if (h != null) {
                             h.postDelayed(toggleGrab, 250);
@@ -2301,12 +2329,12 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                         break;
 
                     // Quit
-                    case KeyEvent.KEYCODE_Q:
-                        finish();
+                    case "disconnect":
+                        disconnect();
                         break;
 
                     // Toggle cursor visibility
-                    case KeyEvent.KEYCODE_C:
+                    case "cursor":
                         if (!grabbedInput) {
                             inputCaptureProvider.enableCapture();
                             grabbedInput = true;
@@ -2324,6 +2352,7 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                 }
 
                 // Reset special key state
+                duoPendingShortcut = null;
                 specialKeyCode = KeyEvent.KEYCODE_UNKNOWN;
                 waitingForAllModifiersUp = false;
             }
@@ -2332,20 +2361,18 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         else if ((modifierFlags & (KeyboardPacket.MODIFIER_CTRL | KeyboardPacket.MODIFIER_ALT | KeyboardPacket.MODIFIER_SHIFT)) ==
                 (KeyboardPacket.MODIFIER_CTRL | KeyboardPacket.MODIFIER_ALT | KeyboardPacket.MODIFIER_SHIFT) &&
                 (down && nonModifierKeyCode != KeyEvent.KEYCODE_UNKNOWN)) {
-            switch (androidKeyCode) {
-                case KeyEvent.KEYCODE_Z:
-                case KeyEvent.KEYCODE_Q:
-                case KeyEvent.KEYCODE_C:
-                    // Remember that a special key combo was activated, so we can consume all key
-                    // events until the modifiers come up
-                    specialKeyCode = androidKeyCode;
-                    waitingForAllModifiersUp = true;
-                    return true;
-
-                default:
-                    // This isn't a special combo that we consume on the client side
-                    return false;
+            // Artemide Duo: the letters are set in Settings → Shortcuts.
+            String action = duoShortcutFor(androidKeyCode);
+            if (action != null) {
+                // Remember that a special key combo was activated, so we can consume all key
+                // events until the modifiers come up
+                duoPendingShortcut = action;
+                specialKeyCode = androidKeyCode;
+                waitingForAllModifiersUp = true;
+                return true;
             }
+            // This isn't a special combo that we consume on the client side
+            return false;
         }
 
         // Not a special combo

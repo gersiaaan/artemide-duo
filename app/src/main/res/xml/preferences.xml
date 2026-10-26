@@ -47,6 +47,67 @@
             app:iconSpaceReserved="false" />
     </PreferenceCategory>
 
+    <!-- Artemide Duo: Ctrl+Alt+Shift + key shortcuts while streaming -->
+    <PreferenceCategory
+        android:key="category_shortcuts"
+        android:title="Shortcuts (Ctrl + Alt + Shift + key)"
+        app:iconSpaceReserved="false">
+        <ListPreference
+            android:key="duo_sc_menu"
+            android:title="Quick menu"
+            android:dialogTitle="Quick menu"
+            android:entries="@array/duo_shortcut_keys"
+            android:entryValues="@array/duo_shortcut_keys"
+            android:defaultValue="M"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+        <ListPreference
+            android:key="duo_sc_panel"
+            android:title="Keyboard &amp; trackpad panel"
+            android:dialogTitle="Keyboard &amp; trackpad panel"
+            android:entries="@array/duo_shortcut_keys"
+            android:entryValues="@array/duo_shortcut_keys"
+            android:defaultValue="K"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+        <ListPreference
+            android:key="duo_sc_perf"
+            android:title="Performance overlay"
+            android:dialogTitle="Performance overlay"
+            android:entries="@array/duo_shortcut_keys"
+            android:entryValues="@array/duo_shortcut_keys"
+            android:defaultValue="P"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+        <ListPreference
+            android:key="duo_sc_disconnect"
+            android:title="Disconnect"
+            android:dialogTitle="Disconnect"
+            android:entries="@array/duo_shortcut_keys"
+            android:entryValues="@array/duo_shortcut_keys"
+            android:defaultValue="Q"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+        <ListPreference
+            android:key="duo_sc_grab"
+            android:title="Capture / release mouse"
+            android:dialogTitle="Capture / release mouse"
+            android:entries="@array/duo_shortcut_keys"
+            android:entryValues="@array/duo_shortcut_keys"
+            android:defaultValue="Z"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+        <ListPreference
+            android:key="duo_sc_cursor"
+            android:title="Show / hide local cursor"
+            android:dialogTitle="Show / hide local cursor"
+            android:entries="@array/duo_shortcut_keys"
+            android:entryValues="@array/duo_shortcut_keys"
+            android:defaultValue="C"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
+
     <PreferenceCategory
         android:key="category_video_settings"
         android:title="@string/category_video_settings"
