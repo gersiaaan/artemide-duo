@@ -24,11 +24,15 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Read version
+        id: ver
+        run: echo "v=$(cat DUO_VERSION)" >> "$GITHUB_OUTPUT"
+
       - name: Build APK
         run: |
           chmod +x gradlew
           set -o pipefail
-          ./gradlew assembleNonRoot_gameDuo -PduoVersion=0.${{ github.run_number }} --stacktrace 2>&1 | tee build.log
+          ./gradlew assembleNonRoot_gameDuo -PduoVersion=${{ steps.ver.outputs.v }} --stacktrace 2>&1 | tee build.log
 
       # Surface compiler errors as annotations (readable without log access).
       - name: Report build errors
@@ -56,8 +60,8 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.${{ github.run_number }}
-          name: Artemide Duo v0.${{ github.run_number }}
+          tag_name: v${{ steps.ver.outputs.v }}
+          name: Artemide Duo v${{ steps.ver.outputs.v }}
           target_commitish: ${{ github.sha }}
           prerelease: false
           make_latest: true
