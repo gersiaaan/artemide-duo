@@ -180,7 +180,8 @@ public final class DuoGamepadMouse {
             return 0;
         }
         float n = Math.min(1f, (mag - DEAD) / (1f - DEAD));
-        return (float) Math.pow(n, 2.2);
+        // Steeper curve: small pushes move very little (precise), full push is fast.
+        return (float) Math.pow(n, 2.8);
     }
 
     private static final Runnable TICK = new Runnable() {
@@ -194,8 +195,8 @@ public final class DuoGamepadMouse {
             float mag = (float) Math.hypot(lx, ly);
             if (mag > DEAD) {
                 any = true;
-                // speed 1 ≈ 400 px/s, 10 ≈ 2600 px/s at full tilt.
-                float pxPerTick = (3f + speed * 2.2f) * curve(mag);
+                // Slower overall: new 5 = old 1 (≈ 650 px/s full tilt); 1 ≈ 250 px/s, 10 ≈ 1150 px/s.
+                float pxPerTick = (1.2f + speed * 0.8f) * curve(mag);
                 accX += lx / mag * pxPerTick;
                 accY += ly / mag * pxPerTick;
                 int dx = (int) accX, dy = (int) accY;
