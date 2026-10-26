@@ -616,7 +616,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         LinearLayout b = row();
         b.setGravity(Gravity.CENTER);
         b.setPadding(dp(primaryStyle ? 18 : 16), 0, dp(primaryStyle ? 18 : 16), 0);
-        int bg = primaryStyle ? accent : DuoTheme.CARD_HIGH;
+        int bg = primaryStyle ? DuoTheme.focus(accent) : DuoTheme.CARD_HIGH;
         b.setBackground(focusable(bg, primaryStyle ? 0 : DuoTheme.LINE, 10));
         if (glyph != null) {
             View g = glyph(glyph);
@@ -624,7 +624,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             gp.rightMargin = dp(8);
             b.addView(g, gp);
         }
-        TextView t = text(label, primaryStyle ? 14 : 13, primaryStyle ? DuoTheme.onAccent(accent) : DuoTheme.TEXT, primaryStyle);
+        TextView t = text(label, primaryStyle ? 14 : 13, primaryStyle ? DuoTheme.onAccent(DuoTheme.focus(accent)) : DuoTheme.TEXT, primaryStyle);
         b.addView(t);
         b.setTag(t);
         b.setFocusable(true);
@@ -704,7 +704,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     private StateListDrawable focusable(int color, int stroke, float radiusDp) {
         StateListDrawable s = new StateListDrawable();
         GradientDrawable ring = rounded(color, 0, radiusDp);
-        ring.setStroke(Math.round(2 * d), color == accent ? DuoTheme.TEXT : DuoTheme.focus(accent));
+        ring.setStroke(Math.round(2 * d), color == DuoTheme.focus(accent) ? DuoTheme.TEXT : DuoTheme.focus(accent));
         GradientDrawable pressed = rounded(color == 0 ? 0x14FFFFFF : DuoTheme.mix(Color.WHITE, color, 0.08f), stroke, radiusDp);
         s.addState(new int[]{android.R.attr.state_focused}, ring);
         s.addState(new int[]{android.R.attr.state_pressed}, pressed);

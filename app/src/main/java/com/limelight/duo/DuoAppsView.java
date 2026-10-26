@@ -686,7 +686,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout b = row();
         b.setGravity(Gravity.CENTER);
         b.setPadding(dp(16), 0, dp(16), 0);
-        int bg = primaryStyle ? accent : DuoTheme.CARD_HIGH;
+        int bg = primaryStyle ? DuoTheme.focus(accent) : DuoTheme.CARD_HIGH;
         StateListDrawable s = new StateListDrawable();
         GradientDrawable ring = rounded(bg, 0, 10);
         ring.setStroke(Math.round(2 * d), primaryStyle ? DuoTheme.TEXT : DuoTheme.focus(accent));
@@ -700,7 +700,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             gp.rightMargin = dp(8);
             b.addView(g, gp);
         }
-        TextView t = text(label, 13, primaryStyle ? DuoTheme.onAccent(accent) : DuoTheme.TEXT, primaryStyle);
+        TextView t = text(label, 13, primaryStyle ? DuoTheme.onAccent(DuoTheme.focus(accent)) : DuoTheme.TEXT, primaryStyle);
         b.addView(t);
         b.setTag(t);
         b.setFocusable(true);
