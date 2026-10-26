@@ -120,10 +120,9 @@ public final class DuoPlayStats {
 
     /** Words that mark a tool / app rather than a game (tabs GAMES / APPS). */
     private static final String[] APP_WORDS = {"desktop", "virtual display", "remote", "reboot", "restart",
-            "shutdown", "shut down", "power off", "sleep", "hibernate", "log off", "logoff", "sign out", "lock",
-            "big picture", "steam", "playnite", "launcher", "explorer", "browser", "chrome", "firefox", "edge",
-            "spotify", "youtube", "netflix", "plex", "kodi", "vlc", "terminal", "cmd", "powershell", "settings",
-            "task manager", "obs", "discord", "monitor", "display", "screen"};
+            "shutdown", "shut down", "power off", "hibernate", "log off", "logoff", "sign out", "lock screen",
+            "big picture", "playnite", "launcher", "explorer", "browser", "chrome", "firefox", "spotify",
+            "youtube", "netflix", "plex", "kodi", "vlc", "terminal", "powershell", "task manager", "discord"};
 
     /** Tools and apps (Desktop, PC Reboot, Steam Big Picture …) vs. games. */
     public static boolean isApp(String name) {
