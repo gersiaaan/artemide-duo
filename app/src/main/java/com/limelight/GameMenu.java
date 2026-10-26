@@ -130,6 +130,9 @@ public class GameMenu implements Game.GameMenuCallbacks {
             currentDialog.dismiss();
         }
         currentDialog = builder.show();
+        if (com.limelight.duo.DuoController.isDuoDevice()) {
+            com.limelight.duo.DuoDialogs.style(currentDialog);
+        }
 
         Window window = currentDialog.getWindow();
 
@@ -319,8 +322,11 @@ public class GameMenu implements Game.GameMenuCallbacks {
                     }));
         }
 
-        options.add(new MenuOption(getString(R.string.game_menu_toggle_keyboard), true,
-                game::toggleKeyboard));
+        // Duo: the panel has its own Gboard button, so no soft keyboard entry here.
+        if (!duo) {
+            options.add(new MenuOption(getString(R.string.game_menu_toggle_keyboard), true,
+                    game::toggleKeyboard));
+        }
 
         options.add(new MenuOption(getString(game.isZoomModeEnabled() ? R.string.game_menu_disable_zoom_mode : R.string.game_menu_enable_zoom_mode), true,
                 game::toggleZoomMode));

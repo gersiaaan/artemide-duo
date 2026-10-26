@@ -121,6 +121,13 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         });
         addBarView(bar, gboard, dp(44), true);
 
+        ImageButton perf = iconButton(context.getDrawable(R.drawable.ic_duo_perf), "Performance-Overlay ein/aus");
+        perf.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            sink.togglePerformanceOverlay();
+        });
+        addBarView(bar, perf, dp(44), true);
+
         // Clock and battery of the Duo, centred between the buttons and the tabs.
         DuoStatusView status = new DuoStatusView(context);
         status.setGravity(Gravity.CENTER);

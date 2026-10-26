@@ -22,6 +22,9 @@ public interface DuoInputSink {
 
     void showStreamMenu();
 
+    /** Performance overlay (HUD) on/off. */
+    void togglePerformanceOverlay();
+
     /** After Ctrl+C / Ctrl+X: pull the PC clipboard to Android once the PC has it. */
     void fetchClipboardFromPc();
 

@@ -187,6 +187,7 @@ public class DuoController {
         value.setGravity(Gravity.END);
 
         SeekBar seek = new SeekBar(themed);
+        DuoDialogs.styleSlider(seek);
         seek.setMax(9);
         int speed = DuoBridge.getSpeed(activity);
         seek.setProgress(speed - 1);
@@ -210,11 +211,12 @@ public class DuoController {
         box.addView(seek, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         box.addView(value, new LinearLayout.LayoutParams(Math.round(32 * density), ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        new AlertDialog.Builder(themed)
+        AlertDialog dialog = new AlertDialog.Builder(themed)
                 .setTitle("Trackpad-Tempo")
                 .setView(box)
                 .setPositiveButton(android.R.string.ok, null)
                 .show();
+        DuoDialogs.style(dialog);
     }
 
     public boolean isSplit() {

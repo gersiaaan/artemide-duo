@@ -2043,6 +2043,11 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
             }
 
             @Override
+            public void togglePerformanceOverlay() {
+                toggleHUD();
+            }
+
+            @Override
             public void fetchClipboardFromPc() {
                 if (connected && httpConn != null) {
                     // Give the PC a moment to put the copied text on its clipboard.
