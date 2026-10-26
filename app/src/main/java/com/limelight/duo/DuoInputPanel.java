@@ -284,7 +284,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
             styleTab(tabs[i], i == m);
         }
         tabs[MODE_COMPACT].setText(m == MODE_COMPACT ? "Compact ⇄" : "Compact");
-        tabs[MODE_KEYBOARD].setText(m == MODE_KEYBOARD ? "Keyboard ⇄" : "Keyboard");
+        tabs[MODE_KEYBOARD].setText(m == MODE_KEYBOARD ? "Keyboard " + (kbMode + 1) : "Keyboard");
         DuoBridge.setPanelMode(getContext(), m);
         autocorrect.onBoundary();
     }
@@ -374,6 +374,9 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         phoneKeyboardArea.setLayoutParams(pl);
         float row = kbMode == 2 ? 68 : 58;
         phoneKeyboard.setCompactRowsDp(row, row);
+        if (tabs[MODE_KEYBOARD] != null && mode == MODE_KEYBOARD) {
+            tabs[MODE_KEYBOARD].setText("Keyboard " + (kbMode + 1));
+        }
     }
 
     private View buildCompactMode(Context context) {
