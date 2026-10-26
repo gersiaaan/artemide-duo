@@ -7,12 +7,20 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.PathInterpolator;
 
 /**
  * Keyboard/trackpad panel shown on the other Surface Duo screen,
  * next to the stream, without spanning the app.
+ * Slides in from the top (the hinge / stream side) and slides back up when hidden.
  */
 public class DuoPanelActivity extends Activity {
+
+    private static final long IN_MS = 280;
+    private static final long OUT_MS = 200;
+
+    private View panel;
+    private boolean finishing;
 
     /** Opens the panel on the adjacent screen. */
     public static void open(Activity from) {
@@ -22,44 +30,83 @@ public class DuoPanelActivity extends Activity {
             intent.addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT);
         }
         from.startActivity(intent);
+        // Our own slide animation replaces the system one.
+        from.overridePendingTransition(0, 0);
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        overridePendingTransition(0, 0);
 
         DuoInputSink sink = DuoBridge.getSink();
         if (sink == null) {
             // No stream running
-            finish();
+            super.finish();
             return;
         }
         DuoBridge.setPanelActivity(this);
 
         Window w = getWindow();
         w.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        w.getDecorView().setSystemUiVisibility(
+        hideSystemUi();
+
+        panel = new DuoInputPanel(this, sink, this::finish);
+        panel.setAlpha(0f);
+        setContentView(panel);
+
+        // Slide in from the top once the panel has its size.
+        panel.post(() -> {
+            panel.setTranslationY(-panel.getHeight());
+            panel.animate()
+                    .translationY(0f)
+                    .alpha(1f)
+                    .setDuration(IN_MS)
+                    // iOS-like: fast start, long soft landing
+                    .setInterpolator(new PathInterpolator(0.32f, 0.72f, 0f, 1f))
+                    .start();
+        });
+    }
+
+    @Override
+    public void finish() {
+        if (finishing) {
+            return;
+        }
+        finishing = true;
+        if (panel == null || panel.getHeight() == 0) {
+            super.finish();
+            overridePendingTransition(0, 0);
+            return;
+        }
+        // Slide back up towards the stream, then close.
+        panel.animate()
+                .translationY(-panel.getHeight())
+                .alpha(0f)
+                .setDuration(OUT_MS)
+                .setInterpolator(new PathInterpolator(0.4f, 0f, 0.9f, 0.6f))
+                .withEndAction(() -> {
+                    DuoPanelActivity.super.finish();
+                    overridePendingTransition(0, 0);
+                })
+                .start();
+    }
+
+    private void hideSystemUi() {
+        getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_FULLSCREEN
                         | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                         | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                         | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-
-        setContentView(new DuoInputPanel(this, sink, this::finish));
     }
 
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
-            getWindow().getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+            hideSystemUi();
         }
     }
 

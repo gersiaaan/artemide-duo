@@ -76,6 +76,17 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         bar.addView(new View(context), new LayoutParams(0, 1, 1f));
 
         addBarView(bar, actionButton("Gboard", v -> sink.toggleSystemKeyboard()), LayoutParams.WRAP_CONTENT);
+        ImageButton mouse = new ImageButton(context);
+        mouse.setImageResource(R.drawable.ic_duo_mouse);
+        mouse.setBackground(pressable(DuoColors.SURFACE, 10));
+        mouse.setContentDescription("Trackpad-Tempo");
+        mouse.setFocusable(false);
+        mouse.setOnClickListener(v -> {
+            if (getContext() instanceof android.app.Activity) {
+                DuoController.showSpeedDialog((android.app.Activity) getContext());
+            }
+        });
+        addBarView(bar, mouse, dp(44));
         if (onHide != null) {
             ImageButton hide = new ImageButton(context);
             hide.setImageResource(R.drawable.ic_duo_keyboard);

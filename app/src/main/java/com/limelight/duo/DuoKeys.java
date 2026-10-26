@@ -47,6 +47,22 @@ public final class DuoKeys {
         }
     }
 
+    /** Like sendCombo, but releases immediately (typing: no lingering key-down). */
+    public static void sendComboNow(DuoInputSink sink, int... vks) {
+        if (sink == null || vks.length == 0) {
+            return;
+        }
+        byte mods = 0;
+        for (int vk : vks) {
+            sink.sendKey(vk, true, mods);
+            mods |= flagFor(vk);
+        }
+        for (int i = vks.length - 1; i >= 0; i--) {
+            mods &= (byte) ~flagFor(vks[i]);
+            sink.sendKey(vks[i], false, mods);
+        }
+    }
+
     /** Presses all keys in order, then releases them in reverse order. */
     public static void sendCombo(final DuoInputSink sink, final int... vks) {
         if (sink == null || vks.length == 0) {

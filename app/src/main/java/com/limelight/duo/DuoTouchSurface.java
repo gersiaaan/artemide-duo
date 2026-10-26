@@ -12,17 +12,18 @@ import com.limelight.nvstream.input.MouseButtonPacket;
 
 /**
  * A touch surface that acts as a trackpad:
- *  - tap (no movement)            -> onTap()
- *  - 1 finger swipe               -> relative mouse movement
- *  - long press, then move        -> drag (left button held)
- *  - long press on repeatable spot-> onTap() repeated
- *  - 2 / 3 finger tap             -> onTwoFingerTap() / onThreeFingerTap()
- *  - 2 finger swipe               -> scroll wheel
+ *  - tap (no movement)             -> onTap()
+ *  - 1 finger swipe                -> relative mouse movement
+ *  - long press                    -> onLongPress() (e.g. umlaut), repeat on repeatable
+ *                                     spots, or drag if dragOnLongPress()
+ *  - 2 / 3 finger tap              -> onTwoFingerTap() / onThreeFingerTap()
+ *  - 2 finger swipe                -> scroll wheel
+ *  - 3 finger swipe                -> drag (left button held), e.g. move windows/files
  */
 public abstract class DuoTouchSurface extends View {
-    private enum Mode { NONE, PENDING, MOUSE, DRAG, REPEAT, MULTI, SCROLL }
+    private enum Mode { NONE, PENDING, HELD, MOUSE, DRAG, REPEAT, MULTI, SCROLL, DRAG3 }
 
-    private static final long LONG_PRESS_MS = 450;
+    private static final long LONG_PRESS_MS = 380;
     private static final long REPEAT_DELAY_MS = 55;
     private static final long MULTI_TAP_MAX_MS = 350;
     /** A second finger landing later than this is fast typing, not a 2-finger gesture. */
@@ -33,7 +34,7 @@ public abstract class DuoTouchSurface extends View {
     private final float slop;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
-    private float sensitivity = 1.6f;
+    private float sensitivity = 0.62f;
 
     private Mode mode = Mode.NONE;
     private float downX, downY, lastX, lastY;
@@ -56,7 +57,10 @@ public abstract class DuoTouchSurface extends View {
                 mode = Mode.REPEAT;
                 onTap(downX, downY);
                 handler.postDelayed(repeat, REPEAT_DELAY_MS);
-            } else {
+            } else if (onLongPress(downX, downY)) {
+                mode = Mode.HELD;
+                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            } else if (dragOnLongPress()) {
                 mode = Mode.DRAG;
                 onCancelPress();
                 onPointerAction();
@@ -65,6 +69,7 @@ public abstract class DuoTouchSurface extends View {
                     sink.sendMouseButton(MouseButtonPacket.BUTTON_LEFT, true);
                 }
             }
+            // Otherwise stay PENDING: releasing still counts as a normal tap.
         }
     };
 
@@ -82,7 +87,7 @@ public abstract class DuoTouchSurface extends View {
     public DuoTouchSurface(Context context) {
         super(context);
         density = context.getResources().getDisplayMetrics().density;
-        slop = 9 * density;
+        slop = tapSlopDp() * density;
         setHapticFeedbackEnabled(true);
     }
 
@@ -95,10 +100,17 @@ public abstract class DuoTouchSurface extends View {
     }
 
     // ---- hooks for subclasses ----
+    /** How far a finger may move and still count as a tap. */
+    protected float tapSlopDp() { return 9f; }
     protected void onPress(float x, float y) {}
     protected void onCancelPress() {}
     protected abstract void onTap(float x, float y);
     protected boolean isRepeatable(float x, float y) { return false; }
+    /** Return true to take over a long press (finger still down); onLongRelease follows. */
+    protected boolean onLongPress(float x, float y) { return false; }
+    protected void onLongRelease(float x, float y) {}
+    /** Long press without movement starts a drag (trackpad); keyboards return false. */
+    protected boolean dragOnLongPress() { return true; }
     protected abstract void onTwoFingerTap();
     protected abstract void onThreeFingerTap();
     /** Keyboards return true so overlapping taps from two thumbs are typed, not treated as gestures. */
@@ -120,6 +132,15 @@ public abstract class DuoTouchSurface extends View {
         onPress(downX, downY);
     }
 
+    /** Commits whatever the current single finger means (key or held key). */
+    private void commitSingle() {
+        if (mode == Mode.PENDING) {
+            onTap(downX, downY);
+        } else if (mode == Mode.HELD) {
+            onLongRelease(downX, downY);
+        }
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getActionMasked()) {
@@ -133,18 +154,16 @@ public abstract class DuoTouchSurface extends View {
 
             case MotionEvent.ACTION_POINTER_DOWN:
                 if (supportsRollover()
-                        && (mode == Mode.PENDING || mode == Mode.NONE)
-                        && (mode == Mode.NONE || event.getEventTime() - downTime > ROLLOVER_MS)) {
+                        && (mode == Mode.PENDING || mode == Mode.HELD || mode == Mode.NONE)
+                        && (mode != Mode.PENDING || event.getEventTime() - downTime > ROLLOVER_MS)) {
                     // Fast typing: commit the first key now, the new finger is the next key.
                     cancelTimers();
-                    if (mode == Mode.PENDING) {
-                        onTap(downX, downY);
-                    }
+                    commitSingle();
                     beginPending(event, event.getActionIndex());
                     return true;
                 }
                 maxPointers = Math.max(maxPointers, event.getPointerCount());
-                if (mode == Mode.PENDING || mode == Mode.MOUSE || mode == Mode.REPEAT) {
+                if (mode == Mode.PENDING || mode == Mode.HELD || mode == Mode.MOUSE || mode == Mode.REPEAT) {
                     cancelTimers();
                     onCancelPress();
                     mode = Mode.MULTI;
@@ -158,11 +177,11 @@ public abstract class DuoTouchSurface extends View {
 
             case MotionEvent.ACTION_POINTER_UP: {
                 int upId = event.getPointerId(event.getActionIndex());
-                if (supportsRollover() && mode == Mode.PENDING) {
+                if (supportsRollover() && (mode == Mode.PENDING || mode == Mode.HELD)) {
                     if (upId == activeId) {
                         // The newest finger lifted first: type it, ignore the rest.
                         cancelTimers();
-                        onTap(downX, downY);
+                        commitSingle();
                         mode = Mode.NONE;
                         onCancelPress();
                     }
@@ -177,7 +196,8 @@ public abstract class DuoTouchSurface extends View {
                 cancelTimers();
                 switch (mode) {
                     case PENDING:
-                        onTap(downX, downY);
+                    case HELD:
+                        commitSingle();
                         break;
                     case MULTI:
                         if (event.getEventTime() - downTime <= MULTI_TAP_MAX_MS) {
@@ -189,6 +209,7 @@ public abstract class DuoTouchSurface extends View {
                         }
                         break;
                     case DRAG:
+                    case DRAG3:
                         if (sink != null) {
                             sink.sendMouseButton(MouseButtonPacket.BUTTON_LEFT, false);
                         }
@@ -201,7 +222,7 @@ public abstract class DuoTouchSurface extends View {
 
             case MotionEvent.ACTION_CANCEL:
                 cancelTimers();
-                if (mode == Mode.DRAG && sink != null) {
+                if ((mode == Mode.DRAG || mode == Mode.DRAG3) && sink != null) {
                     sink.sendMouseButton(MouseButtonPacket.BUTTON_LEFT, false);
                 }
                 finish();
@@ -250,13 +271,20 @@ public abstract class DuoTouchSurface extends View {
             }
 
             case MULTI:
-            case SCROLL: {
+            case SCROLL:
+            case DRAG3: {
                 if (event.getPointerCount() < 2) {
                     resetCentroid = true;
                     break;
                 }
-                float cx = (event.getX(0) + event.getX(1)) / 2f;
-                float cy = (event.getY(0) + event.getY(1)) / 2f;
+                int n = Math.min(3, event.getPointerCount());
+                float cx = 0, cy = 0;
+                for (int i = 0; i < n; i++) {
+                    cx += event.getX(i);
+                    cy += event.getY(i);
+                }
+                cx /= n;
+                cy /= n;
                 if (resetCentroid) {
                     lastCx = cx;
                     lastCy = cy;
@@ -267,14 +295,28 @@ public abstract class DuoTouchSurface extends View {
                 float dy = cy - lastCy;
                 if (mode == Mode.MULTI) {
                     if (Math.hypot(dx, dy) > slop) {
-                        mode = Mode.SCROLL;
                         onPointerAction();
+                        if (maxPointers >= 3) {
+                            // Three-finger drag: hold the left button while moving.
+                            mode = Mode.DRAG3;
+                            lastMoveTime = event.getEventTime();
+                            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+                            if (sink != null) {
+                                sink.sendMouseButton(MouseButtonPacket.BUTTON_LEFT, true);
+                            }
+                        } else {
+                            mode = Mode.SCROLL;
+                        }
                         lastCx = cx;
                         lastCy = cy;
                     }
                     break;
                 }
-                scroll(dx, dy);
+                if (mode == Mode.DRAG3) {
+                    moveMouse(dx, dy, event.getEventTime());
+                } else {
+                    scroll(dx, dy);
+                }
                 lastCx = cx;
                 lastCy = cy;
                 break;
@@ -295,9 +337,9 @@ public abstract class DuoTouchSurface extends View {
         float v = (float) Math.hypot(dx, dy) / density / dt;
         smoothVelocity = smoothVelocity * 0.6f + v * 0.4f;
 
-        // Pointer-precision curve: slow = precise (0.7x), fast = farther (1.8x).
+        // Pointer-precision curve: slow = 1.0x, fast = up to 1.9x.
         float t = Math.max(0f, Math.min(1f, (smoothVelocity - 0.1f) / 1.4f));
-        float gain = sensitivity * (0.7f + 1.1f * t * t * (3f - 2f * t));
+        float gain = sensitivity * (1.0f + 0.9f * t * t * (3f - 2f * t));
 
         remX += dx * gain;
         remY += dy * gain;
@@ -341,7 +383,7 @@ public abstract class DuoTouchSurface extends View {
     @Override
     protected void onDetachedFromWindow() {
         cancelTimers();
-        if (mode == Mode.DRAG && sink != null) {
+        if ((mode == Mode.DRAG || mode == Mode.DRAG3) && sink != null) {
             sink.sendMouseButton(MouseButtonPacket.BUTTON_LEFT, false);
         }
         mode = Mode.NONE;

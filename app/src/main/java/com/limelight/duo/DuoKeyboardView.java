@@ -33,6 +33,9 @@ public class DuoKeyboardView extends DuoTouchSurface {
         final String label;
         String shiftLabel;
         String altLabel;
+        /** Long-press character (a -> ä) with its VK on a German layout. */
+        String longLabel;
+        int longVk;
         final int vk;
         final float units;
         boolean modifier;
@@ -50,6 +53,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
 
         Key shift(String s) { shiftLabel = s; return this; }
         Key alt(String s) { altLabel = s; return this; }
+        Key hold(String s, int vk) { longLabel = s; longVk = vk; return this; }
         Key mod() { modifier = true; return this; }
         Key rep() { repeatable = true; return this; }
         Key quiet() { subtle = true; return this; }
@@ -74,6 +78,10 @@ public class DuoKeyboardView extends DuoTouchSurface {
     private final Paint lockPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private Key pressed;
+    private Key held;
+    private final Paint popupPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint popupText = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF popupRect = new RectF();
     private final float hintHeight;
     private float letterTextSize;
     private DuoAutocorrect autocorrect;
@@ -92,6 +100,11 @@ public class DuoKeyboardView extends DuoTouchSurface {
         hintPaint.setTextAlign(Paint.Align.CENTER);
         hintPaint.setTextSize(10.5f * density);
         lockPaint.setColor(DuoColors.ON_ACCENT);
+        popupPaint.setColor(DuoColors.ACCENT);
+        popupText.setColor(DuoColors.ON_ACCENT);
+        popupText.setTextAlign(Paint.Align.CENTER);
+        popupText.setTextSize(24 * density);
+        popupText.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
         buildLayout();
     }
 
@@ -171,9 +184,13 @@ public class DuoKeyboardView extends DuoTouchSurface {
                 k("+", VK_OEM_6, 1.5f).shift("*").alt("~").quiet(),
                 k("#", VK_OEM_5, 1.5f).shift("'").quiet()));
 
+        top[6].hold("ü", VK_OEM_4);
+        top[8].hold("ö", VK_OEM_1);
+        Key[] home = letters("asdfghjkl", "asdfghjkl");
+        home[0].hold("ä", VK_OEM_7);
         addRow(false, concat(
                 k("Caps", VK_CAPITAL, 2.5f).quiet(),
-                letters("asdfghjkl", "asdfghjkl"),
+                home,
                 k("↵", VK_RETURN, 3.5f)));
 
         Key[] bottom = letters("yxcvbnm", "zxcvbnm");
@@ -308,6 +325,14 @@ public class DuoKeyboardView extends DuoTouchSurface {
                             key.rect.top + 12 * density, altPaint);
                 }
 
+                // Small long-press character in the other corner (ä on a).
+                if (key.longLabel != null && key.rect.height() > 30 * density) {
+                    altPaint.setTextAlign(Paint.Align.LEFT);
+                    canvas.drawText(key.longLabel, key.rect.left + 5 * density,
+                            key.rect.top + 12 * density, altPaint);
+                    altPaint.setTextAlign(Paint.Align.RIGHT);
+                }
+
                 if (state == 2) {
                     // Small bar marks a locked modifier.
                     float bw = 10 * density;
@@ -318,8 +343,29 @@ public class DuoKeyboardView extends DuoTouchSurface {
             }
         }
 
-        canvas.drawText("Tippen = Taste · Wischen = Maus · 2 Finger: Klick / Scrollen · 3 Finger: Rechtsklick · Lang drücken = Ziehen",
+        canvas.drawText("Tippen = Taste · Wischen = Maus · 2 Finger: Klick / Scrollen · 3 Finger: Rechtsklick / Ziehen · a o u halten = ä ö ü",
                 getWidth() / 2f, getHeight() - 5 * density, hintPaint);
+
+        // Long-press popup above the key (Gboard style).
+        if (held != null) {
+            boolean upper = modState[VK_LSHIFT] > 0;
+            String t = upper ? held.longLabel.toUpperCase() : held.longLabel;
+            float w = Math.max(held.rect.width(), 48 * density);
+            float h = 56 * density;
+            float cx = held.rect.centerX();
+            float bottom = held.rect.top - 6 * density;
+            popupRect.set(cx - w / 2, bottom - h, cx + w / 2, bottom);
+            if (popupRect.top < 0) {
+                popupRect.offset(0, -popupRect.top);
+            }
+            keyPaint.setColor(0x99000000);
+            popupRect.offset(0, 3 * density);
+            canvas.drawRoundRect(popupRect, 10 * density, 10 * density, keyPaint);
+            popupRect.offset(0, -3 * density);
+            canvas.drawRoundRect(popupRect, 10 * density, 10 * density, popupPaint);
+            float ty = popupRect.centerY() - (popupText.descent() + popupText.ascent()) / 2f;
+            canvas.drawText(t, popupRect.centerX(), ty, popupText);
+        }
     }
 
     // ---------------- input ----------------
@@ -350,6 +396,50 @@ public class DuoKeyboardView extends DuoTouchSurface {
         return true;
     }
 
+    /** Generous: slight finger slips while typing still count as a key, not a mouse move. */
+    @Override
+    protected float tapSlopDp() {
+        return 20f;
+    }
+
+    /** Dragging on the keyboard is done with three fingers instead. */
+    @Override
+    protected boolean dragOnLongPress() {
+        return false;
+    }
+
+    @Override
+    protected boolean onLongPress(float x, float y) {
+        Key key = keyAt(x, y);
+        if (key == null || key.longLabel == null) {
+            return false;
+        }
+        held = key;
+        invalidate();
+        return true;
+    }
+
+    @Override
+    protected void onLongRelease(float x, float y) {
+        Key key = held;
+        held = null;
+        invalidate();
+        if (key == null) {
+            return;
+        }
+        boolean shift = modState[VK_LSHIFT] > 0;
+        if (shift) {
+            DuoKeys.sendComboNow(sink, VK_LSHIFT, key.longVk);
+        } else {
+            DuoKeys.sendComboNow(sink, key.longVk);
+        }
+        if (autocorrect != null) {
+            char c = key.longLabel.charAt(0);
+            autocorrect.onLetter(shift ? Character.toUpperCase(c) : c);
+        }
+        releaseOneShot();
+    }
+
     @Override
     protected void onPress(float x, float y) {
         pressed = keyAt(x, y);
@@ -362,8 +452,9 @@ public class DuoKeyboardView extends DuoTouchSurface {
 
     @Override
     protected void onCancelPress() {
-        if (pressed != null) {
+        if (pressed != null || held != null) {
             pressed = null;
+            held = null;
             invalidate();
         }
     }
@@ -420,7 +511,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
             for (int i = 0; i < vks.length; i++) {
                 vks[i] = combo.get(i);
             }
-            DuoKeys.sendCombo(sink, vks);
+            DuoKeys.sendComboNow(sink, vks);
 
             if (autocorrect != null && key.vk != VK_SPACE && key.vk != VK_BACK) {
                 if (plain && key.isLetter()) {
@@ -432,7 +523,10 @@ public class DuoKeyboardView extends DuoTouchSurface {
             }
         }
 
-        // Release one-shot modifiers.
+        releaseOneShot();
+    }
+
+    private void releaseOneShot() {
         boolean changed = false;
         for (int i = 0; i < modState.length; i++) {
             if (modState[i] == 1) {

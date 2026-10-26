@@ -1,25 +1,21 @@
 package com.limelight.duo;
 
 import android.content.Context;
-import android.view.textservice.SentenceSuggestionsInfo;
-import android.view.textservice.SpellCheckerSession;
-import android.view.textservice.SuggestionsInfo;
-import android.view.textservice.TextInfo;
-import android.view.textservice.TextServicesManager;
-
-import com.limelight.LimeLog;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Word tracking, suggestions and Gboard-style autocorrect on space, using the
- * system spell checker (the same dictionary as the phone keyboard).
+ * built-in German + English dictionary (offline).
  *
  * The keyboard only knows what was typed since the last word boundary; any
  * mouse action or navigation key resets the word.
  */
-public class DuoAutocorrect implements SpellCheckerSession.SpellCheckerSessionListener {
+public class DuoAutocorrect {
 
     public interface Listener {
         /** cells: 3 entries (may be empty strings); highlight: index of the bold cell or -1. */
@@ -27,16 +23,14 @@ public class DuoAutocorrect implements SpellCheckerSession.SpellCheckerSessionLi
     }
 
     private final DuoInputSink sink;
-    private final Context context;
-    private SpellCheckerSession session;
-    private boolean sessionFailed;
+    private final Handler main = new Handler(Looper.getMainLooper());
+    private HandlerThread worker;
+    private Handler workerHandler;
     private Listener listener;
 
     private final StringBuilder word = new StringBuilder();
     private String resultWord = "";
-    private final List<String> suggestions = new ArrayList<>();
-    private boolean looksLikeTypo;
-    private boolean recommended;
+    private DuoDictionary.Result result;
 
     /** Last automatic correction, so an immediate backspace can undo it. */
     private String undoOriginal;
@@ -48,26 +42,7 @@ public class DuoAutocorrect implements SpellCheckerSession.SpellCheckerSessionLi
 
     public DuoAutocorrect(Context context, DuoInputSink sink) {
         this.sink = sink;
-        this.context = context;
-    }
-
-    private void ensureSession() {
-        if (session != null || sessionFailed) {
-            return;
-        }
-        try {
-            TextServicesManager tsm = (TextServicesManager) context.getSystemService(Context.TEXT_SERVICES_MANAGER_SERVICE);
-            if (tsm != null) {
-                session = tsm.newSpellCheckerSession(null, null, this, true);
-            }
-        } catch (Throwable t) {
-            LimeLog.warning("Duo: spell checker not available: " + t);
-            session = null;
-        }
-        if (session == null) {
-            sessionFailed = true;
-            LimeLog.info("Duo: no system spell checker, suggestions disabled");
-        }
+        DuoDictionary.load(context);
     }
 
     public void setListener(Listener l) {
@@ -76,10 +51,20 @@ public class DuoAutocorrect implements SpellCheckerSession.SpellCheckerSessionLi
     }
 
     public void close() {
-        if (session != null) {
-            session.close();
-            session = null;
+        if (worker != null) {
+            worker.quitSafely();
+            worker = null;
+            workerHandler = null;
         }
+    }
+
+    private Handler worker() {
+        if (workerHandler == null) {
+            worker = new HandlerThread("DuoAutocorrect");
+            worker.start();
+            workerHandler = new Handler(worker.getLooper());
+        }
+        return workerHandler;
     }
 
     // ---------------- events from the keyboard ----------------
@@ -118,8 +103,13 @@ public class DuoAutocorrect implements SpellCheckerSession.SpellCheckerSessionLi
      */
     public boolean onSpace() {
         String typed = word.toString();
-        if (!typed.isEmpty() && typed.equals(resultWord) && looksLikeTypo && recommended && !suggestions.isEmpty()) {
-            String corrected = matchCase(typed, suggestions.get(0));
+        DuoDictionary.Result r = typed.equals(resultWord) ? result : null;
+        if (r == null && !typed.isEmpty() && DuoDictionary.get() != null) {
+            // Result not back yet: decide now.
+            r = DuoDictionary.get().lookup(typed);
+        }
+        if (r != null && r.autocorrect && !r.suggestions.isEmpty()) {
+            String corrected = matchCase(typed, r.suggestions.get(0));
             if (!corrected.equals(typed)) {
                 replaceWord(typed, corrected);
                 DuoKeys.tap(sink, DuoKeys.VK_SPACE, 1);
@@ -166,63 +156,36 @@ public class DuoAutocorrect implements SpellCheckerSession.SpellCheckerSessionLi
     private void resetWord() {
         word.setLength(0);
         resultWord = "";
-        suggestions.clear();
-        looksLikeTypo = false;
-        recommended = false;
+        result = null;
         publish();
     }
 
     private void request() {
-        if (word.length() == 0) {
+        final String typed = word.toString();
+        if (typed.isEmpty()) {
             resultWord = "";
-            suggestions.clear();
-            looksLikeTypo = recommended = false;
+            result = null;
             publish();
             return;
         }
-        ensureSession();
-        if (session == null) {
-            publish();
-            return;
-        }
-        try {
-            session.getSentenceSuggestions(new TextInfo[]{new TextInfo(word.toString())}, 3);
-        } catch (Throwable t) {
-            LimeLog.warning("Duo: spell check failed: " + t);
-        }
-    }
-
-    @Override
-    public void onGetSuggestions(SuggestionsInfo[] results) {
-        // Not used (sentence API below).
-    }
-
-    @Override
-    public void onGetSentenceSuggestions(SentenceSuggestionsInfo[] results) {
-        if (results == null || results.length == 0 || results[0] == null
-                || results[0].getSuggestionsCount() == 0) {
-            return;
-        }
-        SuggestionsInfo info = results[0].getSuggestionsInfoAt(0);
-        if (info == null) {
-            return;
-        }
-        // Results arrive asynchronously; only use them for the word still being typed.
-        String current = word.toString();
-        suggestions.clear();
-        int n = Math.max(0, info.getSuggestionsCount());
-        for (int i = 0; i < n && suggestions.size() < 3; i++) {
-            String s = info.getSuggestionAt(i);
-            if (s != null && !s.isEmpty() && !s.equalsIgnoreCase(current)) {
-                suggestions.add(s);
-            }
-        }
-        int attrs = info.getSuggestionsAttributes();
-        boolean inDictionary = (attrs & SuggestionsInfo.RESULT_ATTR_IN_THE_DICTIONARY) != 0;
-        looksLikeTypo = !inDictionary && (attrs & SuggestionsInfo.RESULT_ATTR_LOOKS_LIKE_TYPO) != 0;
-        recommended = (attrs & SuggestionsInfo.RESULT_ATTR_HAS_RECOMMENDED_SUGGESTIONS) != 0;
-        resultWord = current;
         publish();
+        final DuoDictionary dict = DuoDictionary.get();
+        if (dict == null) {
+            return;
+        }
+        Handler h = worker();
+        h.removeCallbacksAndMessages(null);
+        h.post(() -> {
+            final DuoDictionary.Result r = dict.lookup(typed);
+            main.post(() -> {
+                // Only use it if the word hasn't changed meanwhile.
+                if (typed.equals(word.toString())) {
+                    resultWord = typed;
+                    result = r;
+                    publish();
+                }
+            });
+        });
     }
 
     private void publish() {
@@ -233,14 +196,15 @@ public class DuoAutocorrect implements SpellCheckerSession.SpellCheckerSessionLi
         String typed = word.toString();
         int highlight = -1;
         if (!typed.isEmpty()) {
-            boolean fresh = typed.equals(resultWord);
             List<String> sug = new ArrayList<>();
-            if (fresh) {
-                for (String s : suggestions) {
+            boolean auto = false;
+            if (result != null && typed.equals(resultWord)) {
+                for (String s : result.suggestions) {
                     sug.add(matchCase(typed, s));
                 }
+                auto = result.autocorrect;
             }
-            if (fresh && looksLikeTypo && recommended && !sug.isEmpty()) {
+            if (auto && !sug.isEmpty()) {
                 // „typed“ | best (bold, applied on space) | alternative
                 cellText[0] = typed;
                 cellIsTyped[0] = true;
