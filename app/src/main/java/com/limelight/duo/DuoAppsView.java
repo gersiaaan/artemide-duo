@@ -270,7 +270,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     }
 
     private boolean inTab(App a) {
-        return tab == 0 || (tab == 1) != DuoPlayStats.isApp(a.name);
+        ComputerDetails c = host.computer();
+        return tab == 0 || (tab == 1) != DuoPlayStats.isApp(getContext(), c == null ? null : c.uuid, a.id, a.name);
     }
 
     private void renderList() {
@@ -386,7 +387,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         thumb.setBackground(DuoCovers.placeholderBackground(accent, 5 * d));
         thumb.setClipToOutline(true);
         View ph;
-        if (DuoPlayStats.isApp(a.name)) {
+        if (DuoPlayStats.isApp(getContext(), c == null ? null : c.uuid, a.id, a.name)) {
             ImageView icon = new ImageView(getContext());
             icon.setImageDrawable(tinted(R.drawable.ic_duo_monitor, DuoTheme.TEXT));
             icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
@@ -598,7 +599,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         int sessions = c == null ? 0 : DuoPlayStats.sessions(getContext(), c.uuid, a.id);
         statTime.setText(ms > 0 ? DuoPlayStats.duration(ms) : "–");
         statSessions.setText(String.valueOf(sessions));
-        boolean desk = DuoPlayStats.isApp(a.name);
+        boolean desk = DuoPlayStats.isApp(getContext(), c == null ? null : c.uuid, a.id, a.name);
         bigPlaceholder.setText(desk ? a.name.toUpperCase() : placeholderText(a));
         bigPlaceholder.setTextSize(desk ? 13 : 28);
         bigPlaceholder.setCompoundDrawablesWithIntrinsicBounds(null,

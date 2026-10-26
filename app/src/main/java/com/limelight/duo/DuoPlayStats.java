@@ -67,6 +67,7 @@ public final class DuoPlayStats {
                 .putLong(runPc + "|last.when", System.currentTimeMillis())
                 .apply();
         runPc = null;
+        DuoGameSettings.restore(c);
     }
 
     public static Last last(Context c, String pcUuid) {
@@ -123,6 +124,15 @@ public final class DuoPlayStats {
             "shutdown", "shut down", "power off", "hibernate", "log off", "logoff", "sign out", "lock screen",
             "big picture", "playnite", "launcher", "explorer", "browser", "chrome", "firefox", "spotify",
             "youtube", "netflix", "plex", "kodi", "vlc", "terminal", "powershell", "task manager", "discord"};
+
+    /** Game or app, honouring the choice made in "Game settings & type". */
+    public static boolean isApp(Context c, String pcUuid, int appId, String name) {
+        String t = pcUuid == null ? null : DuoGameSettings.typeOverride(c, pcUuid, appId);
+        if (t != null) {
+            return "app".equals(t);
+        }
+        return isApp(name);
+    }
 
     /** Tools and apps (Desktop, PC Reboot, Steam Big Picture …) vs. games. */
     public static boolean isApp(String name) {

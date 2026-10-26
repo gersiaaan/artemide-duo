@@ -86,6 +86,7 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
 
     private final static int START_OR_RESUME_ID = 1;
     private final static int QUIT_ID = 2;
+    private final static int DUO_GAME_SETTINGS_ID = 900;
     private final static int START_WITH_QUIT = 4;
     private final static int VIEW_DETAILS_ID = 5;
     private final static int CREATE_SHORTCUT_ID = 6;
@@ -433,6 +434,7 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
 
         inForeground = true;
         startComputerUpdates();
+        com.limelight.duo.DuoGameSettings.restore(this);
         if (duoApps != null) {
             duoApps.refresh();
         }
@@ -487,6 +489,8 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
         AppObject selectedApp = (AppObject) appGridAdapter.getItem(info.position);
 
         menu.setHeaderTitle(selectedApp.app.getAppName());
+        // Artemide Duo: own settings for this game (saved as a profile) and game/app type.
+        menu.add(Menu.NONE, DUO_GAME_SETTINGS_ID, 0, "Game settings & type…");
 
         if (lastRunningAppId == 0) {
             if (prefConfig.useVirtualDisplay) {
@@ -545,6 +549,15 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
         AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
         final AppObject app = (AppObject) appGridAdapter.getItem(info.position);
         int itemId = item.getItemId();
+        if (itemId == DUO_GAME_SETTINGS_ID) {
+            com.limelight.duo.DuoGameSettings.show(this, computer.uuid, app.app.getAppId(), app.app.getAppName(),
+                    () -> {
+                        if (duoApps != null) {
+                            duoApps.refresh();
+                        }
+                    });
+            return true;
+        }
         switch (itemId) {
             case START_WITH_QUIT:
             case START_WITH_QUIT_VDISPLAY: {
@@ -556,7 +569,7 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
                         () -> UiHelper.displayQuitConfirmationDialog(this, new Runnable() {
                             @Override
                             public void run() {
-                                ServerHelper.doStart(AppView.this, app.app, computer, managerBinder, true);
+                                duoLaunch(app.app, true);
                             }
                         }, null),
                         null
@@ -566,7 +579,7 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
                     UiHelper.displayQuitConfirmationDialog(this, new Runnable() {
                         @Override
                         public void run() {
-                            ServerHelper.doStart(AppView.this, app.app, computer, managerBinder, withVDiaplay);
+                            duoLaunch(app.app, withVDiaplay);
                         }
                     }, null);
                 }
@@ -580,12 +593,12 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
                     UiHelper.displayVdisplayConfirmationDialog(
                             AppView.this,
                             computer,
-                            () -> ServerHelper.doStart(AppView.this, app.app, computer, managerBinder, true),
+                            () -> duoLaunch(app.app, true),
                             null
                     );
                 } else {
                     // Resume is the same as start for us
-                    ServerHelper.doStart(AppView.this, app.app, computer, managerBinder, withVDiaplay);
+                    duoLaunch(app.app, withVDiaplay);
                 }
                 return true;
             }
@@ -800,7 +813,7 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
                 // Only open the context menu if something is running, otherwise start it
                 if (lastRunningAppId != 0) {
                     if (prefConfig.resumeWithoutConfirm && lastRunningAppId == app.app.getAppId()) {
-                        ServerHelper.doStart(AppView.this, app.app, computer, managerBinder, prefConfig.useVirtualDisplay);
+                        duoLaunch(app.app, prefConfig.useVirtualDisplay);
                     } else if (anchor != null) {
                         openContextMenu(anchor);
                     } else {
@@ -811,13 +824,19 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
                         UiHelper.displayVdisplayConfirmationDialog(
                                 AppView.this,
                                 computer,
-                                () -> ServerHelper.doStart(AppView.this, app.app, computer, managerBinder, true),
+                                () -> duoLaunch(app.app, true),
                                 null
                         );
                     } else {
-                        ServerHelper.doStart(AppView.this, app.app, computer, managerBinder, prefConfig.useVirtualDisplay);
+                        duoLaunch(app.app, prefConfig.useVirtualDisplay);
                     }
                 }
+    }
+
+    /** Start a stream with the game's own profile switched on (if it has one). */
+    private void duoLaunch(NvApp app, boolean withVDisplay) {
+        com.limelight.duo.DuoGameSettings.applyForLaunch(this, computer.uuid, app.getAppId());
+        ServerHelper.doStart(AppView.this, app, computer, managerBinder, withVDisplay);
     }
 
     /** Quit the running session (with the usual confirmation). */

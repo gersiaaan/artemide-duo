@@ -21,6 +21,8 @@ import android.view.View;
  */
 public class DuoWavesView extends View implements Choreographer.FrameCallback {
     private static final int LAYERS = 5;
+    /** 10 % quicker than StreamLight's drift. */
+    private static final float SPEED = 1.1f;
 
     private final int accent;
     private final Paint floor = new Paint(Paint.DITHER_FLAG);
@@ -136,7 +138,7 @@ public class DuoWavesView extends View implements Choreographer.FrameCallback {
         }
         if (lastFrame != 0) {
             // Clamped: the first frame after a pause would report the whole time away.
-            t += Math.min(frameTimeNanos - lastFrame, 100_000_000L) / 1_000_000f;
+            t += Math.min(frameTimeNanos - lastFrame, 100_000_000L) / 1_000_000f * SPEED;
         }
         lastFrame = frameTimeNanos;
         if (riseStart == -1) {

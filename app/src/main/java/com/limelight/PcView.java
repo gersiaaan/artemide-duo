@@ -296,6 +296,7 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
                     return;
                 }
                 NvApp app = new NvApp(last.name, last.appUuid, last.appId, last.hdr);
+                com.limelight.duo.DuoGameSettings.applyForLaunch(PcView.this, c.uuid, last.appId);
                 PreferenceConfiguration prefs = PreferenceConfiguration.readPreferences(PcView.this);
                 if (prefs.useVirtualDisplay && !(c.vDisplaySupported && c.vDisplayDriverReady)) {
                     UiHelper.displayVdisplayConfirmationDialog(PcView.this, c,
@@ -310,6 +311,7 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
                 if (managerBinder == null) {
                     return;
                 }
+                com.limelight.duo.DuoGameSettings.applyForLaunch(PcView.this, c.uuid, c.runningGameId);
                 ServerHelper.doStart(PcView.this, new NvApp("app", null, c.runningGameId, false), c, managerBinder, false);
             }
 
@@ -513,6 +515,7 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
         UiHelper.showDecoderCrashDialog(this);
 
         refreshProfileButton();
+        com.limelight.duo.DuoGameSettings.restore(this);
         if (duoHome != null) {
             duoHome.refresh();
         }

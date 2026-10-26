@@ -420,7 +420,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     }
 
     private void setCover(ComputerDetails c, DuoPlayStats.Last last) {
-        boolean desk = last == null || DuoPlayStats.isApp(last.name);
+        boolean desk = last == null || DuoPlayStats.isApp(getContext(), c.uuid, last.appId, last.name);
         lastPlaceholder.setText(last == null ? "" : desk ? last.name.toUpperCase() : initials(last.name));
         lastPlaceholder.setTextSize(desk ? 11 : 26);
         lastPlaceholder.setCompoundDrawablesWithIntrinsicBounds(null,
