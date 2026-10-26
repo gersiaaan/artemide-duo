@@ -49,6 +49,19 @@ public class DuoKeyboardView extends DuoTouchSurface {
         requestLayout();
     }
 
+    private boolean phoneMode;
+
+    /** Slim layout under the keyboard tab: trackpad + hint line like the full keyboard. */
+    public void setPhoneMode(boolean on) {
+        phoneMode = on;
+        requestLayout();
+        invalidate();
+    }
+
+    private boolean fullLike() {
+        return layout == LAYOUT_FULL || phoneMode;
+    }
+
     /** Phone layout under the keyboard tab: keys end right above the click buttons. */
     public void setCompactBottomDp(float dp) {
         compactBottomDp = dp;
@@ -194,7 +207,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
 
     @Override
     protected boolean trackpadEnabled() {
-        return layout == LAYOUT_FULL;
+        return fullLike();
     }
 
     // ---------------- layouts ----------------
@@ -374,7 +387,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
         float hgap = 5 * density;
         float vgap = (layout == LAYOUT_FULL ? 4 : 6) * density;
         float rowDp = layout == LAYOUT_FULL ? ROW_DP : compactRowDp;
-        float bottomReserve = layout == LAYOUT_FULL ? hintHeight + BOTTOM_GAP_DP * density : compactBottomDp * density;
+        float bottomReserve = fullLike() ? 18 * density + BOTTOM_GAP_DP * density : compactBottomDp * density;
 
         float wanted = 0;
         for (int ri = 0; ri < rows.size(); ri++) {
@@ -518,7 +531,10 @@ public class DuoKeyboardView extends DuoTouchSurface {
             }
         }
 
-        if (layout == LAYOUT_FULL) {
+        if (phoneMode) {
+            canvas.drawText("Swipe = mouse · 2 fingers: click / scroll / zoom · 3 fingers: right click / drag",
+                    getWidth() / 2f, keysBottom + 14 * density, hintPaint);
+        } else if (layout == LAYOUT_FULL) {
             canvas.drawText("Swipe = mouse · 2 fingers: click / scroll / zoom · 3 fingers: right click / drag · hold a o u = ä ö ü · hold ⇪ = Caps",
                     getWidth() / 2f, keysBottom + 14 * density, hintPaint);
         }
