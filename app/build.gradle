@@ -183,6 +183,8 @@ perf {
         // Separate application ID so it installs next to the normal Artemide.
         duo {
             initWith perf
+            // Version shown in Android: "... Duo 0.<build>", set by the CI build number.
+            versionNameSuffix " Duo " + (project.findProperty("duoVersion") ?: "dev")
             matchingFallbacks = ["release"]
             debuggable false
             minifyEnabled true

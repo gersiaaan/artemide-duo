@@ -28,7 +28,7 @@ jobs:
         run: |
           chmod +x gradlew
           set -o pipefail
-          ./gradlew assembleNonRoot_gameDuo --stacktrace 2>&1 | tee build.log
+          ./gradlew assembleNonRoot_gameDuo -PduoVersion=0.${{ github.run_number }} --stacktrace 2>&1 | tee build.log
 
       # Surface compiler errors as annotations (readable without log access).
       - name: Report build errors
@@ -56,11 +56,12 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: duo-build-${{ github.run_number }}
-          name: Artemide Duo – Build ${{ github.run_number }}
+          tag_name: v0.${{ github.run_number }}
+          name: Artemide Duo v0.${{ github.run_number }}
           target_commitish: ${{ github.sha }}
-          prerelease: true
+          prerelease: false
+          make_latest: true
           body: |
-            Für den Surface Duo die Datei mit **arm64-v8a** im Namen installieren.
+            Install the file with **arm64-v8a** in its name on the Surface Duo.
             Commit: ${{ github.sha }}
           files: out/*arm64-v8a*.apk
