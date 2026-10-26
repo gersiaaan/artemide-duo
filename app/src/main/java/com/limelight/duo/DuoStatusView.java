@@ -23,6 +23,7 @@ public class DuoStatusView extends LinearLayout {
     private final TextView time;
     private final TextView percent;
     private final BatteryIcon icon;
+    private final BoltIcon bolt;
     private boolean registered;
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -54,6 +55,13 @@ public class DuoStatusView extends LinearLayout {
         LayoutParams ip = new LayoutParams(dp(22), dp(12));
         ip.leftMargin = dp(10);
         addView(icon, ip);
+
+        // Lightning bolt next to the battery while charging.
+        bolt = new BoltIcon(context);
+        LayoutParams bp = new LayoutParams(dp(9), dp(13));
+        bp.leftMargin = dp(4);
+        bolt.setVisibility(GONE);
+        addView(bolt, bp);
 
         percent = new TextView(context);
         percent.setTextColor(DuoColors.MUTED);
@@ -115,11 +123,43 @@ public class DuoStatusView extends LinearLayout {
                 || status == BatteryManager.BATTERY_STATUS_FULL;
         percent.setText(pct + " %");
         icon.set(pct, charging);
+        bolt.setVisibility(charging ? VISIBLE : GONE);
+        percent.setTextColor(charging ? DuoColors.HI_TEXT : DuoColors.MUTED);
         updateDescription();
     }
 
     private void updateDescription() {
-        setContentDescription("Uhrzeit " + time.getText() + ", Akku " + percent.getText());
+        setContentDescription("Uhrzeit " + time.getText() + ", Akku " + percent.getText()
+                + (bolt.getVisibility() == VISIBLE ? ", lädt" : ""));
+    }
+
+    /** Small filled lightning bolt (charging). */
+    private static class BoltIcon extends View {
+        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final android.graphics.Path path = new android.graphics.Path();
+
+        BoltIcon(Context c) {
+            super(c);
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(DuoColors.HI_TEXT);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            // 9 x 13 grid
+            float u = Math.min(getWidth() / 9f, getHeight() / 13f);
+            float ox = (getWidth() - 9 * u) / 2f;
+            float oy = (getHeight() - 13 * u) / 2f;
+            path.reset();
+            path.moveTo(ox + 5.5f * u, oy);
+            path.lineTo(ox, oy + 7.5f * u);
+            path.lineTo(ox + 4f * u, oy + 7.5f * u);
+            path.lineTo(ox + 3.5f * u, oy + 13f * u);
+            path.lineTo(ox + 9f * u, oy + 5.5f * u);
+            path.lineTo(ox + 5f * u, oy + 5.5f * u);
+            path.close();
+            canvas.drawPath(path, p);
+        }
     }
 
     /** Outline battery with a fill for the level; the fill turns blue while charging. */
