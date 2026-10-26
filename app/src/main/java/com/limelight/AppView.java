@@ -840,7 +840,8 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
     private void startApp(AppObject app, View anchor) {
                 // Only open the context menu if something is running, otherwise start it
                 if (lastRunningAppId != 0) {
-                    if (prefConfig.resumeWithoutConfirm && lastRunningAppId == app.app.getAppId()) {
+                    // Resume button: the running app reconnects right away, no menu in between.
+                    if (lastRunningAppId == app.app.getAppId()) {
                         duoLaunch(app.app, prefConfig.useVirtualDisplay);
                     } else if (anchor != null) {
                         openContextMenu(anchor);
