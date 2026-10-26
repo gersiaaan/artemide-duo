@@ -65,6 +65,9 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
     private SpinnerDialog blockingLoadSpinner;
     private String lastRawApplist;
     private int lastRunningAppId;
+    // Artemide Duo: new app list on top of the (hidden) grid.
+    private com.limelight.duo.DuoAppsView duoApps;
+    private AbsListView appListView;
     private boolean suspendGridUpdates;
     private boolean inForeground;
     private boolean showHiddenApps;
@@ -125,6 +128,16 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
                     }
 
                     appGridAdapter.updateHiddenApps(hiddenAppIds, true);
+                    appGridAdapter.registerDataSetObserver(new android.database.DataSetObserver() {
+                        @Override
+                        public void onChanged() {
+                            runOnUiThread(() -> {
+                                if (duoApps != null) {
+                                    duoApps.refresh();
+                                }
+                            });
+                        }
+                    });
 
                     // Now make the binder visible. We must do this after appGridAdapter
                     // is set to prevent us from reaching updateUiWithServerinfo() and
@@ -335,6 +348,16 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
         setTitle(computerName);
         label.setText(computerName);
 
+        duoApps = new com.limelight.duo.DuoAppsView(this, duoAppsHost(), computerName);
+        addContentView(duoApps, new android.view.ViewGroup.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT));
+        // The old screen stays underneath (its menus are reused) but must not take focus.
+        android.view.ViewGroup duoRoot = findViewById(android.R.id.content);
+        if (duoRoot.getChildAt(0) instanceof android.view.ViewGroup) {
+            ((android.view.ViewGroup) duoRoot.getChildAt(0)).setDescendantFocusability(android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+            duoRoot.getChildAt(0).setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        }
+
         this.prefConfig = PreferenceConfiguration.readPreferences(this);
 
         // Bind to the computer manager service
@@ -401,6 +424,9 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
 
         inForeground = true;
         startComputerUpdates();
+        if (duoApps != null) {
+            duoApps.refresh();
+        }
 
         ExtendedFloatingActionButton profilesButton = findViewById(R.id.profilesButton);
         // User report Samsung and Xiaomi devices have this problem
@@ -746,19 +772,30 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
 
     @Override
     public void receiveAbsListView(AbsListView listView) {
+        appListView = listView;
         listView.setAdapter(appGridAdapter);
         listView.setOnItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> arg0, View arg1, int pos,
                                     long id) {
                 AppObject app = (AppObject) appGridAdapter.getItem(pos);
+                startApp(app, arg1);
+            }
+        });
+        UiHelper.applyStatusBarPadding(listView);
+        registerForContextMenu(listView);
+    }
 
+    /** Start (or ask what to do if something else is running). anchor: grid item, may be null. */
+    private void startApp(AppObject app, View anchor) {
                 // Only open the context menu if something is running, otherwise start it
                 if (lastRunningAppId != 0) {
                     if (prefConfig.resumeWithoutConfirm && lastRunningAppId == app.app.getAppId()) {
                         ServerHelper.doStart(AppView.this, app.app, computer, managerBinder, prefConfig.useVirtualDisplay);
+                    } else if (anchor != null) {
+                        openContextMenu(anchor);
                     } else {
-                        openContextMenu(arg1);
+                        openMenuFor(app);
                     }
                 } else {
                     if (prefConfig.useVirtualDisplay && !(computer.vDisplaySupported && computer.vDisplayDriverReady)) {
@@ -772,11 +809,91 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
                         ServerHelper.doStart(AppView.this, app.app, computer, managerBinder, prefConfig.useVirtualDisplay);
                     }
                 }
+    }
+
+    /** The grid's context menu (resume, quit, hide, shortcut, details …) for one app. */
+    private void openMenuFor(AppObject app) {
+        if (appListView == null || appGridAdapter == null) {
+            return;
+        }
+        for (int i = 0; i < appGridAdapter.getCount(); i++) {
+            if (appGridAdapter.getItem(i) == app) {
+                final int pos = i;
+                appListView.setSelection(pos);
+                appListView.post(() -> {
+                    View child = appListView.getChildAt(pos - appListView.getFirstVisiblePosition());
+                    if (child != null) {
+                        openContextMenu(child);
+                    }
+                });
+                return;
             }
-        });
-        UiHelper.applyStatusBarPadding(listView);
-        registerForContextMenu(listView);
-        listView.requestFocus();
+        }
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
+        if (duoApps != null && duoApps.handleKey(event)) {
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
+    private com.limelight.duo.DuoAppsView.Host duoAppsHost() {
+        return new com.limelight.duo.DuoAppsView.Host() {
+            @Override
+            public java.util.List<com.limelight.duo.DuoAppsView.App> apps() {
+                java.util.List<com.limelight.duo.DuoAppsView.App> out = new java.util.ArrayList<>();
+                if (appGridAdapter == null) {
+                    return out;
+                }
+                for (int i = 0; i < appGridAdapter.getCount(); i++) {
+                    AppObject o = (AppObject) appGridAdapter.getItem(i);
+                    out.add(new com.limelight.duo.DuoAppsView.App(o, o.app.getAppId(), o.app.getAppName(), o.isRunning));
+                }
+                return out;
+            }
+
+            @Override
+            public ComputerDetails computer() {
+                return computer;
+            }
+
+            @Override
+            public void start(com.limelight.duo.DuoAppsView.App app) {
+                if (managerBinder == null || computer == null) {
+                    return;
+                }
+                startApp((AppObject) app.key, null);
+            }
+
+            @Override
+            public void options(com.limelight.duo.DuoAppsView.App app) {
+                openMenuFor((AppObject) app.key);
+            }
+
+            @Override
+            public void loadCover(com.limelight.duo.DuoAppsView.App app, ImageView into) {
+                if (appGridAdapter != null) {
+                    appGridAdapter.loadCover((AppObject) app.key, into);
+                }
+            }
+
+            @Override
+            public void profiles() {
+                startActivity(new Intent(AppView.this, ProfilesActivity.class));
+            }
+
+            @Override
+            public void settings() {
+                startActivity(new Intent(AppView.this, com.limelight.preferences.StreamSettings.class));
+            }
+
+            @Override
+            public void back() {
+                finish();
+            }
+        };
     }
 
     public static class AppObject {

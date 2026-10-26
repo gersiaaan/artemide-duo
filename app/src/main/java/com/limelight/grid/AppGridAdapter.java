@@ -168,6 +168,13 @@ public class AppGridAdapter extends GenericGridAdapter<AppView.AppObject> {
     }
 
     @Override
+    /** Box art for the Artemide Duo app list (same cache and loader as the grid). */
+    public void loadCover(AppView.AppObject obj, ImageView into) {
+        if (loader != null) {
+            loader.populateImageView(obj.app, into, new TextView(into.getContext()));
+        }
+    }
+
     public void populateView(View parentView, ImageView imgView, RelativeLayout gridMask, ProgressBar prgView, TextView txtView, ImageView overlayView, AppView.AppObject obj) {
         // Let the cached asset loader handle it
         loader.populateImageView(obj.app, imgView, txtView);

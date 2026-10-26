@@ -211,6 +211,12 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
         duoHome = new com.limelight.duo.DuoHomeView(this, duoHomeHost());
         addContentView(duoHome, new android.view.ViewGroup.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT));
+        // The old screen stays underneath (its menus are reused) but must not take focus.
+        android.view.ViewGroup duoRoot = findViewById(android.R.id.content);
+        if (duoRoot.getChildAt(0) instanceof android.view.ViewGroup) {
+            ((android.view.ViewGroup) duoRoot.getChildAt(0)).setDescendantFocusability(android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+            duoRoot.getChildAt(0).setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        }
         pushComputersToHome();
     }
 
