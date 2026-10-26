@@ -234,7 +234,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams b2 = new LinearLayout.LayoutParams(-2, -1);
         b2.leftMargin = dp(8);
         bottom.addView(button("Settings", "Y", false, v -> host.settings()), b2);
-        optionsButton = button("Options", "X", false, v -> {
+        // Options: the Menu button (≡, right of the Xbox button).
+        optionsButton = button("Options", "≡", false, v -> {
             App a = selectedApp();
             if (a != null) {
                 host.options(a);
@@ -736,9 +737,10 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             case "A": c = 0xFF6FCF7F; break;
             case "B": c = 0xFFE0645A; break;
             case "X": c = 0xFF5A9BE0; break;
+            case "≡": c = 0xFF3A434A; break;
             default: c = 0xFFE8C15A; break;
         }
-        TextView g = text(letter, 9.5f, Color.BLACK, true);
+        TextView g = text(letter, 9.5f, "≡".equals(letter) ? Color.WHITE : Color.BLACK, true);
         g.setGravity(Gravity.CENTER);
         GradientDrawable circle = new GradientDrawable();
         circle.setShape(GradientDrawable.OVAL);
@@ -927,7 +929,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         }
         int k = e.getKeyCode();
         boolean ours = k == KeyEvent.KEYCODE_BUTTON_L1 || k == KeyEvent.KEYCODE_BUTTON_R1 || k == KeyEvent.KEYCODE_BUTTON_X
-                || k == KeyEvent.KEYCODE_BUTTON_Y || k == KeyEvent.KEYCODE_BUTTON_B || k == KeyEvent.KEYCODE_BUTTON_A;
+                || k == KeyEvent.KEYCODE_BUTTON_START || k == KeyEvent.KEYCODE_BUTTON_Y || k == KeyEvent.KEYCODE_BUTTON_B || k == KeyEvent.KEYCODE_BUTTON_A;
         if (!ours) {
             return false;
         }
@@ -944,7 +946,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             case KeyEvent.KEYCODE_BUTTON_Y:
                 host.settings();
                 break;
-            case KeyEvent.KEYCODE_BUTTON_X:
+            case KeyEvent.KEYCODE_BUTTON_START:
                 optionsButton.performClick();
                 break;
             case KeyEvent.KEYCODE_BUTTON_B:
