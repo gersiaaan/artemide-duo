@@ -342,7 +342,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         phoneKeyboard.setSink(sink);
         phoneKeyboard.setAutocorrect(autocorrect);
         phoneKeyboard.setCompactBottomDp(14);
-        phoneKeyboard.setCompactRowsDp(58, 58);
+        phoneKeyboard.setCompactRowsDp(72, 72);
         phoneKeyboardArea = keyboardWithSuggestions(context, phoneKeyboard);
         FrameLayout.LayoutParams pl = new FrameLayout.LayoutParams(-1, -1, Gravity.CENTER_HORIZONTAL);
         int sideMargin = Math.round(context.getResources().getDisplayMetrics().widthPixels * 0.11f);
