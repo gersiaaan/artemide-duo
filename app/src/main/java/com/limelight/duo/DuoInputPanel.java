@@ -153,15 +153,16 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(VERTICAL);
 
-        root.addView(new DuoSuggestionBar(context, autocorrect), new LayoutParams(LayoutParams.MATCH_PARENT, dp(32)));
-
-        View line = new View(context);
-        line.setBackgroundColor(DuoColors.BORDER);
-        root.addView(line, new LayoutParams(LayoutParams.MATCH_PARENT, Math.max(1, Math.round(density))));
-
-        LayoutParams kp = new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f);
-        kp.topMargin = dp(6);
-        root.addView(keyboard, kp);
+        // The keyboard view fills the area (free space is trackpad); the suggestion bar
+        // floats directly above the keys, wherever the keyboard places them.
+        FrameLayout area = new FrameLayout(context);
+        root.addView(area, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f));
+        area.addView(keyboard, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        final DuoSuggestionBar suggestions = new DuoSuggestionBar(context, autocorrect);
+        area.addView(suggestions, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, dp(32), Gravity.TOP));
+        keyboard.setKeysListener(top -> suggestions.setTranslationY(Math.max(0, top - dp(35))));
 
         LinearLayout clicks = new LinearLayout(context);
         clicks.setOrientation(HORIZONTAL);

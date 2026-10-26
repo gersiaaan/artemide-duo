@@ -6,6 +6,7 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.view.HapticFeedbackConstants;
+import android.view.View;
 
 import com.limelight.nvstream.input.MouseButtonPacket;
 
@@ -61,6 +62,9 @@ public class DuoKeyboardView extends DuoTouchSurface {
         /** Empty space (no key, part of the trackpad). */
         boolean spacer;
         Key space() { spacer = true; return this; }
+        /** Only reacts to a long press (Caps Lock, so it can't be hit by accident). */
+        boolean holdOnly;
+        Key holdOnly() { holdOnly = true; return this; }
 
         boolean isLetter() {
             return label.length() == 1 && Character.isLetter(label.charAt(0));
@@ -182,31 +186,31 @@ public class DuoKeyboardView extends DuoTouchSurface {
         top[0].alt("@");
         top[2].alt("€");
         addRow(false, concat(
-                k("Tab", VK_TAB, 2f).quiet(),
+                k("Tab", VK_TAB, 2.5f).quiet(),
                 top,
-                k("+", VK_OEM_6, 1.5f).shift("*").alt("~").quiet(),
-                k("#", VK_OEM_5, 1.5f).shift("'").quiet()));
+                k("+", VK_OEM_6, 1.25f).shift("*").alt("~").quiet(),
+                k("#", VK_OEM_5, 1.25f).shift("'").quiet()));
 
         top[6].hold("ü", VK_OEM_4);
         top[8].hold("ö", VK_OEM_1);
         Key[] home = letters("asdfghjkl", "asdfghjkl");
         home[0].hold("ä", VK_OEM_7);
         addRow(false, concat(
-                // No Caps Lock (tap Shift twice instead); keeps the Gboard stagger.
-                k("", 0, 2.5f).space(),
+                // Caps Lock only on long press (tap Shift twice for local caps).
+                k("⇪", VK_CAPITAL, 3f).quiet().holdOnly(),
                 home,
-                k("↵", VK_RETURN, 3.5f)));
+                k("↵", VK_RETURN, 3f)));
 
         Key[] bottom = letters("yxcvbnm", "zxcvbnm");
         bottom[6].alt("µ");
         addRow(false, concat(
-                k("⇧", VK_LSHIFT, 2.5f).mod(),
+                k("⇧", VK_LSHIFT, 3f).mod(),
                 k("<", VK_OEM_102).shift(">").alt("|").quiet(),
                 bottom,
                 k(",", VK_OEM_COMMA).shift(";"),
                 k(".", VK_OEM_PERIOD).shift(":"),
                 k("-", VK_OEM_2).shift("_"),
-                k("⇧", VK_LSHIFT, 1.5f).mod()));
+                k("⇧", VK_LSHIFT, 1f).mod()));
 
         addRow(false,
                 k("Alt", VK_LMENU, 1.3f).mod().quiet(),
@@ -226,21 +230,74 @@ public class DuoKeyboardView extends DuoTouchSurface {
         layoutKeys(w, h);
     }
 
+    /** Room above the keys for the suggestion bar, which floats right on top of them. */
+    private static final float SUGGESTION_DP = 35f;
+    /** Letter rows sit this far below the centre of the panel's screen. */
+    private static final float CENTER_OFFSET_DP = 20f;
+
+    public interface KeysListener {
+        /** Top edge of the key area, in this view's coordinates. */
+        void onKeysTop(float top);
+    }
+
+    private KeysListener keysListener;
+    private float keysTop, keysBottom;
+
+    public void setKeysListener(KeysListener l) {
+        keysListener = l;
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        // Position depends on where this view sits on the screen.
+        post(() -> {
+            layoutKeys(getWidth(), getHeight());
+            invalidate();
+        });
+    }
+
+    /** Vertical centre of the panel (= the screen the keyboard is on), in this view's coordinates. */
+    private float panelCenterY() {
+        View panel = this;
+        while (panel.getParent() instanceof View && !(panel instanceof DuoInputPanel)) {
+            panel = (View) panel.getParent();
+        }
+        int[] me = new int[2];
+        int[] p = new int[2];
+        getLocationInWindow(me);
+        panel.getLocationInWindow(p);
+        return p[1] + panel.getHeight() / 2f - me[1];
+    }
+
     private void layoutKeys(int width, int height) {
-        float gap = 5 * density;
+        if (width == 0 || height == 0) {
+            return;
+        }
+        float hgap = 5 * density;
+        float vgap = 4 * density;
         float wanted = 0;
         for (Boolean fn : fnRow) {
             wanted += (fn ? FN_ROW_DP : ROW_DP) * density;
         }
-        float available = height - hintHeight - gap * (rows.size() - 1);
+        float minTop = SUGGESTION_DP * density;
+        float available = height - minTop - hintHeight - vgap * (rows.size() - 1);
         float scale = Math.min(1f, available / wanted);
-        float total = wanted * scale + gap * (rows.size() - 1);
-        // Keys anchored at the bottom; any space above stays free (still trackpad).
-        float y = height - hintHeight - total;
+        float total = wanted * scale + vgap * (rows.size() - 1);
+        float fnH = FN_ROW_DP * density * scale;
+        float rowH = ROW_DP * density * scale;
 
+        // Put the three letter rows (rows 2..4) around the middle of the screen.
+        float lettersH = 3 * rowH + 2 * vgap;
+        float aboveLetters = fnH + vgap + rowH + vgap;
+        float target = panelCenterY() + CENTER_OFFSET_DP * density;
+        float y = target - lettersH / 2f - aboveLetters;
+        y = Math.max(minTop, Math.min(y, height - hintHeight - total));
+
+        keysTop = y;
         for (int ri = 0; ri < rows.size(); ri++) {
             List<Key> row = rows.get(ri);
-            float h = (fnRow.get(ri) ? FN_ROW_DP : ROW_DP) * density * scale;
+            float h = fnRow.get(ri) ? fnH : rowH;
             float units = 0;
             int visible = 0;
             for (Key key : row) {
@@ -249,7 +306,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
                     visible++;
                 }
             }
-            float unitW = (width - gap * (visible - 1)) / units;
+            float unitW = (width - hgap * (visible - 1)) / units;
             float x = 0;
             float prevX = 0, prevW = 0;
             float half = (h - 3 * density) / 2f;
@@ -267,11 +324,15 @@ public class DuoKeyboardView extends DuoTouchSurface {
                 }
                 prevX = x;
                 prevW = kw;
-                x += kw + gap;
+                x += kw + hgap;
             }
-            y += h + gap;
+            y += h + vgap;
         }
-        letterTextSize = Math.min(ROW_DP * density * scale * 0.36f, 20 * density);
+        keysBottom = y - vgap;
+        letterTextSize = Math.min(rowH * 0.36f, 20 * density);
+        if (keysListener != null) {
+            keysListener.onKeysTop(keysTop);
+        }
     }
 
     // ---------------- drawing ----------------
@@ -350,8 +411,11 @@ public class DuoKeyboardView extends DuoTouchSurface {
             }
         }
 
-        canvas.drawText("Tippen = Taste · Wischen = Maus · 2 Finger: Klick / Scrollen · 3 Finger: Rechtsklick / Ziehen · a o u halten = ä ö ü",
-                getWidth() / 2f, getHeight() - 5 * density, hintPaint);
+        canvas.drawText("Wischen = Maus · 2 Finger: Klick / Scrollen · 3 Finger: Rechtsklick / Ziehen · a o u halten = ä ö ü · ⇪ halten = Caps",
+                getWidth() / 2f, keysBottom + 14 * density, hintPaint);
+        // Hairline between the suggestion bar and the keys.
+        borderPaint.setColor(DuoColors.BORDER);
+        canvas.drawLine(0, keysTop - 3 * density, getWidth(), keysTop - 3 * density, borderPaint);
 
         // Long-press popup above the key (Gboard style).
         if (held != null) {
@@ -434,6 +498,13 @@ public class DuoKeyboardView extends DuoTouchSurface {
     @Override
     protected boolean onLongPress(float x, float y, boolean alreadyTyped) {
         Key key = keyAtTouch(x, y);
+        if (key != null && key.holdOnly) {
+            DuoKeys.sendComboNow(sink, key.vk);
+            if (autocorrect != null) {
+                autocorrect.onBoundary();
+            }
+            return true;   // HELD; release does nothing (held stays null)
+        }
         if (key == null || key.longLabel == null) {
             return false;
         }
@@ -508,6 +579,9 @@ public class DuoKeyboardView extends DuoTouchSurface {
     protected void onTap(float x, float y) {
         Key key = keyAtTouch(x, y);
         if (key == null) {
+            return;
+        }
+        if (key.holdOnly) {
             return;
         }
         lastTypeTime = android.os.SystemClock.uptimeMillis();
