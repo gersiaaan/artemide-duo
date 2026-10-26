@@ -697,8 +697,10 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         b.setBackground(s);
         if (glyph != null) {
             View g = glyph(glyph);
-            LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(dp(17), dp(17));
-            gp.rightMargin = dp(8);
+            // 3 dp of glow around the 17 dp button.
+            LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(dp(23), dp(23));
+            gp.leftMargin = -dp(3);
+            gp.rightMargin = dp(5);
             b.addView(g, gp);
         }
         TextView t = text(label, 13, primaryStyle ? DuoTheme.onAccent(DuoTheme.focus(accent)) : DuoTheme.TEXT, primaryStyle);
@@ -723,7 +725,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         GradientDrawable circle = new GradientDrawable();
         circle.setShape(GradientDrawable.OVAL);
         circle.setColor(c);
-        g.setBackground(circle);
+        g.setBackground(DuoTheme.padButton(c, d));
         glyphs.add(g);
         return g;
     }

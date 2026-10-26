@@ -676,8 +676,10 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         b.setBackground(focusable(bg, primaryStyle ? 0 : DuoTheme.LINE, 10));
         if (glyph != null) {
             View g = glyph(glyph);
-            LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(dp(17), dp(17));
-            gp.rightMargin = dp(8);
+            // 3 dp of glow around the 17 dp button.
+            LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(dp(23), dp(23));
+            gp.leftMargin = -dp(3);
+            gp.rightMargin = dp(5);
             b.addView(g, gp);
         }
         TextView t = text(label, primaryStyle ? 14 : 13, primaryStyle ? DuoTheme.onAccent(DuoTheme.focus(accent)) : DuoTheme.TEXT, primaryStyle);
@@ -701,7 +703,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         }
         TextView g = text(letter, 9.5f, Color.BLACK, true);
         g.setGravity(Gravity.CENTER);
-        g.setBackground(circle(c));
+        g.setBackground(DuoTheme.padButton(c, d));
         glyphs.add(g);
         return g;
     }

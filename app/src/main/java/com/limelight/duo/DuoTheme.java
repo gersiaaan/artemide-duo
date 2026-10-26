@@ -103,4 +103,23 @@ public final class DuoTheme {
     public static int focus(int accent) {
         return mix(0xFF000000, accent, 0.15f);
     }
+
+    /** Controller face button (A/B/X/Y): soft glow halo, glossy gradient, thin light rim. */
+    public static android.graphics.drawable.Drawable padButton(int color, float density) {
+        android.graphics.drawable.GradientDrawable halo = new android.graphics.drawable.GradientDrawable();
+        halo.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        halo.setGradientType(android.graphics.drawable.GradientDrawable.RADIAL_GRADIENT);
+        halo.setColors(new int[]{withAlpha(color, 0.55f), withAlpha(color, 0f)});
+        halo.setGradientRadius(11 * density);
+        android.graphics.drawable.GradientDrawable body = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{mix(0xFFFFFFFF, color, 0.35f), color, mix(0xFF000000, color, 0.15f)});
+        body.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        body.setStroke(Math.max(1, Math.round(density * 0.8f)), withAlpha(0xFFFFFFFF, 0.35f));
+        android.graphics.drawable.LayerDrawable l = new android.graphics.drawable.LayerDrawable(
+                new android.graphics.drawable.Drawable[]{halo, body});
+        int in = Math.round(3 * density);
+        l.setLayerInset(1, in, in, in, in);
+        return l;
+    }
 }
