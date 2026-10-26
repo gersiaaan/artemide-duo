@@ -22,10 +22,10 @@
         <!-- All customizations that are NOT specific to a particular API-level can go here. -->
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
-        <item name="android:statusBarColor">#1A1A1A</item>
-        <item name="android:navigationBarColor">#1A1A1A</item>
-        <item name="android:colorBackground">#1A1A1A</item>
-        <item name="android:windowBackground">#1A1A1A</item>
+        <item name="android:statusBarColor">#000000</item>
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="android:colorBackground">#000000</item>
+        <item name="android:windowBackground">#000000</item>
     </style>
 
     <style name="StreamBaseTheme" parent="AppBaseTheme">
