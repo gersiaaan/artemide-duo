@@ -4708,11 +4708,41 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         prefConfig.enableTouchSensitivity = !prefConfig.enableTouchSensitivity;
     }
 
+    private boolean duoClosing;
+
     public void disconnect() {
         if (prefConfig.smartClipboardSync) {
             getClipboard(-1);
         }
-        finish();
+        if (duoClosing) {
+            return;
+        }
+        duoClosing = true;
+        // Apple-style close: the stream shrinks into the centre with rounded corners and fades,
+        // then the host page settles in from slightly larger.
+        final View content = findViewById(android.R.id.content);
+        if (content == null) {
+            finish();
+            return;
+        }
+        final float d = getResources().getDisplayMetrics().density;
+        content.setOutlineProvider(new android.view.ViewOutlineProvider() {
+            @Override
+            public void getOutline(View v, android.graphics.Outline o) {
+                o.setRoundRect(0, 0, v.getWidth(), v.getHeight(), 28 * d);
+            }
+        });
+        content.setClipToOutline(true);
+        content.animate()
+                .scaleX(0.82f).scaleY(0.82f)
+                .alpha(0f)
+                .setDuration(340)
+                .setInterpolator(new android.view.animation.PathInterpolator(0.32f, 0.72f, 0f, 1f))
+                .withEndAction(() -> {
+                    finish();
+                    overridePendingTransition(R.anim.duo_host_in, 0);
+                })
+                .start();
     }
 
     public void quit() {
