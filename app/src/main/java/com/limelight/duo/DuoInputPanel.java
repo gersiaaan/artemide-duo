@@ -209,6 +209,9 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
     public void onSpeedChanged(int speed) {
         float gain = DuoBridge.gainFor(speed);
         keyboard.setSensitivity(gain);
+        if (phoneKeyboard != null) {
+            phoneKeyboard.setSensitivity(gain);
+        }
         pad.setSensitivity(gain);
         compactPad.setSensitivity(gain);
     }
@@ -257,6 +260,13 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
     // ---------- modes ----------
 
     private void onTab(int m) {
+        if (m == MODE_KEYBOARD && mode == MODE_KEYBOARD) {
+            // Tapping Keyboard again switches between the PC keyboard and the phone layout.
+            androidx.preference.PreferenceManager.getDefaultSharedPreferences(getContext()).edit()
+                    .putBoolean("duo_kb_phone", !phone).apply();
+            applyPhone();
+            return;
+        }
         if (m == MODE_COMPACT && mode == MODE_COMPACT) {
             // Tapping Kompakt again swaps trackpad and keyboard.
             swapped = !swapped;
@@ -274,6 +284,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
             styleTab(tabs[i], i == m);
         }
         tabs[MODE_COMPACT].setText(m == MODE_COMPACT ? "Compact ⇄" : "Compact");
+        tabs[MODE_KEYBOARD].setText(m == MODE_KEYBOARD ? "Keyboard ⇄" : "Keyboard");
         DuoBridge.setPanelMode(getContext(), m);
         autocorrect.onBoundary();
     }
@@ -322,7 +333,23 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
     private View buildKeyboardMode(Context context) {
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(VERTICAL);
-        root.addView(keyboardWithSuggestions(context, keyboard), new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f));
+        FrameLayout area = new FrameLayout(context);
+        root.addView(area, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f));
+        fullKeyboardArea = keyboardWithSuggestions(context, keyboard);
+        area.addView(fullKeyboardArea, new FrameLayout.LayoutParams(-1, -1));
+        // Phone layout: the compact keys, a bit narrower than the full keyboard, centred.
+        phoneKeyboard = new DuoKeyboardView(context, DuoKeyboardView.LAYOUT_COMPACT);
+        phoneKeyboard.setSink(sink);
+        phoneKeyboard.setAutocorrect(autocorrect);
+        phoneKeyboard.setCompactBottomDp(14);
+        phoneKeyboard.setCompactRowsDp(58, 58);
+        phoneKeyboardArea = keyboardWithSuggestions(context, phoneKeyboard);
+        FrameLayout.LayoutParams pl = new FrameLayout.LayoutParams(-1, -1, Gravity.CENTER_HORIZONTAL);
+        int sideMargin = Math.round(context.getResources().getDisplayMetrics().widthPixels * 0.11f);
+        pl.leftMargin = sideMargin;
+        pl.rightMargin = sideMargin;
+        area.addView(phoneKeyboardArea, pl);
+        applyPhone();
 
         LinearLayout clicks = new LinearLayout(context);
         clicks.setOrientation(HORIZONTAL);
@@ -330,6 +357,16 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         addWeighted(clicks, holdButton("Left click", MouseButtonPacket.BUTTON_LEFT), 1f, false);
         addWeighted(clicks, holdButton("Right click", MouseButtonPacket.BUTTON_RIGHT), 1f, true);
         return root;
+    }
+
+    private View fullKeyboardArea, phoneKeyboardArea;
+    private DuoKeyboardView phoneKeyboard;
+    private boolean phone;
+
+    private void applyPhone() {
+        phone = androidx.preference.PreferenceManager.getDefaultSharedPreferences(getContext()).getBoolean("duo_kb_phone", false);
+        fullKeyboardArea.setVisibility(phone ? GONE : VISIBLE);
+        phoneKeyboardArea.setVisibility(phone ? VISIBLE : GONE);
     }
 
     private View buildCompactMode(Context context) {

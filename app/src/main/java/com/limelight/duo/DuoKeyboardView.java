@@ -39,6 +39,21 @@ public class DuoKeyboardView extends DuoTouchSurface {
     private static final float COMPACT_SPACE_ROW_DP = 46f;
     /** Compact: keys end above the Links/Rechts buttons of the trackpad column (52 + 6). */
     private static final float COMPACT_BOTTOM_DP = 58f;
+    private float compactBottomDp = COMPACT_BOTTOM_DP;
+    private float compactRowDp = COMPACT_ROW_DP, compactSpaceDp = COMPACT_SPACE_ROW_DP;
+
+    /** Phone layout: same key height as the full keyboard. */
+    public void setCompactRowsDp(float rows, float space) {
+        compactRowDp = rows;
+        compactSpaceDp = space;
+        requestLayout();
+    }
+
+    /** Phone layout under the keyboard tab: keys end right above the click buttons. */
+    public void setCompactBottomDp(float dp) {
+        compactBottomDp = dp;
+        requestLayout();
+    }
     /** Room above the keys for the suggestion bar, which floats right on top of them. */
     private static final float SUGGESTION_DP = 35f;
     /** Full layout: free space between the hint line and the click buttons below. */
@@ -341,7 +356,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
             return FN_ROW_DP;
         }
         if (layout == LAYOUT_COMPACT && ri == rows.size() - 1) {
-            return COMPACT_SPACE_ROW_DP;
+            return compactSpaceDp;
         }
         return rowDp;
     }
@@ -358,8 +373,8 @@ public class DuoKeyboardView extends DuoTouchSurface {
         }
         float hgap = 5 * density;
         float vgap = (layout == LAYOUT_FULL ? 4 : 6) * density;
-        float rowDp = layout == LAYOUT_FULL ? ROW_DP : COMPACT_ROW_DP;
-        float bottomReserve = layout == LAYOUT_FULL ? hintHeight + BOTTOM_GAP_DP * density : COMPACT_BOTTOM_DP * density;
+        float rowDp = layout == LAYOUT_FULL ? ROW_DP : compactRowDp;
+        float bottomReserve = layout == LAYOUT_FULL ? hintHeight + BOTTOM_GAP_DP * density : compactBottomDp * density;
 
         float wanted = 0;
         for (int ri = 0; ri < rows.size(); ri++) {
