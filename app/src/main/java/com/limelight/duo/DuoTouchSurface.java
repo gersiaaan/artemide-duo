@@ -351,7 +351,7 @@ public abstract class DuoTouchSurface extends View {
                     break;
                 }
                 if (mode == Mode.MULTI && maxPointers == 2 && event.getPointerCount() == 2
-                        && Math.abs(span - startSpan) > slop * 2.5f
+                        && Math.abs(span - startSpan) > slop * 1.5f
                         && Math.abs(span - startSpan) > Math.hypot(dx, dy)) {
                     // Two fingers apart/together: zoom like a laptop trackpad (Ctrl + wheel).
                     mode = Mode.PINCH;
@@ -369,7 +369,9 @@ public abstract class DuoTouchSurface extends View {
                     // Trackpad: two fingers start scrolling after a short way (6dp).
                     // Keyboard keeps its larger slop so two thumbs typing don't scroll.
                     float start = maxPointers >= 3 || supportsRollover() ? slop : Math.min(slop, 6f * density);
-                    if (Math.hypot(dx, dy) > start) {
+                    // Fingers spreading/closing more than they move together: wait for the pinch.
+                    boolean pinching = maxPointers == 2 && Math.abs(span - startSpan) >= Math.hypot(dx, dy);
+                    if (Math.hypot(dx, dy) > start && !pinching) {
                         onPointerAction();
                         if (maxPointers >= 3) {
                             // Three-finger drag: hold the left button while moving.
