@@ -195,8 +195,8 @@ public final class DuoGamepadMouse {
             float mag = (float) Math.hypot(lx, ly);
             if (mag > DEAD) {
                 any = true;
-                // Slower overall: new 5 = old 1 (≈ 650 px/s full tilt); 1 ≈ 250 px/s, 10 ≈ 1150 px/s.
-                float pxPerTick = (1.2f + speed * 0.8f) * curve(mag);
+                // Full tilt: 1 ≈ 310 px/s, 5 ≈ 950 px/s, 10 ≈ 1750 px/s (= the old 5).
+                float pxPerTick = (1.22f + speed * 1.278f) * curve(mag);
                 accX += lx / mag * pxPerTick;
                 accY += ly / mag * pxPerTick;
                 int dx = (int) accX, dy = (int) accY;
