@@ -101,6 +101,6 @@ public final class DuoTheme {
 
     /** Focus / highlight colour: the accent a bit darker so it doesn't glare. */
     public static int focus(int accent) {
-        return mix(0xFF000000, accent, 0.28f);
+        return mix(0xFF000000, accent, 0.15f);
     }
 }

@@ -219,7 +219,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams bt = new LinearLayout.LayoutParams(-1, dp(36));
         bt.topMargin = dp(12);
         content.addView(bottom, bt);
-        bottom.addView(button("‹  Back", "B", false, v -> host.back()), new LinearLayout.LayoutParams(-2, -1));
+        bottomFirst = button("‹  Back", "B", false, v -> host.back());
+        bottom.addView(bottomFirst, new LinearLayout.LayoutParams(-2, -1));
         LinearLayout.LayoutParams b2 = new LinearLayout.LayoutParams(-2, -1);
         b2.leftMargin = dp(8);
         bottom.addView(button("Settings", "X", false, v -> host.settings()), b2);
@@ -849,8 +850,56 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         return DuoPadNav.onMotion(this, e, list.getChildCount() > 1 ? list.getChildAt(1) : playButton);
     }
 
+    private View bottomFirst;
+
+    /** Explicit jumps between the list, the detail buttons and the bottom row. */
+    private boolean jump(int key) {
+        View f = findFocus();
+        if (f == null) {
+            return false;
+        }
+        boolean inList = f.getParent() == list;
+        if (inList && key == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            return playButton.getVisibility() == VISIBLE && playButton.requestFocus();
+        }
+        if (inList && key == KeyEvent.KEYCODE_DPAD_DOWN && f == lastRow()) {
+            return bottomFirst != null && bottomFirst.requestFocus();
+        }
+        if ((f == playButton || f == quitButton || f == pinButton) && key == KeyEvent.KEYCODE_DPAD_LEFT
+                && f == playButton) {
+            View row = selectedRow();
+            return row != null && row.requestFocus();
+        }
+        if ((f == playButton || f == quitButton || f == pinButton) && key == KeyEvent.KEYCODE_DPAD_DOWN) {
+            return optionsButton.requestFocus();
+        }
+        return false;
+    }
+
+    private View lastRow() {
+        for (int i = list.getChildCount() - 1; i >= 0; i--) {
+            if (list.getChildAt(i).getTag() instanceof App) {
+                return list.getChildAt(i);
+            }
+        }
+        return null;
+    }
+
+    private View selectedRow() {
+        for (int i = 0; i < list.getChildCount(); i++) {
+            View v = list.getChildAt(i);
+            if (v.getTag() instanceof App && ((App) v.getTag()).id == selectedId) {
+                return v;
+            }
+        }
+        return null;
+    }
+
     /** Controller shortcuts; returns true if handled. */
     public boolean handleKey(KeyEvent e) {
+        if (e.getAction() == KeyEvent.ACTION_DOWN && jump(e.getKeyCode())) {
+            return true;
+        }
         if (DuoPadNav.onKey(this, e, list.getChildCount() > 1 ? list.getChildAt(1) : playButton)) {
             return true;
         }
