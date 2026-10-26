@@ -1173,8 +1173,24 @@
     <PreferenceCategory
         android:key="category_perf_monitor_settings"
         android:title="@string/category_perf_monitor_settings"
-        app:initialExpandedChildrenCount="1"
+        app:initialExpandedChildrenCount="3"
         app:iconSpaceReserved="false">
+        <ListPreference
+            android:key="duo_overlay_style"
+            android:title="Overlay style"
+            android:entries="@array/duo_overlay_style_names"
+            android:entryValues="@array/duo_overlay_style_values"
+            android:defaultValue="new"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+        <ListPreference
+            android:key="duo_overlay_opacity"
+            android:title="Overlay opacity (new style)"
+            android:entries="@array/duo_overlay_opacity_names"
+            android:entryValues="@array/duo_overlay_opacity_values"
+            android:defaultValue="55"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="checkbox_tv_compositor_workaround"

@@ -101,4 +101,26 @@
         <item>SELECT</item>
         <item>OFF</item>
     </string-array>
+    <string-array name="duo_overlay_style_names">
+        <item>New</item>
+        <item>Detailed</item>
+        <item>Classic</item>
+    </string-array>
+    <string-array name="duo_overlay_style_values" translatable="false">
+        <item>new</item>
+        <item>detailed</item>
+        <item>classic</item>
+    </string-array>
+    <string-array name="duo_overlay_opacity_names">
+        <item>40 %</item>
+        <item>55 %</item>
+        <item>70 %</item>
+        <item>85 %</item>
+    </string-array>
+    <string-array name="duo_overlay_opacity_values" translatable="false">
+        <item>40</item>
+        <item>55</item>
+        <item>70</item>
+        <item>85</item>
+    </string-array>
 </resources>

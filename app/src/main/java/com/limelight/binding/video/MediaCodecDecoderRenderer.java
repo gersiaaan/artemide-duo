@@ -2781,7 +2781,12 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
 
                                 // Notify overlay listener
                                 if (perfListener != null && prefsSnapshot.enablePerfOverlay) {
-                                    perfListener.onPerfUpdate(overlay.renderedLog);
+                                    // Artemide Duo: compact overlay unless "Classic" is chosen.
+                                    perfListener.onPerfUpdate(DuoPerfText.isNew(context)
+                                            ? DuoPerfText.build(context, lastTwoSnapshot, fpsSnapshot, decodeTimeMsSnapshot,
+                                                    rttInfoSnapshot, videoFormat, coldCfg.initialWidth, coldCfg.initialHeight,
+                                                    endToEndTimeMsSnapshot)
+                                            : overlay.renderedLog);
                                 }
 
                                 // Track best decode time at target FPS

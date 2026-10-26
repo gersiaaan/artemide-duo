@@ -324,7 +324,11 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                     }
                 } else {
                     if (performanceOverlayBig != null && performanceOverlayBig.getVisibility() == View.VISIBLE) {
-                        performanceOverlayBig.setText(text);
+                        if (duoNewOverlay) {
+                            performanceOverlayBig.setText(android.text.Html.fromHtml(text, android.text.Html.FROM_HTML_MODE_LEGACY));
+                        } else {
+                            performanceOverlayBig.setText(text);
+                        }
                     }
                 }
             } catch (Throwable ignored) { }
@@ -759,6 +763,15 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                     Toast.makeText(this, "HDR requires Android 7.0 or later", Toast.LENGTH_LONG).show();
                 }
             }
+        }
+
+        // Artemide Duo: compact overlay, top centre (Settings → Overlay → Overlay style).
+        duoNewOverlay = com.limelight.binding.video.DuoPerfText.isNew(this);
+        if (duoNewOverlay) {
+            prefConfig.enablePerfOverlayLite = false;
+            prefConfig.enablePerfOverlayMini = false;
+            prefConfig.enablePerfOverlayBottom = false;
+            styleDuoOverlay();
         }
 
         // Check if the user has enabled performance stats overlay
@@ -4633,6 +4646,38 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         // Always exit zoom mode if mouse mode has changed
         isPanZoomMode = false;
         updateZoomButtonAppearance();
+    }
+
+    private boolean duoNewOverlay;
+
+    private void styleDuoOverlay() {
+        float d = getResources().getDisplayMetrics().density;
+        float k = com.limelight.duo.DuoTheme.uiScale(this);
+        android.widget.FrameLayout.LayoutParams fl = (android.widget.FrameLayout.LayoutParams) performanceOverlayView.getLayoutParams();
+        fl.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        performanceOverlayView.setLayoutParams(fl);
+        android.widget.LinearLayout.LayoutParams lp = (android.widget.LinearLayout.LayoutParams) performanceOverlayBig.getLayoutParams();
+        lp.width = Math.round(255 * k * d);
+        lp.gravity = Gravity.CENTER_HORIZONTAL;
+        lp.leftMargin = 0;
+        lp.setMarginStart(0);
+        lp.topMargin = Math.round(10 * d);
+        performanceOverlayBig.setLayoutParams(lp);
+        performanceOverlayBig.setGravity(Gravity.START);
+        performanceOverlayBig.setTypeface(android.graphics.Typeface.MONOSPACE);
+        performanceOverlayBig.setTextSize(9.5f * k);
+        performanceOverlayBig.setLineSpacing(0, 1.15f);
+        performanceOverlayBig.setTextColor(0xFFF3F7F8);
+        performanceOverlayBig.setSingleLine(false);
+        performanceOverlayBig.setHorizontallyScrolling(false);
+        int p = Math.round(8 * d);
+        performanceOverlayBig.setPadding(Math.round(10 * d), p, Math.round(10 * d), p);
+        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+        bg.setCornerRadius(12 * d);
+        int a = Math.round(com.limelight.binding.video.DuoPerfText.opacity(this) * 255);
+        bg.setColor((a << 24) | 0x465866);
+        bg.setStroke(Math.max(1, Math.round(d)), 0x1AFFFFFF);
+        performanceOverlayBig.setBackground(bg);
     }
 
     public void toggleHUD() {
