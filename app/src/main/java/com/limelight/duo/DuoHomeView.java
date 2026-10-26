@@ -197,7 +197,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams bt = new LinearLayout.LayoutParams(-1, dp(36));
         bt.topMargin = dp(14);
         content.addView(bottom, bt);
-        View settings = button("Settings", "X", false, v -> host.settings());
+        View settings = button("Settings", "Y", false, v -> host.settings());
         bottom.addView(settings, new LinearLayout.LayoutParams(-2, -1));
         View exit = button("Exit", "B", false, v -> host.exit());
         LinearLayout.LayoutParams ep = new LinearLayout.LayoutParams(-2, -1);
@@ -562,7 +562,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams pa = new LinearLayout.LayoutParams(-2, dp(36));
         pa.topMargin = dp(12);
         lastPanel.addView(actions, pa);
-        playAgain = button("Play again", "Y", false, null);
+        playAgain = button("Play again", "X", false, null);
         actions.addView(playAgain, new LinearLayout.LayoutParams(-2, -1));
         quitRunning = button("Quit", null, false, null);
         LinearLayout.LayoutParams ql = new LinearLayout.LayoutParams(-2, -1);
@@ -816,10 +816,10 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             case KeyEvent.KEYCODE_BUTTON_R1:
                 cycle(1);
                 return true;
-            case KeyEvent.KEYCODE_BUTTON_X:
+            case KeyEvent.KEYCODE_BUTTON_Y:
                 host.settings();
                 return true;
-            case KeyEvent.KEYCODE_BUTTON_Y:
+            case KeyEvent.KEYCODE_BUTTON_X:
                 if (playAgain.getVisibility() == VISIBLE && playAgain.isEnabled()) {
                     playAgain.performClick();
                 }

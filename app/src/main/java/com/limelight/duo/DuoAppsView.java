@@ -223,11 +223,11 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         bottom.addView(bottomFirst, new LinearLayout.LayoutParams(-2, -1));
         LinearLayout.LayoutParams b2 = new LinearLayout.LayoutParams(-2, -1);
         b2.leftMargin = dp(8);
-        bottom.addView(button("Settings", "X", false, v -> host.settings()), b2);
+        bottom.addView(button("Settings", "Y", false, v -> host.settings()), b2);
         LinearLayout.LayoutParams b3 = new LinearLayout.LayoutParams(-2, -1);
         b3.leftMargin = dp(8);
         bottom.addView(button("Profiles", null, false, v -> host.profiles()), b3);
-        optionsButton = button("Options", "Y", false, v -> {
+        optionsButton = button("Options", "X", false, v -> {
             App a = selectedApp();
             if (a != null) {
                 host.options(a);
@@ -919,10 +919,10 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             case KeyEvent.KEYCODE_BUTTON_R1:
                 setTab((tab + 1) % 3);
                 break;
-            case KeyEvent.KEYCODE_BUTTON_X:
+            case KeyEvent.KEYCODE_BUTTON_Y:
                 host.settings();
                 break;
-            case KeyEvent.KEYCODE_BUTTON_Y:
+            case KeyEvent.KEYCODE_BUTTON_X:
                 optionsButton.performClick();
                 break;
             case KeyEvent.KEYCODE_BUTTON_B:
