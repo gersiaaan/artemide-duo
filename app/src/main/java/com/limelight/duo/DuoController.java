@@ -54,6 +54,18 @@ public class DuoController {
         return n.contains("desktop") || n.contains("virtual display") || n.contains("remote");
     }
 
+    /** Desktop / remote app: name, or what the user set under "Game settings & type". */
+    private static boolean isDesktopLaunch(Activity a) {
+        android.content.Intent in = a.getIntent();
+        String pc = in.getStringExtra(Game.EXTRA_PC_UUID);
+        int id = in.getIntExtra(Game.EXTRA_APP_ID, 0);
+        String type = pc == null ? null : DuoGameSettings.typeOverride(a, pc, id);
+        if (type != null) {
+            return "app".equals(type);
+        }
+        return isDesktopApp(in.getStringExtra(Game.EXTRA_APP_NAME));
+    }
+
     private final Activity activity;
     private final FrameLayout root;
     private final View stream;
@@ -86,10 +98,11 @@ public class DuoController {
         String buttonMode = androidx.preference.PreferenceManager.getDefaultSharedPreferences(activity)
                 .getString(DuoBridge.KEY_STREAM_BUTTON, "desktop");
         this.desktopApp = "all".equals(buttonMode)
-                || (!"off".equals(buttonMode) && isDesktopApp(activity.getIntent().getStringExtra(Game.EXTRA_APP_NAME)));
+                || (!"off".equals(buttonMode) && isDesktopLaunch(activity));
         float density = activity.getResources().getDisplayMetrics().density;
 
         DuoBridge.setSink(sink);
+        DuoGamepadMouse.init(activity, desktopApp, sink);
         DuoBridge.setPanelListener(() -> root.post(this::updateToggleButton));
 
         panel = new DuoInputPanel(activity, sink, null);
@@ -166,6 +179,7 @@ public class DuoController {
         DuoBridge.resetFocus();
         DuoBridge.closePanel();
         DuoBridge.setSink(null);
+        DuoGamepadMouse.end();
     }
 
     /** The stream button is hidden while split or while the panel is open on the other screen. */
@@ -174,7 +188,7 @@ public class DuoController {
         toggleButton.setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
-    /** Trackpad speed dialog for the stream menu (1..10, shared with the settings). */
+    /** Speed dialog for the stream menu: trackpad and gamepad cursor (desktop mode), 1..10. */
     public static void showSpeedDialog(Activity activity) {
         float density = activity.getResources().getDisplayMetrics().density;
         int pad = Math.round(20 * density);
@@ -184,27 +198,60 @@ public class DuoController {
                 new android.view.ContextThemeWrapper(activity, activity.getApplicationInfo().theme);
 
         LinearLayout box = new LinearLayout(themed);
-        box.setOrientation(LinearLayout.HORIZONTAL);
-        box.setGravity(Gravity.CENTER_VERTICAL);
-        box.setPadding(pad, pad, pad, Math.round(8 * density));
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(pad, Math.round(8 * density), pad, Math.round(8 * density));
 
+        speedRow(themed, box, "Trackpad", null, DuoBridge.getSpeed(activity),
+                sp -> DuoBridge.setSpeed(activity, sp), density);
+        speedRow(themed, box, "Gamepad cursor",
+                "Desktop mode (D): small stick movement = fine, fully pushed = fast",
+                DuoGamepadMouse.getSpeed(activity), sp -> DuoGamepadMouse.setSpeed(activity, sp), density);
+
+        AlertDialog dialog = new AlertDialog.Builder(themed)
+                .setTitle("Speed")
+                .setView(box)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+        DuoDialogs.style(dialog);
+    }
+
+    private interface IntSink {
+        void set(int v);
+    }
+
+    private static void speedRow(android.content.Context themed, LinearLayout box, String title, String hint,
+                                 int speed, IntSink onChange, float density) {
+        TextView t = new TextView(themed);
+        t.setText(title);
+        t.setTextSize(14);
+        t.setTypeface(DuoFonts.semibold());
+        LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(-1, -2);
+        tp.topMargin = Math.round((box.getChildCount() == 0 ? 6 : 18) * density);
+        box.addView(t, tp);
+        if (hint != null) {
+            TextView h = new TextView(themed);
+            h.setText(hint);
+            h.setTextSize(11.5f);
+            h.setAlpha(0.6f);
+            box.addView(h);
+        }
+        LinearLayout row = new LinearLayout(themed);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
         final TextView value = new TextView(themed);
         value.setTextSize(16);
         value.setGravity(Gravity.END);
-
         SeekBar seek = new SeekBar(themed);
         DuoDialogs.styleSlider(seek);
         seek.setMax(9);
-        int speed = DuoBridge.getSpeed(activity);
         seek.setProgress(speed - 1);
         value.setText(String.valueOf(speed));
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar s, int progress, boolean fromUser) {
-                int sp = progress + 1;
-                value.setText(String.valueOf(sp));
+                value.setText(String.valueOf(progress + 1));
                 if (fromUser) {
-                    DuoBridge.setSpeed(activity, sp);
+                    onChange.set(progress + 1);
                 }
             }
 
@@ -214,15 +261,11 @@ public class DuoController {
             @Override
             public void onStopTrackingTouch(SeekBar s) {}
         });
-        box.addView(seek, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        box.addView(value, new LinearLayout.LayoutParams(Math.round(32 * density), ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        AlertDialog dialog = new AlertDialog.Builder(themed)
-                .setTitle("Trackpad speed")
-                .setView(box)
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
-        DuoDialogs.style(dialog);
+        row.addView(seek, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        row.addView(value, new LinearLayout.LayoutParams(Math.round(32 * density), ViewGroup.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
+        rp.topMargin = Math.round(6 * density);
+        box.addView(row, rp);
     }
 
     /** The stream is connected: desktop apps get the panel on the other screen right away. */

@@ -2418,6 +2418,10 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         if ((event.getFlags() & KeyEvent.FLAG_VIRTUAL_HARD_KEY) != 0) {
             return false;
         }
+        // Duo desktop mode: face buttons drive the mouse / Win / Alt+Tab.
+        if (com.limelight.duo.DuoGamepadMouse.onKey(event)) {
+            return true;
+        }
 
         int deviceId = event.getDeviceId();
         if (prefConfig.ignoreSynthEvents && deviceId <= 0) {
@@ -2508,6 +2512,10 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         // Pass-through virtual navigation keys
         if ((event.getFlags() & KeyEvent.FLAG_VIRTUAL_HARD_KEY) != 0) {
             return false;
+        }
+        // Duo desktop mode: face buttons drive the mouse / Win / Alt+Tab.
+        if (com.limelight.duo.DuoGamepadMouse.onKey(event)) {
+            return true;
         }
 
         int deviceId = event.getDeviceId();
@@ -3163,6 +3171,9 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         int eventSource = event.getSource();
         int deviceSources = event.getDevice() != null ? event.getDevice().getSources() : 0;
         if ((eventSource & InputDevice.SOURCE_CLASS_JOYSTICK) != 0) {
+            if (com.limelight.duo.DuoGamepadMouse.onMotion(event)) {
+                return true;
+            }
             if (controllerHandler.handleMotionEvent(event)) {
                 return true;
             }

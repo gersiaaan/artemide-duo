@@ -85,6 +85,8 @@ public class DuoPanelActivity extends Activity {
             return;
         }
         finishing = true;
+        // Tell the stream right away (not after the slide-out), so its keyboard button comes back.
+        DuoBridge.clearPanelActivity(this);
         if (!restoreOnFinish) {
             DuoPreviousApp.forget();
         }

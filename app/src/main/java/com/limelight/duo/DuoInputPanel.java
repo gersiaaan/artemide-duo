@@ -128,6 +128,33 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         });
         addBarView(bar, perf, dp(44), true);
 
+        // Controller mode for desktop / remote streams: G = gamepad, D = desktop (mouse).
+        if (DuoGamepadMouse.available()) {
+            FrameLayout pad = new FrameLayout(context);
+            ImageButton padIcon = iconButton(context.getDrawable(R.drawable.ic_duo_gamepad), "Controller: gamepad or desktop");
+            pad.addView(padIcon, new FrameLayout.LayoutParams(-1, -1));
+            final TextView padLetter = new TextView(context);
+            padLetter.setTextSize(9);
+            padLetter.setTypeface(DuoFonts.bold());
+            FrameLayout.LayoutParams ll = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.END);
+            ll.rightMargin = dp(4);
+            ll.bottomMargin = dp(2);
+            pad.addView(padLetter, ll);
+            final Runnable paint = () -> {
+                boolean d = DuoGamepadMouse.isDesktop();
+                padLetter.setText(d ? "D" : "G");
+                padLetter.setTextColor(d ? DuoColors.HI_TEXT : DuoColors.MUTED);
+                padIcon.setBackground(d ? outlined(DuoColors.SURFACE, DuoColors.HI_TEXT, 10) : pressable(DuoColors.SURFACE, 10));
+            };
+            padIcon.setOnClickListener(v -> {
+                v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+                DuoGamepadMouse.toggle(getContext());
+                paint.run();
+            });
+            paint.run();
+            addBarView(bar, pad, dp(44), true);
+        }
+
         // Clock and battery of the Duo, centred between the buttons and the tabs.
         DuoStatusView status = new DuoStatusView(context);
         status.setGravity(Gravity.CENTER);
@@ -189,6 +216,9 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         applySwap();
         int saved = DuoBridge.getPanelMode(context);
         showMode(saved >= 0 && saved <= 2 ? saved : MODE_KEYBOARD);
+        // Touch only: the controller stays in the stream and never selects panel buttons.
+        setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
+        setFocusable(false);
     }
 
     @Override

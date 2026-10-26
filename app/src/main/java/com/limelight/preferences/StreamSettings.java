@@ -137,16 +137,7 @@ public class StreamSettings extends AppCompatActivity {
 
         android.widget.LinearLayout header = new android.widget.LinearLayout(this);
         header.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        header.setPadding(Math.round(12 * d), Math.round(14 * d), Math.round(16 * d), 0);
-        android.widget.TextView back = new android.widget.TextView(this);
-        back.setText("‹");
-        back.setTextSize(26);
-        back.setTextColor(com.limelight.duo.DuoTheme.TEXT);
-        back.setGravity(android.view.Gravity.CENTER);
-        back.setFocusable(true);
-        back.setContentDescription("Back");
-        back.setOnClickListener(v -> onBackPressed());
-        header.addView(back, new android.widget.LinearLayout.LayoutParams(Math.round(36 * d), Math.round(36 * d)));
+        header.setPadding(Math.round(20 * d), Math.round(14 * d), Math.round(16 * d), 0);
         android.widget.TextView title = new android.widget.TextView(this);
         title.setText("Settings");
         title.setTextSize(18);
@@ -177,8 +168,91 @@ public class StreamSettings extends AppCompatActivity {
             tabs.addView(tv, lp);
             duoTabViews[i] = tv;
         }
-        column.addView(duoTabScroll, 1);
+        // LB / RB hints around the tabs (only while a controller is connected).
+        android.widget.LinearLayout tabRow = new android.widget.LinearLayout(this);
+        tabRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        tabRow.setPadding(Math.round(12 * d), 0, Math.round(12 * d), 0);
+        android.view.View lb = duoKeyPill("LB", d);
+        android.view.View rb = duoKeyPill("RB", d);
+        tabRow.addView(lb);
+        tabRow.addView(duoTabScroll, new android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        tabRow.addView(rb);
+        column.addView(tabRow, 1);
         styleDuoTabs();
+
+        // Bottom bar: Back (B).
+        android.widget.LinearLayout bottom = new android.widget.LinearLayout(this);
+        bottom.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        bottom.setPadding(Math.round(20 * d), Math.round(8 * d), Math.round(20 * d), Math.round(12 * d));
+        android.widget.LinearLayout backBtn = new android.widget.LinearLayout(this);
+        backBtn.setGravity(android.view.Gravity.CENTER);
+        backBtn.setPadding(Math.round(16 * d), 0, Math.round(18 * d), 0);
+        android.graphics.drawable.GradientDrawable bbg = new android.graphics.drawable.GradientDrawable();
+        bbg.setCornerRadius(10 * d);
+        bbg.setColor(0x17FFFFFF);
+        bbg.setStroke(Math.max(1, Math.round(d)), 0x29FFFFFF);
+        backBtn.setBackground(bbg);
+        android.widget.TextView bGlyph = new android.widget.TextView(this);
+        bGlyph.setText("B");
+        bGlyph.setTextSize(9.5f);
+        bGlyph.setTextColor(0xFF000000);
+        bGlyph.setTypeface(com.limelight.duo.DuoFonts.bold());
+        bGlyph.setGravity(android.view.Gravity.CENTER);
+        bGlyph.setBackground(com.limelight.duo.DuoTheme.padButton(0xFFE0645A, d));
+        android.widget.LinearLayout.LayoutParams gp = new android.widget.LinearLayout.LayoutParams(Math.round(23 * d), Math.round(23 * d));
+        gp.leftMargin = -Math.round(3 * d);
+        gp.rightMargin = Math.round(5 * d);
+        backBtn.addView(bGlyph, gp);
+        duoPadGlyphs.add(bGlyph);
+        android.widget.TextView bText = new android.widget.TextView(this);
+        bText.setText("‹  Back");
+        bText.setTextSize(13);
+        bText.setTextColor(com.limelight.duo.DuoTheme.TEXT);
+        bText.setTypeface(com.limelight.duo.DuoFonts.medium());
+        backBtn.addView(bText);
+        backBtn.setFocusable(false);
+        backBtn.setClickable(true);
+        backBtn.setOnClickListener(v -> onBackPressed());
+        bottom.addView(backBtn, new android.widget.LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Math.round(36 * d)));
+        column.addView(bottom);
+        duoUpdatePadGlyphs();
+    }
+
+    private final java.util.List<android.view.View> duoPadGlyphs = new java.util.ArrayList<>();
+
+    private android.view.View duoKeyPill(String label, float d) {
+        android.widget.TextView t = new android.widget.TextView(this);
+        t.setText(label);
+        t.setTextSize(9);
+        t.setTextColor(com.limelight.duo.DuoTheme.TEXT);
+        t.setTypeface(com.limelight.duo.DuoFonts.bold());
+        t.setGravity(android.view.Gravity.CENTER);
+        t.setMinWidth(Math.round(26 * d));
+        t.setPadding(Math.round(5 * d), Math.round(2 * d), Math.round(5 * d), Math.round(2 * d));
+        android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable();
+        g.setCornerRadius(5 * d);
+        g.setColor(com.limelight.duo.DuoTheme.CARD_HIGH);
+        g.setStroke(Math.max(1, Math.round(d)), com.limelight.duo.DuoTheme.LINE);
+        t.setBackground(g);
+        t.setFocusable(false);
+        duoPadGlyphs.add(t);
+        return t;
+    }
+
+    /** Controller hints only while a gamepad is connected. */
+    private void duoUpdatePadGlyphs() {
+        boolean pad = com.limelight.duo.DuoPadNav.hasGamepad();
+        for (android.view.View v : duoPadGlyphs) {
+            v.setVisibility(pad ? android.view.View.VISIBLE : android.view.View.GONE);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!duoPadGlyphs.isEmpty()) {
+            duoUpdatePadGlyphs();
+        }
     }
 
     private void styleDuoTabs() {
@@ -226,6 +300,10 @@ public class StreamSettings extends AppCompatActivity {
     @Override
     public boolean dispatchKeyEvent(android.view.KeyEvent event) {
         int k = event.getKeyCode();
+        if (!duoPadGlyphs.isEmpty() && duoPadGlyphs.get(0).getVisibility() != android.view.View.VISIBLE
+                && android.view.KeyEvent.isGamepadButton(k)) {
+            duoUpdatePadGlyphs();
+        }
         android.view.ViewGroup duoRoot = findViewById(R.id.duo_settings_root);
         if (duoRoot != null && com.limelight.duo.DuoPadNav.onKey(duoRoot, event, duoTabViews[duoTab])) {
             return true;

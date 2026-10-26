@@ -44,6 +44,13 @@ public final class DuoPlayStats {
         String p = pcUuid + "|";
         String a = p + appId + "|";
         SharedPreferences s = prefs(c);
+        // A resume without a known name ("app") keeps the name we already have.
+        if (name == null || name.isEmpty() || "app".equals(name)) {
+            String known = s.getString(a + "name", null);
+            if (known != null) {
+                name = known;
+            }
+        }
         s.edit()
                 .putInt(p + "last.id", appId)
                 .putString(p + "last.name", name)

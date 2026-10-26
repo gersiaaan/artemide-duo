@@ -16,6 +16,7 @@ public final class DuoPadNav {
     private DuoPadNav() {}
 
     private static int lastHatDir;
+    private static java.lang.ref.WeakReference<View> lastFocus;
     private static long lastStickMove;
     private static final long STICK_REPEAT_MS = 220;
 
@@ -68,8 +69,13 @@ public final class DuoPadNav {
     private static void move(ViewGroup root, int dir, View fallback) {
         View f = root.findFocus();
         if (f == null) {
-            if (fallback != null) {
-                fallback.requestFocusFromTouch();
+            // Back from touch: continue on the button the controller was on last.
+            View last = lastFocus == null ? null : lastFocus.get();
+            View target = last != null && last.isAttachedToWindow() && last.isShown() && isInside(root, last)
+                    ? last : fallback;
+            if (target != null) {
+                target.requestFocusFromTouch();
+                lastFocus = new java.lang.ref.WeakReference<>(target);
             }
             return;
         }
@@ -78,12 +84,29 @@ public final class DuoPadNav {
         // Stay inside the Duo screen: never hand focus to the hidden grid behind it.
         if (next != null && isInside(root, next)) {
             next.requestFocus(dir);
+            lastFocus = new java.lang.ref.WeakReference<>(next);
         }
     }
 
     private static boolean isInside(ViewGroup root, View v) {
         for (android.view.ViewParent p = v.getParent(); p != null; p = p.getParent()) {
             if (p == root) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** A real gamepad / joystick is connected. */
+    public static boolean hasGamepad() {
+        for (int id : InputDevice.getDeviceIds()) {
+            InputDevice dev = InputDevice.getDevice(id);
+            if (dev == null || dev.isVirtual()) {
+                continue;
+            }
+            int s = dev.getSources();
+            if ((s & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD
+                    || (s & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
                 return true;
             }
         }

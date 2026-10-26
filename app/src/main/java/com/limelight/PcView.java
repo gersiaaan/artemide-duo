@@ -225,6 +225,13 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
         if (duoRoot.getChildAt(0) instanceof android.view.ViewGroup) {
             ((android.view.ViewGroup) duoRoot.getChildAt(0)).setDescendantFocusability(android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS);
             duoRoot.getChildAt(0).setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+            // The old screen must never take focus (Android tints a focused plain view grey).
+            duoRoot.getChildAt(0).setFocusable(false);
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                duoRoot.getChildAt(0).setDefaultFocusHighlightEnabled(false);
+                duoHome.setDefaultFocusHighlightEnabled(false);
+            }
+            duoHome.setFocusable(false);
         }
         pushComputersToHome();
     }
@@ -320,7 +327,12 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
                     return;
                 }
                 com.limelight.duo.DuoGameSettings.applyForLaunch(PcView.this, c.uuid, c.runningGameId);
-                ServerHelper.doStart(PcView.this, new NvApp("app", null, c.runningGameId, false), c, managerBinder, false);
+                // Use the real app name, so play stats and the desktop panel know what runs.
+                com.limelight.duo.DuoPlayStats.Last last = com.limelight.duo.DuoPlayStats.last(PcView.this, c.uuid);
+                NvApp app = last != null && last.appId == c.runningGameId
+                        ? new NvApp(last.name, last.appUuid, last.appId, last.hdr)
+                        : new NvApp("app", null, c.runningGameId, false);
+                ServerHelper.doStart(PcView.this, app, c, managerBinder, false);
             }
 
             @Override

@@ -179,7 +179,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             tv.setLetterSpacing(0.15f);
             tv.setGravity(Gravity.CENTER);
             tv.setPadding(dp(6), 0, dp(6), 0);
-            tv.setFocusable(true);
+            // Tabs switch with LB/RB (or touch); the stick never lands on them.
+            tv.setFocusable(false);
             tv.setOnClickListener(v -> setTab(t));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -1);
             lp.leftMargin = dp(i == 0 ? 10 : 8);
@@ -278,6 +279,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     }
 
     private void renderList() {
+        View before = findFocus();
+        boolean refocus = before == null || list.hasFocus();
         list.removeAllViews();
         ComputerDetails c = host.computer();
         List<App> apps = host.apps();
@@ -322,6 +325,13 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             list.addView(empty);
         }
         renderDetail();
+        // Start on (and keep focus on) the selected app, LAST PLAYED first.
+        if (refocus) {
+            View row = list.findViewWithTag(selectedApp());
+            if (row != null && !row.requestFocus() && DuoPadNav.hasGamepad()) {
+                row.requestFocusFromTouch();
+            }
+        }
     }
 
     /** Favourite on/off (star button or long press on a row). */
@@ -731,6 +741,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         t.setMinWidth(dp(26));
         t.setPadding(dp(5), dp(2), dp(5), dp(2));
         t.setBackground(rounded(DuoTheme.CARD_HIGH, DuoTheme.LINE, 5));
+        // Hint only: LB/RB are pressed on the controller, never selected.
+        t.setFocusable(false);
         glyphs.add(t);
         return t;
     }

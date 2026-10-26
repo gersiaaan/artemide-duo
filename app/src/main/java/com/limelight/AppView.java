@@ -367,6 +367,13 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
         if (duoRoot.getChildAt(0) instanceof android.view.ViewGroup) {
             ((android.view.ViewGroup) duoRoot.getChildAt(0)).setDescendantFocusability(android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS);
             duoRoot.getChildAt(0).setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+            // The old screen must never take focus (Android tints a focused plain view grey).
+            duoRoot.getChildAt(0).setFocusable(false);
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                duoRoot.getChildAt(0).setDefaultFocusHighlightEnabled(false);
+                duoApps.setDefaultFocusHighlightEnabled(false);
+            }
+            duoApps.setFocusable(false);
         }
 
         this.prefConfig = PreferenceConfiguration.readPreferences(this);

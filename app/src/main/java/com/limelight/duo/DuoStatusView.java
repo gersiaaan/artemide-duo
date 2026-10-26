@@ -47,13 +47,14 @@ public class DuoStatusView extends LinearLayout {
 
         time = new TextView(context);
         time.setTextColor(DuoColors.TEXT);
-        time.setTextSize(13);
+        time.setTextSize(12);
+        time.setSingleLine(true);
         time.setTypeface(DuoFonts.medium());
         addView(time, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 
         icon = new BatteryIcon(context);
         LayoutParams ip = new LayoutParams(dp(22), dp(12));
-        ip.leftMargin = dp(10);
+        ip.leftMargin = dp(8);
         addView(icon, ip);
 
         // Lightning bolt next to the battery while charging.
@@ -65,7 +66,8 @@ public class DuoStatusView extends LinearLayout {
 
         percent = new TextView(context);
         percent.setTextColor(DuoColors.MUTED);
-        percent.setTextSize(13);
+        percent.setTextSize(12);
+        percent.setSingleLine(true);
         percent.setTypeface(DuoFonts.medium());
         LayoutParams pp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
         pp.leftMargin = dp(5);

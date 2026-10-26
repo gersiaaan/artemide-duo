@@ -1,22 +1,20 @@
-## Artemide Duo v0.21
+## Artemide Duo v0.22
 
-**Keyboard**
-- Keyboard tab now has three masks — tap the active tab to cycle: **1** full PC keyboard, **2** Slim (phone keys, centred), **3** Wide (phone keys, full width, taller). The last one is remembered.
-- Slim and Wide work as a trackpad too (swipe = mouse, 2/3 fingers) and show the hint line; they sit at the same height as the full keyboard.
+**Controller desktop mode (new)**
+- New **G / D** button next to the performance button in the keyboard panel — only for Desktop / remote streams. **G** = normal gamepad (default, always used for games and the menus), **D** = desktop mode:
+  - left stick = mouse (soft curve: fine with a small push, fast when fully pushed), right stick = scroll
+  - A = left click, B = right click, X = Windows key, Y = Alt+Tab (hold Y to keep stepping through windows)
+- Stream menu → **Speed**: trackpad speed plus a new **Gamepad cursor** speed (1–10).
 
-**Home / host page**
-- New **Add a host** tab next to your PCs (LB/RB cycle through all of them): searches the network, *Add a host* by address, *Refresh*. A newly found PC opens right away.
-- The **A** glyph follows the focused button (Open, Profiles, Options, Resume, Quit); X still resumes / plays again.
+**Stream**
+- Controller stays in the stream: the stick / D-pad no longer jump onto the keyboard panel.
+- The keyboard button bottom-left comes back as soon as the panel is hidden (also after swiping it away) — Desktop / remote only.
+- Desktop panel now also opens automatically when you resume from the host page, and for apps you marked as "App" under Game settings & type.
 
-**App list**
-- Star / favourites removed, Profiles removed from the bottom bar.
-- Apps that aren't running show **Open**; only the running one shows Resume (outlined, no accent fill).
+**Host page & app list**
+- No more grey screen: the old screen behind can't take focus any more; after touching, the controller continues on the last button.
+- App list opens with focus on LAST PLAYED; tabs and LB/RB hints can't be selected with the stick (use LB/RB).
+- Resume from the host page keeps the real app name.
 
-**Controller**
-- Focus can no longer leave the Duo screens (no more grey window when pushing the stick past the edge).
-- Info rows (resolution, FPS, host…) are no longer selectable.
-
-**Look**
-- Inter font everywhere (Duo screens, settings, keyboard).
-- Glowing A/B/X/Y glyphs, lighter see-through secondary buttons, bigger right-aligned clock/date/battery.
-- Bigger covers and list thumbnails on the Surface Duo.
+**Settings**
+- LB/RB hints around the tabs (only with a controller), the back arrow at the top is replaced by **Back (B)** in a bottom bar.

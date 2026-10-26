@@ -730,6 +730,8 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         t.setMinWidth(dp(26));
         t.setPadding(dp(5), dp(2), dp(5), dp(2));
         t.setBackground(rounded(DuoTheme.CARD_HIGH, DuoTheme.LINE, 5));
+        // Hint only: LB/RB are pressed on the controller, never selected.
+        t.setFocusable(false);
         glyphs.add(t);
         return t;
     }

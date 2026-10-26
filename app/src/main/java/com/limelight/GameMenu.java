@@ -341,7 +341,7 @@ public class GameMenu implements Game.GameMenuCallbacks {
             if (!game.isDuoSplit()) {
                 options.add(new MenuOption("Keyboard & trackpad on/off", false, game::toggleDuoPanel));
             }
-            options.add(new MenuOption("Trackpad speed", false,
+            options.add(new MenuOption("Speed (trackpad & gamepad cursor)", false,
                     () -> com.limelight.duo.DuoController.showSpeedDialog(game)));
         }
 
