@@ -234,8 +234,29 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     // ================= data =================
 
     public void setComputers(List<ComputerDetails> list) {
+        // On the "Add a host" page a newly found PC opens right away as its tab.
+        ComputerDetails found = null;
+        if (addMode || computers.isEmpty()) {
+            for (ComputerDetails n : list) {
+                boolean known = false;
+                for (ComputerDetails o : computers) {
+                    if (o.uuid != null && o.uuid.equals(n.uuid)) {
+                        known = true;
+                        break;
+                    }
+                }
+                if (!known) {
+                    found = n;
+                    break;
+                }
+            }
+        }
         computers.clear();
         computers.addAll(list);
+        if (found != null && found.uuid != null) {
+            select(found);
+            return;
+        }
         render();
     }
 
