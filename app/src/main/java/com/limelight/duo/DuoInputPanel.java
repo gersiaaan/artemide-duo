@@ -143,8 +143,8 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
             final Runnable paint = () -> {
                 boolean d = DuoGamepadMouse.isDesktop();
                 padLetter.setText(d ? "D" : "G");
-                padLetter.setTextColor(d ? DuoColors.HI_TEXT : DuoColors.MUTED);
-                padIcon.setBackground(d ? outlined(DuoColors.SURFACE, DuoColors.HI_TEXT, 10) : pressable(DuoColors.SURFACE, 10));
+                // Same frame as the other buttons; only the letter shows the mode.
+                padLetter.setTextColor(DuoColors.TEXT);
             };
             padIcon.setOnClickListener(v -> {
                 v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
