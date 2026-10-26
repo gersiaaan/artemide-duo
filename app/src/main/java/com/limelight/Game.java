@@ -1973,6 +1973,18 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         }
     }
 
+    /** Surface Duo: open/close the keyboard panel on the other screen. */
+    public void toggleDuoPanel() {
+        if (duoController != null) {
+            duoController.togglePanel();
+        }
+    }
+
+    /** Surface Duo: spanned over both screens with the built-in panel. */
+    public boolean isDuoSplit() {
+        return duoController != null && duoController.isSplit();
+    }
+
     private com.limelight.duo.DuoInputSink createDuoInputSink() {
         return new com.limelight.duo.DuoInputSink() {
             @Override

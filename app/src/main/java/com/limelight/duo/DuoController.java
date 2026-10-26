@@ -220,7 +220,7 @@ public class DuoController {
         return split;
     }
 
-    private void togglePanel() {
+    public void togglePanel() {
         if (DuoBridge.isPanelOpen()) {
             DuoBridge.closePanel();
         } else {

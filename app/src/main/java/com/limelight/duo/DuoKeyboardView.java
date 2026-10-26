@@ -85,6 +85,8 @@ public class DuoKeyboardView extends DuoTouchSurface {
     private final Paint lockPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private Key pressed;
+    private Key keyQ, keyW, keyA;
+    private float lastTapX = Float.NaN, lastTapY = Float.NaN;
     private Key held;
     private final Paint popupPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint popupText = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -183,6 +185,8 @@ public class DuoKeyboardView extends DuoTouchSurface {
         // Letters, Gboard-style stagger: A row +0.5, Y row starts under S.
         // German labels with US positional VKs (z and y are swapped on QWERTZ).
         Key[] top = letters("qwertzuiop", "qwertyuiop");
+        keyQ = top[0];
+        keyW = top[1];
         top[0].alt("@");
         top[2].alt("€");
         addRow(false, concat(
@@ -194,6 +198,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
         top[6].hold("ü", VK_OEM_4);
         top[8].hold("ö", VK_OEM_1);
         Key[] home = letters("asdfghjkl", "asdfghjkl");
+        keyA = home[0];
         home[0].hold("ä", VK_OEM_7);
         addRow(false, concat(
                 // Caps Lock only on long press (tap Shift twice for local caps).
@@ -340,6 +345,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
     @Override
     protected void onDraw(Canvas canvas) {
         boolean shift = modState[VK_LSHIFT] > 0;
+        boolean autoCap = autocorrect != null && autocorrect.autoShift();
         boolean altGr = modState[VK_RMENU] > 0;
         float radius = 7 * density;
         float subtleText = Math.min(letterTextSize * 0.62f, 12 * density);
@@ -378,7 +384,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
                     text = key.altLabel;
                 } else if (shift && key.shiftLabel != null) {
                     text = key.shiftLabel;
-                } else if (shift && key.isLetter()) {
+                } else if ((shift || autoCap) && key.isLetter()) {
                     text = text.toUpperCase();
                 }
                 boolean small = quiet || text.length() > 2;
@@ -467,7 +473,17 @@ public class DuoKeyboardView extends DuoTouchSurface {
 
     /** Fingers land a little below where they aim; shift the hit point up like Gboard. */
     private Key keyAtTouch(float x, float y) {
-        return keyAt(x, y - 4 * density);
+        float yy = y - 4 * density;
+        // Touch position in key units (q = 0,0) for the autocorrect's spatial model.
+        if (keyQ != null && keyW != null && keyA != null) {
+            float pitchX = keyW.rect.left - keyQ.rect.left;
+            float pitchY = keyA.rect.top - keyQ.rect.top;
+            if (pitchX > 0 && pitchY > 0) {
+                lastTapX = (x - keyQ.rect.centerX()) / pitchX;
+                lastTapY = (yy - keyQ.rect.centerY()) / pitchY;
+            }
+        }
+        return keyAt(x, yy);
     }
 
     private long lastTypeTime;
@@ -536,7 +552,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
         }
         if (autocorrect != null) {
             char c = key.longLabel.charAt(0);
-            autocorrect.onLetter(shift ? Character.toUpperCase(c) : c);
+            autocorrect.onLetter(shift ? Character.toUpperCase(c) : c, Float.NaN, Float.NaN);
         }
         releaseOneShot();
     }
@@ -606,12 +622,20 @@ public class DuoKeyboardView extends DuoTouchSurface {
             }
         }
 
+        // Start of a sentence: capitalize the letter like Gboard's auto-shift.
+        boolean autoCap = !handled && plain && !shift && key.isLetter()
+                && autocorrect != null && autocorrect.autoShift();
+        float tx = lastTapX, ty = lastTapY;
+
         if (!handled) {
             List<Integer> combo = new ArrayList<>();
             for (int vk : new int[]{VK_LCONTROL, VK_LMENU, VK_RMENU, VK_LWIN, VK_LSHIFT}) {
                 if (modState[vk] > 0) {
                     combo.add(vk);
                 }
+            }
+            if (autoCap) {
+                combo.add(VK_LSHIFT);
             }
             combo.add(key.vk);
             int[] vks = new int[combo.size()];
@@ -623,13 +647,18 @@ public class DuoKeyboardView extends DuoTouchSurface {
             if (autocorrect != null && key.vk != VK_SPACE && key.vk != VK_BACK) {
                 if (plain && key.isLetter()) {
                     char c = key.label.charAt(0);
-                    autocorrect.onLetter(shift ? Character.toUpperCase(c) : c);
+                    autocorrect.onLetter(shift || autoCap ? Character.toUpperCase(c) : c, tx, ty);
+                } else if (plain && key.vk == VK_RETURN) {
+                    autocorrect.onEnter();
+                } else if (plain && key.label.length() == 1) {
+                    String out = shift && key.shiftLabel != null ? key.shiftLabel : key.label;
+                    autocorrect.onChar(out.charAt(0));
                 } else {
                     autocorrect.onBoundary();
                 }
             }
         }
-
+        invalidate();
         releaseOneShot();
     }
 

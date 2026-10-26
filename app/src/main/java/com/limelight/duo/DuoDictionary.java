@@ -12,14 +12,16 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Offline German + English word list with frequencies, used for suggestions and
- * Gboard-style autocorrect. Loaded once in the background.
+ * Offline German + English word list with frequencies and proper capitalization
+ * (German nouns), used for suggestions and Gboard-style autocorrect.
  *
- * Matching works on a "plain" form (ä->a, ö->o, ü->u, ß->ss) so words typed without
- * umlauts find their umlaut spelling, and substitutions between neighbouring keys on
- * the QWERTZ layout are cheaper than others.
+ * Matching works on a "plain" lowercase form (ä->a, ö->o, ü->u, ß->ss) so words typed
+ * without umlauts find their umlaut spelling. Letter substitutions are cheap when the
+ * finger actually landed near the other key (spatial model, like Gboard), and words
+ * the user keeps typing are learned.
  */
 public final class DuoDictionary {
 
@@ -28,25 +30,30 @@ public final class DuoDictionary {
         public boolean known;
         /** Confident enough to replace the word automatically on space. */
         public boolean autocorrect;
-        /** Best first; corrections and/or completions. */
+        /** Best first; corrections and/or completions, in display spelling. */
         public final List<String> suggestions = new ArrayList<>();
     }
 
     private static volatile DuoDictionary instance;
     private static boolean loading;
 
-    private String[] words;        // sorted by plain form
+    private String[] display;      // display spelling (nouns capitalized), sorted by plain form
+    private String[] lower;        // lowercase
     private String[] plain;        // plain forms, sorted
     private int[] freq;
-    private Map<String, Integer> exact;     // word -> frequency
+    private Map<String, Integer> exact;      // lowercase -> index
     private int[][] byLength;      // plain length -> indices
+
+    /** Learned words: lowercase -> (display spelling, count). */
+    private final Map<String, Integer> learnedCount = new ConcurrentHashMap<>();
+    private final Map<String, String> learnedDisplay = new ConcurrentHashMap<>();
 
     public static DuoDictionary get() {
         return instance;
     }
 
     /** Starts loading in the background (no-op if already loaded or loading). */
-    public static synchronized void load(final Context context) {
+    public static synchronized void load(final Context context, final Map<String, Integer> learned) {
         if (instance != null || loading) {
             return;
         }
@@ -56,8 +63,14 @@ public final class DuoDictionary {
             try {
                 DuoDictionary d = new DuoDictionary();
                 d.read(app);
+                if (learned != null) {
+                    for (Map.Entry<String, Integer> e : learned.entrySet()) {
+                        d.learnedCount.put(e.getKey().toLowerCase(), e.getValue());
+                        d.learnedDisplay.put(e.getKey().toLowerCase(), e.getKey());
+                    }
+                }
                 instance = d;
-                LimeLog.info("Duo: dictionary loaded, " + d.words.length + " words");
+                LimeLog.info("Duo: dictionary loaded, " + d.display.length + " words");
             } catch (Throwable t) {
                 LimeLog.warning("Duo: dictionary failed to load: " + t);
             } finally {
@@ -94,23 +107,25 @@ public final class DuoDictionary {
         final String[] plainTmp = new String[n];
         for (int i = 0; i < n; i++) {
             order[i] = i;
-            plainTmp[i] = toPlain(w.get(i));
+            plainTmp[i] = toPlain(w.get(i).toLowerCase());
         }
         Arrays.sort(order, (a, b) -> plainTmp[a].compareTo(plainTmp[b]));
 
-        words = new String[n];
+        display = new String[n];
+        lower = new String[n];
         plain = new String[n];
         freq = new int[n];
         exact = new HashMap<>(n * 2);
         int maxLen = 0;
         for (int i = 0; i < n; i++) {
             int o = order[i];
-            words[i] = w.get(o);
+            display[i] = w.get(o);
+            lower[i] = display[i].toLowerCase();
             plain[i] = plainTmp[o];
             freq[i] = f.get(o);
-            Integer prev = exact.get(words[i]);
-            if (prev == null || prev < freq[i]) {
-                exact.put(words[i], freq[i]);
+            Integer prev = exact.get(lower[i]);
+            if (prev == null || freq[prev] < freq[i]) {
+                exact.put(lower[i], i);
             }
             maxLen = Math.max(maxLen, plain[i].length());
         }
@@ -145,46 +160,100 @@ public final class DuoDictionary {
         return b.toString();
     }
 
-    public boolean isKnown(String word) {
-        return exact.containsKey(word.toLowerCase());
+    // ---------------- learning ----------------
+
+    /** The user typed this word and kept it. Returns the new count. */
+    public int learn(String word, int increment) {
+        String key = word.toLowerCase();
+        int c = (learnedCount.containsKey(key) ? learnedCount.get(key) : 0) + increment;
+        learnedCount.put(key, c);
+        if (!learnedDisplay.containsKey(key)) {
+            learnedDisplay.put(key, word);
+        }
+        return c;
+    }
+
+    /** Learned words worth persisting (display spelling -> count). */
+    public Map<String, Integer> learnedSnapshot() {
+        Map<String, Integer> out = new HashMap<>();
+        for (Map.Entry<String, Integer> e : learnedCount.entrySet()) {
+            String d = learnedDisplay.get(e.getKey());
+            out.put(d != null ? d : e.getKey(), e.getValue());
+        }
+        return out;
+    }
+
+    private int learned(String key) {
+        Integer c = learnedCount.get(key);
+        return c == null ? 0 : c;
     }
 
     // ---------------- lookup ----------------
 
-    public Result lookup(String typedRaw) {
+    /**
+     * @param tapX, tapY per typed character, the touch position in key units
+     *        (q = 0,0; one key/row = 1), or NaN if unknown. May be null.
+     */
+    public Result lookup(String typedRaw, float[] tapX, float[] tapY) {
         Result res = new Result();
         String typed = typedRaw.toLowerCase();
         if (typed.isEmpty()) {
             return res;
         }
-        Integer typedFreq = exact.get(typed);
-        res.known = typedFreq != null;
+        Integer typedIdx = exact.get(typed);
+        int typedLearned = learned(typed);
+        // A word typed and kept twice counts as known.
+        res.known = typedIdx != null || typedLearned >= 2;
         String p = toPlain(typed);
+        if (p.length() != typed.length()) {
+            tapX = tapY = null;   // ß expanded: positions no longer line up
+        }
+
+        // Known German noun typed in lowercase: capitalize it (haus -> Haus).
+        if (typedIdx != null && typedLearned < 2 && Character.isLowerCase(typedRaw.charAt(0))) {
+            String disp = display[typedIdx];
+            if (Character.isUpperCase(disp.charAt(0)) && disp.equalsIgnoreCase(typedRaw)) {
+                res.autocorrect = true;
+                res.suggestions.add(disp);
+            }
+        }
 
         // 1) Corrections: weighted edit distance on plain forms, nearby lengths.
         final int maxCandidates = 3;
         String[] best = new String[maxCandidates];
         double[] bestScore = new double[maxCandidates];
         double[] bestDist = new double[maxCandidates];
+        int[] bestFreq = new int[maxCandidates];
         Arrays.fill(bestScore, Double.MAX_VALUE);
         double maxDist = p.length() <= 2 ? 0.6 : (p.length() <= 5 ? 1.1 : 2.1);
 
         for (int l = Math.max(1, p.length() - 2); l <= Math.min(byLength.length - 1, p.length() + 2); l++) {
             for (int idx : byLength[l]) {
-                double d = distance(p, plain[idx], maxDist);
-                if (d > maxDist) {
-                    continue;
-                }
-                String cand = words[idx];
-                if (cand.equals(typed)) {
+                double d = distance(p, plain[idx], maxDist, tapX, tapY);
+                if (d > maxDist || lower[idx].equals(typed)) {
                     continue;
                 }
                 // Umlaut spelling of exactly what was typed (fur -> für) is nearly free.
                 if (d == 0) {
                     d = 0.15;
                 }
-                double score = d * 3.0 - Math.log(freq[idx] + 1);
-                insert(best, bestScore, bestDist, cand, score, d);
+                int fr = freq[idx] + learned(lower[idx]) * 20000;
+                double score = d * 3.0 - Math.log(fr + 1);
+                insert(best, bestScore, bestDist, bestFreq, display[idx], score, d, fr);
+            }
+        }
+        // Learned words that aren't in the word list.
+        for (Map.Entry<String, Integer> e : learnedCount.entrySet()) {
+            String key = e.getKey();
+            if (e.getValue() < 2 || exact.containsKey(key) || key.equals(typed)) {
+                continue;
+            }
+            double d = distance(p, toPlain(key), maxDist, tapX, tapY);
+            if (d <= maxDist) {
+                int fr = e.getValue() * 20000;
+                String disp = learnedDisplay.get(key);
+                insert(best, bestScore, bestDist, bestFreq, disp != null ? disp : key,
+                        d * 3.0 - Math.log(fr + 1), Math.max(d, 0.15), fr);
             }
         }
 
@@ -194,16 +263,17 @@ public final class DuoDictionary {
         // A "known" word that is very rare next to a close, very common candidate
         // (helo -> hello) is treated like a typo.
         boolean rareTypo = false;
-        if (res.known && best[0] != null && bestDist[0] <= 1.0) {
-            Integer bf = exact.get(best[0]);
-            rareTypo = bf != null && typedFreq * 300L < bf;
+        if (res.known && typedLearned < 2 && typedIdx != null && best[0] != null && bestDist[0] <= 1.0) {
+            rareTypo = (long) freq[typedIdx] * 300L < bestFreq[0];
         }
 
         if ((!res.known || rareTypo) && best[0] != null) {
             // Confident if the best candidate is close and clearly ahead of the rest.
             boolean close = bestDist[0] <= (p.length() <= 4 ? 1.0 : 2.0);
             boolean ahead = best[1] == null || bestScore[0] + 1.0 < bestScore[1];
-            res.autocorrect = close && (ahead || bestDist[0] <= 0.5);
+            if (close && (ahead || bestDist[0] <= 0.5)) {
+                res.autocorrect = true;
+            }
             for (String s : best) {
                 if (s != null) {
                     add(res.suggestions, s);
@@ -216,41 +286,44 @@ public final class DuoDictionary {
             for (String c : completions) {
                 add(res.suggestions, c);
             }
-            for (String s : best) {
-                if (s != null && bestDistOf(best, bestDist, s) <= 1.0) {
-                    add(res.suggestions, s);
+            for (int i = 0; i < best.length; i++) {
+                if (best[i] != null && bestDist[i] <= 1.0) {
+                    add(res.suggestions, best[i]);
                 }
             }
         }
-        // Never suggest the typed word itself.
-        res.suggestions.remove(typed);
+        // Never suggest exactly the typed word itself.
+        for (int i = res.suggestions.size() - 1; i >= 0; i--) {
+            if (res.suggestions.get(i).equals(typedRaw)) {
+                res.suggestions.remove(i);
+            }
+        }
         while (res.suggestions.size() > 3) {
             res.suggestions.remove(res.suggestions.size() - 1);
+        }
+        if (res.autocorrect && res.suggestions.isEmpty()) {
+            res.autocorrect = false;
         }
         return res;
     }
 
-    private static double bestDistOf(String[] best, double[] dist, String s) {
-        for (int i = 0; i < best.length; i++) {
-            if (s.equals(best[i])) {
-                return dist[i];
+    private static void add(List<String> list, String s) {
+        for (String x : list) {
+            if (x.equalsIgnoreCase(s)) {
+                return;
             }
         }
-        return Double.MAX_VALUE;
+        list.add(s);
     }
 
-    private static void add(List<String> list, String s) {
-        if (!list.contains(s)) {
-            list.add(s);
-        }
-    }
-
-    private static void insert(String[] best, double[] scores, double[] dists, String cand, double score, double d) {
+    private static void insert(String[] best, double[] scores, double[] dists, int[] freqs,
+                               String cand, double score, double d, int fr) {
         for (int i = 0; i < best.length; i++) {
-            if (cand.equals(best[i])) {
+            if (cand.equalsIgnoreCase(best[i])) {
                 if (score < scores[i]) {
                     scores[i] = score;
                     dists[i] = d;
+                    freqs[i] = fr;
                 }
                 return;
             }
@@ -261,10 +334,12 @@ public final class DuoDictionary {
                     best[j] = best[j - 1];
                     scores[j] = scores[j - 1];
                     dists[j] = dists[j - 1];
+                    freqs[j] = freqs[j - 1];
                 }
                 best[i] = cand;
                 scores[i] = score;
                 dists[i] = d;
+                freqs[i] = fr;
                 return;
             }
         }
@@ -280,20 +355,17 @@ public final class DuoDictionary {
         int[] topF = new int[max];
         int scanned = 0;
         for (int i = lo; i < plain.length && plain[i].startsWith(p) && scanned < 6000; i++, scanned++) {
-            if (words[i].equals(typed) || plain[i].length() == p.length() && !words[i].startsWith(typed)) {
-                // Same length as typed: that's the word itself or an umlaut variant handled above.
-                if (words[i].equals(typed)) {
-                    continue;
-                }
+            if (lower[i].equals(typed)) {
+                continue;
             }
-            int fr = freq[i];
+            int fr = freq[i] + learned(lower[i]) * 20000;
             for (int k = 0; k < max; k++) {
                 if (top[k] == null || fr > topF[k]) {
                     for (int j = max - 1; j > k; j--) {
                         top[j] = top[j - 1];
                         topF[j] = topF[j - 1];
                     }
-                    top[k] = words[i];
+                    top[k] = display[i];
                     topF[k] = fr;
                     break;
                 }
@@ -334,13 +406,27 @@ public final class DuoDictionary {
         }
     }
 
-    private static double subCost(char a, char b) {
+    /** Key centre of a letter in key units (q = 0,0), or null. */
+    static float[] keyPos(char c) {
+        return c < 128 ? POS[c] : null;
+    }
+
+    private static double subCost(int i, char a, char b, float[] tapX, float[] tapY) {
         if (a == b) {
             return 0;
         }
-        if (a < 128 && b < 128 && POS[a] != null && POS[b] != null) {
-            float dx = POS[a][0] - POS[b][0];
-            float dy = POS[a][1] - POS[b][1];
+        float[] pb = b < 128 ? POS[b] : null;
+        if (pb != null && tapX != null && i < tapX.length && !Float.isNaN(tapX[i])) {
+            // Spatial model: how close did the finger land to the other key?
+            float dx = tapX[i] - pb[0];
+            float dy = tapY[i] - pb[1];
+            double d = Math.sqrt(dx * dx + dy * dy);
+            return Math.max(0.1, Math.min(1.0, d - 0.45));
+        }
+        float[] pa = a < 128 ? POS[a] : null;
+        if (pa != null && pb != null) {
+            float dx = pa[0] - pb[0];
+            float dy = pa[1] - pb[1];
             if (dx * dx + dy * dy <= 1.6f) {
                 return 0.5;   // neighbouring keys: likely a slip
             }
@@ -348,8 +434,8 @@ public final class DuoDictionary {
         return 1.0;
     }
 
-    /** Edit distance with cheap neighbour substitutions; stops early above max. */
-    static double distance(String a, String b, double max) {
+    /** Edit distance with cheap near-miss substitutions; stops early above max. */
+    static double distance(String a, String b, double max, float[] tapX, float[] tapY) {
         int n = a.length(), m = b.length();
         if (Math.abs(n - m) > max) {
             return Double.MAX_VALUE;
@@ -367,7 +453,7 @@ public final class DuoDictionary {
             for (int j = 1; j <= m; j++) {
                 char cb = b.charAt(j - 1);
                 double v = Math.min(prev[j] + 1, cur[j - 1] + 1);
-                v = Math.min(v, prev[j - 1] + subCost(ca, cb));
+                v = Math.min(v, prev[j - 1] + subCost(i - 1, ca, cb, tapX, tapY));
                 if (i > 1 && j > 1 && ca == b.charAt(j - 2) && a.charAt(i - 2) == cb) {
                     v = Math.min(v, prev2[j - 2] + 0.6);   // swapped letters
                 }

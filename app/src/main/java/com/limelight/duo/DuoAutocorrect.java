@@ -1,19 +1,28 @@
 package com.limelight.duo;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.os.SystemClock;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * Word tracking, suggestions and Gboard-style autocorrect on space, using the
- * built-in German + English dictionary (offline).
+ * Word tracking, suggestions and Gboard-style autocorrect for the Duo keyboard:
+ *  - corrections on space using the built-in dictionary and where the finger landed
+ *  - learns words you keep (and words whose correction you undo with backspace)
+ *  - capitalizes German nouns and the start of a sentence
+ *  - double space types ". "
  *
- * The keyboard only knows what was typed since the last word boundary; any
- * mouse action or navigation key resets the word.
+ * The keyboard only knows what was typed since the last boundary; any mouse action
+ * or navigation key resets the state.
  */
 public class DuoAutocorrect {
 
@@ -22,6 +31,11 @@ public class DuoAutocorrect {
         void onSuggestions(String[] cells, int highlight);
     }
 
+    private static final String PREFS = "duo_learned_words";
+    private static final String KEY = "words";
+    private static final long DOUBLE_SPACE_MS = 1500;
+
+    private final Context context;
     private final DuoInputSink sink;
     private final Handler main = new Handler(Looper.getMainLooper());
     private HandlerThread worker;
@@ -29,6 +43,8 @@ public class DuoAutocorrect {
     private Listener listener;
 
     private final StringBuilder word = new StringBuilder();
+    private final List<Float> tapX = new ArrayList<>();
+    private final List<Float> tapY = new ArrayList<>();
     private String resultWord = "";
     private DuoDictionary.Result result;
 
@@ -36,13 +52,22 @@ public class DuoAutocorrect {
     private String undoOriginal;
     private String undoCorrected;
 
+    /** Last character sent (0 = unknown) and whether a sentence just ended. */
+    private char lastChar;
+    private long lastSpaceTime;
+    private boolean sentenceEnded;
+    private boolean autoShift;
+
     // What each suggestion cell stands for.
     private final String[] cellText = {"", "", ""};
     private final boolean[] cellIsTyped = {false, false, false};
 
+    private final Runnable saveLearned = this::persistLearned;
+
     public DuoAutocorrect(Context context, DuoInputSink sink) {
+        this.context = context.getApplicationContext();
         this.sink = sink;
-        DuoDictionary.load(context);
+        DuoDictionary.load(context, readLearned());
     }
 
     public void setListener(Listener l) {
@@ -51,6 +76,8 @@ public class DuoAutocorrect {
     }
 
     public void close() {
+        main.removeCallbacks(saveLearned);
+        persistLearned();
         if (worker != null) {
             worker.quitSafely();
             worker = null;
@@ -67,12 +94,41 @@ public class DuoAutocorrect {
         return workerHandler;
     }
 
+    /** True if the next letter should be capitalized (start of a sentence). */
+    public boolean autoShift() {
+        return autoShift;
+    }
+
     // ---------------- events from the keyboard ----------------
 
-    public void onLetter(char c) {
+    /** tx/ty: touch position in key units (q = 0,0), NaN if unknown. */
+    public void onLetter(char c, float tx, float ty) {
         undoOriginal = null;
+        autoShift = false;
+        sentenceEnded = false;
         word.append(c);
+        tapX.add(tx);
+        tapY.add(ty);
+        lastChar = c;
         request();
+    }
+
+    /** Punctuation, digits and other printable characters. */
+    public void onChar(char c) {
+        finishWord(true);
+        undoOriginal = null;
+        autoShift = false;
+        lastChar = c;
+        sentenceEnded = c == '.' || c == '!' || c == '?';
+    }
+
+    public void onEnter() {
+        finishWord(true);
+        undoOriginal = null;
+        lastChar = '\n';
+        sentenceEnded = false;
+        autoShift = true;
+        publish();
     }
 
     /**
@@ -80,19 +136,37 @@ public class DuoAutocorrect {
      *         false if the keyboard should send a normal backspace.
      */
     public boolean onBackspace() {
+        autoShift = false;
         if (undoOriginal != null) {
-            // Gboard behaviour: backspace right after an autocorrect restores the typed word.
+            // Gboard behaviour: backspace right after an autocorrect restores the typed word,
+            // and that word is learned so it isn't corrected again.
             DuoKeys.tap(sink, DuoKeys.VK_BACK, undoCorrected.length() + 1);
             sink.sendText(undoOriginal);
+            learn(undoOriginal, 2);
             word.setLength(0);
             word.append(undoOriginal);
+            tapX.clear();
+            tapY.clear();
+            for (int i = 0; i < undoOriginal.length(); i++) {
+                tapX.add(Float.NaN);
+                tapY.add(Float.NaN);
+            }
             undoOriginal = null;
+            lastChar = word.charAt(word.length() - 1);
             request();
             return true;
         }
         if (word.length() > 0) {
             word.setLength(word.length() - 1);
+            if (!tapX.isEmpty()) {
+                tapX.remove(tapX.size() - 1);
+                tapY.remove(tapY.size() - 1);
+            }
+            lastChar = word.length() > 0 ? word.charAt(word.length() - 1) : 0;
             request();
+        } else {
+            lastChar = 0;
+            sentenceEnded = false;
         }
         return false;
     }
@@ -102,11 +176,29 @@ public class DuoAutocorrect {
      * @return true if the space was already sent here.
      */
     public boolean onSpace() {
+        long now = SystemClock.uptimeMillis();
+
+        // Double space after a word: ". " like Gboard.
+        if (word.length() == 0 && lastChar == ' ' && now - lastSpaceTime < DOUBLE_SPACE_MS && !sentenceEnded) {
+            DuoKeys.tap(sink, DuoKeys.VK_BACK, 1);
+            DuoKeys.tap(sink, DuoKeys.VK_OEM_PERIOD, 1);
+            DuoKeys.tap(sink, DuoKeys.VK_SPACE, 1);
+            lastChar = ' ';
+            lastSpaceTime = 0;
+            sentenceEnded = false;
+            autoShift = true;
+            undoOriginal = null;
+            publish();
+            return true;
+        }
+
+        boolean wasWord = word.length() > 0;
+        boolean sent = false;
         String typed = word.toString();
         DuoDictionary.Result r = typed.equals(resultWord) ? result : null;
-        if (r == null && !typed.isEmpty() && DuoDictionary.get() != null) {
+        if (r == null && wasWord && DuoDictionary.get() != null) {
             // Result not back yet: decide now.
-            r = DuoDictionary.get().lookup(typed);
+            r = DuoDictionary.get().lookup(typed, floats(tapX), floats(tapY));
         }
         if (r != null && r.autocorrect && !r.suggestions.isEmpty()) {
             String corrected = matchCase(typed, r.suggestions.get(0));
@@ -115,21 +207,37 @@ public class DuoAutocorrect {
                 DuoKeys.tap(sink, DuoKeys.VK_SPACE, 1);
                 undoOriginal = typed;
                 undoCorrected = corrected;
-                resetWord();
-                return true;
+                sent = true;
             }
         }
-        undoOriginal = null;
+        if (!sent) {
+            undoOriginal = null;
+            finishWord(false);
+        }
         resetWord();
-        return false;
+
+        // Only arm double-space after a word, not after a run of spaces.
+        lastSpaceTime = wasWord ? now : 0;
+        if (sentenceEnded) {
+            autoShift = true;
+            sentenceEnded = false;
+        }
+        lastChar = ' ';
+        publish();
+        return sent;
     }
 
-    /** Any other key, a click or a mouse movement ends the word. */
+    /** Any other key, a click or a mouse movement: context unknown, start fresh. */
     public void onBoundary() {
         undoOriginal = null;
+        autoShift = false;
+        sentenceEnded = false;
+        lastChar = 0;
+        lastSpaceTime = 0;
         if (word.length() > 0 || !resultWord.isEmpty()) {
             resetWord();
         }
+        publish();
     }
 
     /** A suggestion cell was tapped. */
@@ -140,13 +248,74 @@ public class DuoAutocorrect {
         String typed = word.toString();
         if (!cellIsTyped[cell]) {
             replaceWord(typed, cellText[cell]);
+        } else {
+            // Tapping „typed“ means: keep it as it is.
+            learn(typed, 2);
         }
         DuoKeys.tap(sink, DuoKeys.VK_SPACE, 1);
         undoOriginal = null;
         resetWord();
+        lastChar = ' ';
+        lastSpaceTime = 0;
+        publish();
     }
 
     // ---------------- internals ----------------
+
+    /** The word ends without a correction: learn it if it's new. */
+    private void finishWord(boolean resetAfter) {
+        String typed = word.toString();
+        DuoDictionary d = DuoDictionary.get();
+        if (typed.length() >= 2 && d != null) {
+            DuoDictionary.Result r = typed.equals(resultWord) ? result : null;
+            if (r != null && !r.known) {
+                learn(typed, 1);
+            }
+        }
+        if (resetAfter) {
+            resetWord();
+        }
+    }
+
+    private void learn(String w, int inc) {
+        DuoDictionary d = DuoDictionary.get();
+        if (d == null || w.length() < 2) {
+            return;
+        }
+        d.learn(w, inc);
+        main.removeCallbacks(saveLearned);
+        main.postDelayed(saveLearned, 2000);
+    }
+
+    private Map<String, Integer> readLearned() {
+        Map<String, Integer> map = new HashMap<>();
+        Set<String> set = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getStringSet(KEY, null);
+        if (set != null) {
+            for (String s : set) {
+                int c = s.lastIndexOf(':');
+                if (c > 0) {
+                    try {
+                        map.put(s.substring(0, c), Integer.parseInt(s.substring(c + 1)));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+        }
+        return map;
+    }
+
+    private void persistLearned() {
+        DuoDictionary d = DuoDictionary.get();
+        if (d == null) {
+            return;
+        }
+        Set<String> set = new HashSet<>();
+        for (Map.Entry<String, Integer> e : d.learnedSnapshot().entrySet()) {
+            set.add(e.getKey() + ":" + e.getValue());
+        }
+        SharedPreferences p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        p.edit().putStringSet(KEY, set).apply();
+    }
 
     private void replaceWord(String typed, String replacement) {
         DuoKeys.tap(sink, DuoKeys.VK_BACK, typed.length());
@@ -155,9 +324,19 @@ public class DuoAutocorrect {
 
     private void resetWord() {
         word.setLength(0);
+        tapX.clear();
+        tapY.clear();
         resultWord = "";
         result = null;
         publish();
+    }
+
+    private static float[] floats(List<Float> list) {
+        float[] out = new float[list.size()];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = list.get(i);
+        }
+        return out;
     }
 
     private void request() {
@@ -173,10 +352,12 @@ public class DuoAutocorrect {
         if (dict == null) {
             return;
         }
+        final float[] tx = floats(tapX);
+        final float[] ty = floats(tapY);
         Handler h = worker();
         h.removeCallbacksAndMessages(null);
         h.post(() -> {
-            final DuoDictionary.Result r = dict.lookup(typed);
+            final DuoDictionary.Result r = dict.lookup(typed, tx, ty);
             main.post(() -> {
                 // Only use it if the word hasn't changed meanwhile.
                 if (typed.equals(word.toString())) {
@@ -204,7 +385,7 @@ public class DuoAutocorrect {
                 }
                 auto = result.autocorrect;
             }
-            if (auto && !sug.isEmpty()) {
+            if (auto && !sug.isEmpty() && !sug.get(0).equals(typed)) {
                 // „typed“ | best (bold, applied on space) | alternative
                 cellText[0] = typed;
                 cellIsTyped[0] = true;
@@ -216,11 +397,17 @@ public class DuoAutocorrect {
                 // alternative | typed (bold) | alternative
                 cellText[1] = typed;
                 cellIsTyped[1] = true;
-                if (sug.size() > 0) {
-                    cellText[0] = sug.get(0);
-                }
-                if (sug.size() > 1) {
-                    cellText[2] = sug.get(1);
+                int k = 0;
+                for (String s : sug) {
+                    if (s.equals(typed)) {
+                        continue;
+                    }
+                    if (k == 0) {
+                        cellText[0] = s;
+                    } else if (k == 1) {
+                        cellText[2] = s;
+                    }
+                    k++;
                 }
             }
             highlight = 1;
@@ -234,6 +421,7 @@ public class DuoAutocorrect {
         }
     }
 
+    /** Keeps nouns capitalized; capitalizes the suggestion if the typed word was. */
     private static String matchCase(String typed, String suggestion) {
         if (typed.isEmpty() || suggestion.isEmpty()) {
             return suggestion;

@@ -14,6 +14,7 @@ import android.widget.TextView;
 @SuppressLint("ViewConstructor")
 public class DuoSuggestionBar extends LinearLayout implements DuoAutocorrect.Listener {
     private final TextView[] cells = new TextView[3];
+    private final View[] dividers = new View[2];
 
     public DuoSuggestionBar(Context context, final DuoAutocorrect autocorrect) {
         super(context);
@@ -28,6 +29,7 @@ public class DuoSuggestionBar extends LinearLayout implements DuoAutocorrect.Lis
                 LayoutParams dl = new LayoutParams(Math.max(1, Math.round(density)), LayoutParams.MATCH_PARENT);
                 dl.topMargin = dl.bottomMargin = Math.round(8 * density);
                 addView(divider, dl);
+                dividers[i - 1] = divider;
             }
             final int index = i;
             TextView t = new TextView(context);
@@ -49,6 +51,18 @@ public class DuoSuggestionBar extends LinearLayout implements DuoAutocorrect.Lis
 
     @Override
     public void onSuggestions(String[] texts, int highlight) {
+        boolean any = false;
+        for (String t : texts) {
+            if (t != null && !t.isEmpty()) {
+                any = true;
+            }
+        }
+        // Dividers only when there is something to separate.
+        for (View d : dividers) {
+            if (d != null) {
+                d.setVisibility(any ? VISIBLE : INVISIBLE);
+            }
+        }
         for (int i = 0; i < 3; i++) {
             String s = texts[i] == null ? "" : texts[i];
             cells[i].setText(s);

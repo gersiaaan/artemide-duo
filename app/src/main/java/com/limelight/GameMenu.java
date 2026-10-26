@@ -298,21 +298,26 @@ public class GameMenu implements Game.GameMenuCallbacks {
         options.add(new MenuOption(getString(R.string.game_menu_fetch_clipboard), true,
                 () -> game.getClipboard(0)));
 
-        options.add(new MenuOption(getString(R.string.game_menu_server_cmd), true,
-                () -> {
-                    ArrayList<String> serverCmds = game.getServerCmds();
-                    if (serverCmds.isEmpty()) {
-                        int themeResId = game.getApplicationInfo().theme;
-                        Context themedContext = new ContextThemeWrapper(dialogScreenContext, themeResId);
-                        new AlertDialog.Builder(themedContext)
-                                .setTitle(R.string.game_dialog_title_server_cmd_empty)
-                                .setMessage(R.string.game_dialog_message_server_cmd_empty)
-                                .show();
-                    } else {
-                        hideMenu();
-                        this.showServerCmd(serverCmds);
-                    }
-                }));
+        boolean duo = com.limelight.duo.DuoController.isDuoDevice();
+
+        // Duo build: no server commands and no rotate entry in the quick menu.
+        if (!duo) {
+            options.add(new MenuOption(getString(R.string.game_menu_server_cmd), true,
+                    () -> {
+                        ArrayList<String> serverCmds = game.getServerCmds();
+                        if (serverCmds.isEmpty()) {
+                            int themeResId = game.getApplicationInfo().theme;
+                            Context themedContext = new ContextThemeWrapper(dialogScreenContext, themeResId);
+                            new AlertDialog.Builder(themedContext)
+                                    .setTitle(R.string.game_dialog_title_server_cmd_empty)
+                                    .setMessage(R.string.game_dialog_message_server_cmd_empty)
+                                    .show();
+                        } else {
+                            hideMenu();
+                            this.showServerCmd(serverCmds);
+                        }
+                    }));
+        }
 
         options.add(new MenuOption(getString(R.string.game_menu_toggle_keyboard), true,
                 game::toggleKeyboard));
@@ -320,21 +325,26 @@ public class GameMenu implements Game.GameMenuCallbacks {
         options.add(new MenuOption(getString(game.isZoomModeEnabled() ? R.string.game_menu_disable_zoom_mode : R.string.game_menu_enable_zoom_mode), true,
                 game::toggleZoomMode));
 
-        if (dialogScreenContext == game) {
+        if (!duo && dialogScreenContext == game) {
             options.add(new MenuOption(getString(R.string.game_menu_rotate_screen), true,
                     game::rotateScreen));
         }
 
-        if (com.limelight.duo.DuoController.isDuoDevice()) {
+        if (duo) {
+            // Panel on the other screen (not shown while spanned: the panel is built in then).
+            if (!game.isDuoSplit()) {
+                options.add(new MenuOption("Tastatur & Trackpad ein/aus", false, game::toggleDuoPanel));
+            }
             options.add(new MenuOption("Trackpad-Tempo", false,
                     () -> com.limelight.duo.DuoController.showSpeedDialog(game)));
         }
 
-        options.add(new MenuOption(getString(R.string.game_menu_advanced), true,
-                () -> showAdvancedMenu(device)));
-
         // Duo build: performance overlay toggle instead of "Cancel" (tap outside to close)
         options.add(new MenuOption(getString(R.string.game_menu_toggle_hud), true, game::toggleHUD));
+
+        // Advanced menu always last.
+        options.add(new MenuOption(getString(R.string.game_menu_advanced), true,
+                () -> showAdvancedMenu(device)));
 
         showMenuDialog(getString(R.string.quick_menu_title), options.toArray(new MenuOption[options.size()]));
     }

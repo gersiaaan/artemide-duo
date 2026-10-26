@@ -34,8 +34,9 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
     private final DuoTrackpadView pad;
     private final View keyboardMode;
     private final View trackpadMode;
-    private final TextView tabKeyboard;
-    private final TextView tabTrackpad;
+    private final TextView modeButton;
+    private final DuoImeView ime;
+    private boolean keyboardShown = true;
 
     /**
      * @param onHide if not null, the panel runs on the other screen and gets a
@@ -60,22 +61,21 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         bar.setGravity(Gravity.CENTER_VERTICAL);
         addView(bar, new LayoutParams(LayoutParams.MATCH_PARENT, dp(44)));
 
-        LinearLayout segment = new LinearLayout(context);
-        segment.setOrientation(HORIZONTAL);
-        segment.setBackground(outlined(DuoColors.SURFACE, 10));
-        segment.setPadding(dp(3), dp(3), dp(3), dp(3));
-        bar.addView(segment, new LayoutParams(LayoutParams.WRAP_CONTENT, dp(44)));
-
-        tabKeyboard = tab("Tastatur");
-        tabTrackpad = tab("Trackpad");
-        segment.addView(tabKeyboard, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT));
-        LayoutParams tp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
-        tp.leftMargin = dp(3);
-        segment.addView(tabTrackpad, tp);
+        // One toggle: it always names the mode you switch to.
+        modeButton = actionButton("Trackpad", v -> showKeyboardMode(!keyboardShown));
+        modeButton.setTextSize(13);
+        modeButton.setMinWidth(dp(96));
+        bar.addView(modeButton, new LayoutParams(LayoutParams.WRAP_CONTENT, dp(44)));
 
         bar.addView(new View(context), new LayoutParams(0, 1, 1f));
 
-        addBarView(bar, actionButton("Gboard", v -> sink.toggleSystemKeyboard()), LayoutParams.WRAP_CONTENT);
+        // Gboard types into an invisible field that forwards everything to the PC.
+        ime = new DuoImeView(context, sink);
+        addView(ime, 0, new LayoutParams(1, 1));
+        addBarView(bar, actionButton("Gboard", v -> {
+            autocorrect.onBoundary();
+            ime.toggle();
+        }), LayoutParams.WRAP_CONTENT);
         ImageButton mouse = new ImageButton(context);
         mouse.setImageResource(R.drawable.ic_duo_mouse);
         mouse.setBackground(pressable(DuoColors.SURFACE, 10));
@@ -123,8 +123,6 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
 
         onSpeedChanged(DuoBridge.getSpeed(context));
 
-        tabKeyboard.setOnClickListener(v -> showKeyboardMode(true));
-        tabTrackpad.setOnClickListener(v -> showKeyboardMode(false));
         showKeyboardMode(true);
     }
 
@@ -213,8 +211,8 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
     private void showKeyboardMode(boolean kb) {
         keyboardMode.setVisibility(kb ? VISIBLE : GONE);
         trackpadMode.setVisibility(kb ? GONE : VISIBLE);
-        styleTab(tabKeyboard, kb);
-        styleTab(tabTrackpad, !kb);
+        keyboardShown = kb;
+        modeButton.setText(kb ? "Trackpad" : "Tastatur");
         autocorrect.onBoundary();
     }
 
