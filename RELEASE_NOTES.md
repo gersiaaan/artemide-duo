@@ -1,23 +1,21 @@
-## Artemide Duo v0.23
+## Artemide Duo v0.24
 
-**Performance overlay (new default)**
-- Compact overlay, top centre, fixed width, see-through (opacity selectable, 55 % default):
-  resolution · codec · FPS from the host (H) and shown on the client (C), bitrate in Mbps and MB/s with peak,
-  **Total** latency (host + network round trip + decode + render), network / decode, rendering, dropped frames.
-- Settings → Overlay → **Overlay style**: New, Detailed, Classic (the previous Artemide overlay).
-
-**Controller shortcuts** (Settings → Shortcuts, hold LB + RB + button) — keyboard shortcuts removed:
-- Quit session (A), Pause session / disconnect (Y), Performance overlay (X), Open stream settings / quick menu (B),
-  Keyboard & trackpad (Start), Controller mode G/D (Select). Every combo can be changed or turned off.
-- Quick menu: new **Controller mode (Gamepad / Desktop)** entry showing the current mode.
+**Controller**
+- Controller button in the keyboard panel now has three states: **G** gamepad, **D** desktop/mouse (desktop & remote only), **crossed out** = controller ignored in the stream except the LB + RB shortcuts. Also in the quick menu and on LB + RB + View.
+- Gamepad cursor: slower and much more precise for small stick movements (10 = the old 5).
+- Shortcuts can be rebound by pressing the controller button (A, B, X, Y, Menu, View, L3, R3), with Reset / Turn off.
+- Panel on the other screen no longer steals focus: controller, mouse and shortcuts keep working while you tap the keyboard (Gboard is the only exception).
 
 **Host page & app list**
-- New **Host profiles** window: Off / your profiles as pills (LB/RB to switch), what each profile changes,
-  "+ Add" with templates (Desktop, GPD Win Max) or your current settings.
-- Favourites are back: Options → Add to / Remove from favourites, own FAVOURITES section.
-- After a session ends you are back on the host page.
-- Resume from the host page now uses your virtual display setting (no fallback to the host monitor when the session had ended).
+- X = Play / Resume, Menu ≡ = Quit, View ⧉ = Options, Y = Settings, B = Back/Exit. These buttons and the host tabs / bottom bars can't be selected with the stick any more.
+- App list steps row by row (Last played → Favourites → All), opens on the last played app; Resume connects directly.
+- Back on the host page lands on Open.
+
+**Stream**
+- Apple-style disconnect: the stream shrinks into the centre and the host page settles in.
+- Keyboard panel appears from the stream screen with a soft spring and slides back up when hidden.
+- Performance overlay: glass look, Inter font, 40 % opacity by default.
 
 **Settings**
-- StreamLight look: big clock / date / battery, upper-case tabs with accent line (LB/RB), sections as one card with separators,
-  filled accent pills for short choices. No more grey focus tint on lists and tab bars.
+- Regrouped into clear sections per tab, codec under Video, nothing hidden behind "advanced" any more, GitHub / update links removed.
+- Duo tab: "New in Artemide Duo" with the new settings (overlay, gamepad cursor speed, shortcuts) plus a keyboard vibration slider (default 50 %).
