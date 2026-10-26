@@ -61,6 +61,8 @@ public class DuoController {
     private final DuoInputPanel panel;
     private final ImageButton toggleButton;
     private final boolean desktopApp;
+    /** The panel opens by itself once per stream for desktop apps (not spanned). */
+    private boolean autoOpened;
     private final int streamGravity;
     private final int backgroundGravity;
 
@@ -290,6 +292,14 @@ public class DuoController {
             setFrame(backgroundTouch, ViewGroup.LayoutParams.MATCH_PARENT, backgroundGravity);
             panel.setVisibility(View.GONE);
             updateToggleButton();
+            if (desktopApp && !autoOpened) {
+                autoOpened = true;
+                root.postDelayed(() -> {
+                    if (!split && !DuoBridge.isPanelOpen() && !activity.isFinishing()) {
+                        DuoPanelActivity.open(activity);
+                    }
+                }, 700);
+            }
             LimeLog.info("Duo: single screen mode, toggle button " + (desktopApp ? "shown" : "hidden"));
         }
     }

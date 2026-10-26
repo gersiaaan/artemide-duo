@@ -71,6 +71,15 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 public class PcView extends AppCompatActivity implements AdapterFragmentCallbacks {
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            // Artemide Duo: no status / navigation bar on the pre-stream screens.
+            com.limelight.duo.DuoFullscreen.apply(this);
+        }
+    }
+
     // Artemide Duo: new start screen on top of the (hidden) PC grid.
     private com.limelight.duo.DuoHomeView duoHome;
     private AbsListView pcListView;

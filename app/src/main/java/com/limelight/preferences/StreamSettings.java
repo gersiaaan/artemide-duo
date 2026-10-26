@@ -74,6 +74,15 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.preference.PreferenceGroup;
 
 public class StreamSettings extends AppCompatActivity {
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            // Artemide Duo: no status / navigation bar on the pre-stream screens.
+            com.limelight.duo.DuoFullscreen.apply(this);
+        }
+    }
+
     private PreferenceConfiguration previousPrefs;
     private int previousDisplayPixelCount;
 
