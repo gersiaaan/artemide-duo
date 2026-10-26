@@ -140,10 +140,31 @@ public class StreamSettings extends AppCompatActivity {
         header.setPadding(Math.round(20 * d), Math.round(14 * d), Math.round(16 * d), 0);
         android.widget.TextView title = new android.widget.TextView(this);
         title.setText("Settings");
-        title.setTextSize(18);
+        title.setTextSize(22);
         title.setTextColor(com.limelight.duo.DuoTheme.TEXT);
         title.setTypeface(com.limelight.duo.DuoFonts.semibold());
-        header.addView(title);
+        header.addView(title, new android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        // Clock, date and battery top right (like the host page).
+        android.widget.LinearLayout clockCol = new android.widget.LinearLayout(this);
+        clockCol.setOrientation(android.widget.LinearLayout.VERTICAL);
+        clockCol.setGravity(android.view.Gravity.END);
+        android.widget.TextClock clock = new android.widget.TextClock(this);
+        clock.setFormat24Hour("HH:mm");
+        clock.setFormat12Hour("h:mm");
+        clock.setTextSize(30);
+        clock.setTextColor(com.limelight.duo.DuoTheme.TEXT);
+        clock.setTypeface(com.limelight.duo.DuoFonts.medium());
+        clock.setGravity(android.view.Gravity.END);
+        clockCol.addView(clock);
+        duoDateLine = new android.widget.TextView(this);
+        duoDateLine.setTextSize(12);
+        duoDateLine.setTextColor(com.limelight.duo.DuoTheme.TEXT2);
+        duoDateLine.setTypeface(com.limelight.duo.DuoFonts.regular());
+        duoDateLine.setSingleLine(true);
+        duoDateLine.setGravity(android.view.Gravity.END);
+        clockCol.addView(duoDateLine);
+        header.addView(clockCol);
+        duoUpdateDateLine();
         column.addView(header, 0);
 
         duoTabScroll = new android.widget.HorizontalScrollView(this);
@@ -164,7 +185,8 @@ public class StreamSettings extends AppCompatActivity {
             tv.setTypeface(com.limelight.duo.DuoFonts.semibold());
             tv.setGravity(android.view.Gravity.CENTER);
             tv.setPadding(Math.round(11 * d), 0, Math.round(11 * d), 0);
-            tv.setFocusable(true);
+            // Tabs switch with LB/RB (or touch); the stick stays in the list.
+            tv.setFocusable(false);
             tv.setOnClickListener(v -> selectDuoTab(t));
             android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, Math.round(30 * d));
@@ -224,6 +246,33 @@ public class StreamSettings extends AppCompatActivity {
 
     private final java.util.List<android.view.View> duoPadGlyphs = new java.util.ArrayList<>();
 
+    private android.widget.TextView duoDateLine;
+
+    /** First settings row: where the controller starts. */
+    private android.view.View duoFirstRow() {
+        if (prefsFragment != null && prefsFragment.getListView() != null) {
+            androidx.recyclerview.widget.RecyclerView rv = prefsFragment.getListView();
+            for (int i = 0; i < rv.getChildCount(); i++) {
+                android.view.View v = rv.getChildAt(i);
+                if (v.isFocusable()) {
+                    return v;
+                }
+            }
+        }
+        return null;
+    }
+
+    private void duoUpdateDateLine() {
+        if (duoDateLine == null) {
+            return;
+        }
+        String date = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(new java.util.Date());
+        android.content.Intent b = registerReceiver(null, new android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED));
+        int level = b == null ? -1 : b.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
+        int scale = b == null ? 100 : b.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, 100);
+        duoDateLine.setText(level < 0 ? date : date + "  ·  " + Math.round(level * 100f / scale) + " %");
+    }
+
     private android.view.View duoKeyPill(String label, float d) {
         android.widget.TextView t = new android.widget.TextView(this);
         t.setText(label);
@@ -257,6 +306,7 @@ public class StreamSettings extends AppCompatActivity {
         if (!duoPadGlyphs.isEmpty()) {
             duoUpdatePadGlyphs();
         }
+        duoUpdateDateLine();
     }
 
     private void styleDuoTabs() {
@@ -264,21 +314,17 @@ public class StreamSettings extends AppCompatActivity {
         int accent = com.limelight.duo.DuoTheme.accent(this);
         for (int i = 0; i < duoTabViews.length; i++) {
             boolean on = i == duoTab;
-            android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
-            android.graphics.drawable.GradientDrawable focus = new android.graphics.drawable.GradientDrawable();
-            focus.setCornerRadius(8 * d);
-            focus.setColor(on ? com.limelight.duo.DuoTheme.mix(accent, com.limelight.duo.DuoTheme.CARD, 0.16f) : 0);
-            focus.setStroke(Math.round(1.5f * d), com.limelight.duo.DuoTheme.focus(accent));
-            android.graphics.drawable.GradientDrawable normal = new android.graphics.drawable.GradientDrawable();
-            normal.setCornerRadius(8 * d);
-            normal.setColor(on ? com.limelight.duo.DuoTheme.mix(accent, com.limelight.duo.DuoTheme.CARD, 0.16f) : 0);
-            if (on) {
-                normal.setStroke(Math.max(1, Math.round(d)), com.limelight.duo.DuoTheme.withAlpha(accent, 0.45f));
-            }
-            s.addState(new int[]{android.R.attr.state_focused}, focus);
-            s.addState(new int[]{}, normal);
-            duoTabViews[i].setBackground(s);
-            duoTabViews[i].setTextColor(on ? accent : com.limelight.duo.DuoTheme.TEXT2);
+            // StreamLight tabs: upper case, accent line under the current one.
+            android.graphics.drawable.GradientDrawable line = new android.graphics.drawable.GradientDrawable();
+            line.setColor(on ? accent : 0);
+            android.graphics.drawable.LayerDrawable ld = new android.graphics.drawable.LayerDrawable(
+                    new android.graphics.drawable.Drawable[]{line});
+            ld.setLayerGravity(0, android.view.Gravity.BOTTOM | android.view.Gravity.FILL_HORIZONTAL);
+            ld.setLayerHeight(0, Math.round(2 * d));
+            duoTabViews[i].setBackground(ld);
+            duoTabViews[i].setText(com.limelight.duo.DuoSettingsDecor.TABS[i].toUpperCase(java.util.Locale.ROOT));
+            duoTabViews[i].setLetterSpacing(0.12f);
+            duoTabViews[i].setTextColor(on ? com.limelight.duo.DuoTheme.TEXT : com.limelight.duo.DuoTheme.TEXT2);
         }
         final android.widget.TextView cur = duoTabViews[duoTab];
         duoTabScroll.post(() -> duoTabScroll.smoothScrollTo(Math.max(0, cur.getLeft() - Math.round(40 * d)), 0));
@@ -295,7 +341,7 @@ public class StreamSettings extends AppCompatActivity {
     @Override
     public boolean dispatchGenericMotionEvent(android.view.MotionEvent event) {
         android.view.ViewGroup duoRoot = findViewById(R.id.duo_settings_root);
-        if (duoRoot != null && com.limelight.duo.DuoPadNav.onMotion(duoRoot, event, duoTabViews[duoTab])) {
+        if (duoRoot != null && com.limelight.duo.DuoPadNav.onMotion(duoRoot, event, duoFirstRow())) {
             return true;
         }
         return super.dispatchGenericMotionEvent(event);
@@ -309,7 +355,7 @@ public class StreamSettings extends AppCompatActivity {
             duoUpdatePadGlyphs();
         }
         android.view.ViewGroup duoRoot = findViewById(R.id.duo_settings_root);
-        if (duoRoot != null && com.limelight.duo.DuoPadNav.onKey(duoRoot, event, duoTabViews[duoTab])) {
+        if (duoRoot != null && com.limelight.duo.DuoPadNav.onKey(duoRoot, event, duoFirstRow())) {
             return true;
         }
         if (k == android.view.KeyEvent.KEYCODE_BUTTON_L1 || k == android.view.KeyEvent.KEYCODE_BUTTON_R1

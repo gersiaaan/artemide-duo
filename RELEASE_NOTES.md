@@ -1,20 +1,23 @@
-## Artemide Duo v0.22
+## Artemide Duo v0.23
 
-**Controller desktop mode (new)**
-- New **G / D** button next to the performance button in the keyboard panel — only for Desktop / remote streams. **G** = normal gamepad (default, always used for games and the menus), **D** = desktop mode:
-  - left stick = mouse (soft curve: fine with a small push, fast when fully pushed), right stick = scroll
-  - A = left click, B = right click, X = Windows key, Y = Alt+Tab (hold Y to keep stepping through windows)
-- Stream menu → **Speed**: trackpad speed plus a new **Gamepad cursor** speed (1–10).
+**Performance overlay (new default)**
+- Compact overlay, top centre, fixed width, see-through (opacity selectable, 55 % default):
+  resolution · codec · FPS from the host (H) and shown on the client (C), bitrate in Mbps and MB/s with peak,
+  **Total** latency (host + network round trip + decode + render), network / decode, rendering, dropped frames.
+- Settings → Overlay → **Overlay style**: New, Detailed, Classic (the previous Artemide overlay).
 
-**Stream**
-- Controller stays in the stream: the stick / D-pad no longer jump onto the keyboard panel.
-- The keyboard button bottom-left comes back as soon as the panel is hidden (also after swiping it away) — Desktop / remote only.
-- Desktop panel now also opens automatically when you resume from the host page, and for apps you marked as "App" under Game settings & type.
+**Controller shortcuts** (Settings → Shortcuts, hold LB + RB + button) — keyboard shortcuts removed:
+- Quit session (A), Pause session / disconnect (Y), Performance overlay (X), Open stream settings / quick menu (B),
+  Keyboard & trackpad (Start), Controller mode G/D (Select). Every combo can be changed or turned off.
+- Quick menu: new **Controller mode (Gamepad / Desktop)** entry showing the current mode.
 
 **Host page & app list**
-- No more grey screen: the old screen behind can't take focus any more; after touching, the controller continues on the last button.
-- App list opens with focus on LAST PLAYED; tabs and LB/RB hints can't be selected with the stick (use LB/RB).
-- Resume from the host page keeps the real app name.
+- New **Host profiles** window: Off / your profiles as pills (LB/RB to switch), what each profile changes,
+  "+ Add" with templates (Desktop, GPD Win Max) or your current settings.
+- Favourites are back: Options → Add to / Remove from favourites, own FAVOURITES section.
+- After a session ends you are back on the host page.
+- Resume from the host page now uses your virtual display setting (no fallback to the host monitor when the session had ended).
 
 **Settings**
-- LB/RB hints around the tabs (only with a controller), the back arrow at the top is replaced by **Back (B)** in a bottom bar.
+- StreamLight look: big clock / date / battery, upper-case tabs with accent line (LB/RB), sections as one card with separators,
+  filled accent pills for short choices. No more grey focus tint on lists and tab bars.

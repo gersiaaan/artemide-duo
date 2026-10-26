@@ -361,7 +361,8 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
 
             @Override
             public void profiles() {
-                startActivity(new Intent(PcView.this, ProfilesActivity.class));
+                ComputerDetails sel = duoHome == null ? null : duoHome.selectedComputer();
+                com.limelight.duo.DuoProfilesDialog.show(PcView.this, sel == null ? null : sel.name);
             }
 
             @Override

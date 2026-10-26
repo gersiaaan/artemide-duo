@@ -60,7 +60,28 @@ public final class DuoSettingsDecor {
         Context c = row.getContext();
         float d = c.getResources().getDisplayMetrics().density;
         int accent = DuoTheme.accent(c);
-        row.setBackground(rowBackground(accent, d));
+        // StreamLight look: the rows of one section form a single card with thin separators.
+        boolean first = true, last = true;
+        androidx.preference.PreferenceGroup g = pref.getParent();
+        if (g != null) {
+            int idx = -1, firstVis = -1, lastVis = -1;
+            for (int i = 0; i < g.getPreferenceCount(); i++) {
+                Preference q = g.getPreference(i);
+                if (!q.isVisible()) {
+                    continue;
+                }
+                if (firstVis < 0) {
+                    firstVis = i;
+                }
+                lastVis = i;
+                if (q == pref) {
+                    idx = i;
+                }
+            }
+            first = idx == firstVis;
+            last = idx == lastVis;
+        }
+        row.setBackground(groupedBackground(accent, d, first, last));
         View title = row.findViewById(android.R.id.title);
         if (title instanceof TextView) {
             ((TextView) title).setTypeface(DuoFonts.medium());
@@ -87,9 +108,9 @@ public final class DuoSettingsDecor {
             ListPreference lp = (ListPreference) pref;
             CharSequence[] names = lp.getEntries();
             CharSequence[] values = lp.getEntryValues();
-            if (names != null && values != null && names.length >= 2 && names.length <= 4
+            if (names != null && values != null && names.length >= 2 && names.length <= 5
                     && names.length == values.length && fits(names)) {
-                pills.setBackground(rounded(0xFF000000, DuoTheme.LINE, 9, d));
+                pills.setBackground(rounded(0x59000000, DuoTheme.LINE, 9, d));
                 String current = lp.getValue();
                 for (int i = 0; i < names.length; i++) {
                     final String v = values[i].toString();
@@ -98,14 +119,15 @@ public final class DuoSettingsDecor {
                     t.setText(names[i]);
                     t.setTextSize(11.5f);
                     t.setTypeface(DuoFonts.medium());
-                    t.setTextColor(on ? accent : DuoTheme.TEXT);
+                    t.setTextColor(on ? DuoTheme.onAccent(accent) : DuoTheme.TEXT);
+                    t.setTypeface(on ? DuoFonts.semibold() : DuoFonts.medium());
                     t.setGravity(Gravity.CENTER);
                     t.setPadding(Math.round(10 * d), 0, Math.round(10 * d), 0);
                     StateListDrawable s = new StateListDrawable();
-                    GradientDrawable focus = rounded(on ? DuoTheme.mix(accent, DuoTheme.CARD, 0.16f) : 0, 0, 7, d);
+                    GradientDrawable focus = rounded(on ? accent : 0, 0, 7, d);
                     focus.setStroke(Math.round(1.5f * d), DuoTheme.focus(accent));
                     s.addState(new int[]{android.R.attr.state_focused}, focus);
-                    s.addState(new int[]{}, rounded(on ? DuoTheme.mix(accent, DuoTheme.CARD, 0.16f) : 0, 0, 7, d));
+                    s.addState(new int[]{}, rounded(on ? accent : 0, 0, 7, d));
                     t.setBackground(s);
                     t.setFocusable(true);
                     t.setEnabled(pref.isEnabled());
@@ -137,7 +159,46 @@ public final class DuoSettingsDecor {
             }
             total += n.length();
         }
-        return total <= 36;
+        return total <= 40;
+    }
+
+    private static StateListDrawable groupedBackground(int accent, float d, boolean first, boolean last) {
+        float r = 14 * d;
+        float[] radii = {first ? r : 0, first ? r : 0, first ? r : 0, first ? r : 0,
+                last ? r : 0, last ? r : 0, last ? r : 0, last ? r : 0};
+        int card = DuoTheme.withAlpha(DuoTheme.CARD, 0.72f);
+        GradientDrawable base = new GradientDrawable();
+        base.setColor(card);
+        base.setCornerRadii(radii);
+        android.graphics.drawable.Drawable normal = base;
+        if (!last) {
+            GradientDrawable line = new GradientDrawable();
+            line.setColor(0x12FFFFFF);
+            LayerDrawable ld = new LayerDrawable(new android.graphics.drawable.Drawable[]{base, line});
+            int inset = Math.round(14 * d);
+            ld.setLayerInset(1, inset, 0, inset, 0);
+            ld.setLayerGravity(1, android.view.Gravity.BOTTOM | android.view.Gravity.FILL_HORIZONTAL);
+            ld.setLayerHeight(1, Math.max(1, Math.round(d)));
+            normal = ld;
+        }
+        GradientDrawable ringFill = new GradientDrawable();
+        ringFill.setColor(card);
+        ringFill.setCornerRadii(radii);
+        GradientDrawable ring = new GradientDrawable();
+        ring.setColor(0);
+        ring.setCornerRadius(10 * d);
+        ring.setStroke(Math.round(2 * d), DuoTheme.focus(accent));
+        LayerDrawable focused = new LayerDrawable(new android.graphics.drawable.Drawable[]{ringFill, ring});
+        int ri = Math.round(4 * d);
+        focused.setLayerInset(1, ri, Math.round(2 * d), ri, Math.round(2 * d));
+        GradientDrawable pressed = new GradientDrawable();
+        pressed.setColor(DuoTheme.CARD_HIGH);
+        pressed.setCornerRadii(radii);
+        StateListDrawable s = new StateListDrawable();
+        s.addState(new int[]{android.R.attr.state_focused}, focused);
+        s.addState(new int[]{android.R.attr.state_pressed}, pressed);
+        s.addState(new int[]{}, normal);
+        return s;
     }
 
     private static StateListDrawable rowBackground(int accent, float d) {

@@ -261,6 +261,10 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         render();
     }
 
+    public ComputerDetails selectedComputer() {
+        return addMode ? null : selected();
+    }
+
     private ComputerDetails selected() {
         if (computers.isEmpty()) {
             return null;
