@@ -10,6 +10,16 @@
         android:title="Surface Duo"
         app:iconSpaceReserved="false">
         <SeekBarPreference
+            android:key="duo_kb_vibration"
+            android:title="Keyboard vibration"
+            android:summary="Strength of the vibration when typing (0 = off)"
+            android:defaultValue="50"
+            android:max="100"
+            app:min="0"
+            app:seekBarIncrement="5"
+            app:showSeekBarValue="true"
+            app:iconSpaceReserved="false" />
+        <SeekBarPreference
             android:key="duo_trackpad_speed"
             android:title="Trackpad speed"
             android:summary="Speed of the keyboard trackpad and the trackpad (1 to 10)"

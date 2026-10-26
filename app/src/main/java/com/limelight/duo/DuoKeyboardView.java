@@ -687,7 +687,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
         pressed = keyAtTouch(x, y);
         if (pressed != null) {
             // Immediate feedback on touch-down, like Gboard.
-            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            DuoHaptics.key(this);
         }
         invalidate();
     }
