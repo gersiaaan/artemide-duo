@@ -11,4 +11,47 @@
         <item>all</item>
         <item>off</item>
     </string-array>
+    <!-- Accent colours of the start screen (StreamLight's palette + Duo blue) -->
+    <string-array name="duo_accent_names">
+        <item>Ion (cyan)</item>
+        <item>Duo blue</item>
+        <item>Rose</item>
+        <item>Ember</item>
+        <item>Amber</item>
+        <item>Lemon</item>
+        <item>Lime</item>
+        <item>Signal (green)</item>
+        <item>Mint</item>
+        <item>Azure</item>
+        <item>Indigo</item>
+        <item>Ultra</item>
+        <item>Magenta</item>
+    </string-array>
+    <string-array name="duo_accent_values" translatable="false">
+        <item>#00D3F2</item>
+        <item>#A9C1F0</item>
+        <item>#FF4D6D</item>
+        <item>#FF6A3D</item>
+        <item>#FFB300</item>
+        <item>#FFE14D</item>
+        <item>#A6E22E</item>
+        <item>#00E676</item>
+        <item>#2EE6B6</item>
+        <item>#3D9BFF</item>
+        <item>#6E74FF</item>
+        <item>#C060FF</item>
+        <item>#FF4FD8</item>
+    </string-array>
+    <string-array name="duo_splash_names">
+        <item>Off</item>
+        <item>1 second</item>
+        <item>2 seconds</item>
+        <item>3 seconds</item>
+    </string-array>
+    <string-array name="duo_splash_values" translatable="false">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
 </resources>

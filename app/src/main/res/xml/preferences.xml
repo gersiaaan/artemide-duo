@@ -27,6 +27,24 @@
             android:defaultValue="desktop"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
+        <ListPreference
+            android:key="duo_accent"
+            android:title="Accent color"
+            android:dialogTitle="Accent color"
+            android:entries="@array/duo_accent_names"
+            android:entryValues="@array/duo_accent_values"
+            android:defaultValue="#00D3F2"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+        <ListPreference
+            android:key="duo_splash"
+            android:title="Start screen"
+            android:dialogTitle="Start screen"
+            android:entries="@array/duo_splash_names"
+            android:entryValues="@array/duo_splash_values"
+            android:defaultValue="2"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
     </PreferenceCategory>
 
     <PreferenceCategory

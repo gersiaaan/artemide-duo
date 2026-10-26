@@ -71,6 +71,9 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 public class PcView extends AppCompatActivity implements AdapterFragmentCallbacks {
+    // Artemide Duo: new start screen on top of the (hidden) PC grid.
+    private com.limelight.duo.DuoHomeView duoHome;
+    private AbsListView pcListView;
     private RelativeLayout noPcFoundLayout;
     private PcGridAdapter pcGridAdapter;
     private ShortcutHelper shortcutHelper;
@@ -204,6 +207,109 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
             noPcFoundLayout.setVisibility(View.INVISIBLE);
         }
         pcGridAdapter.notifyDataSetChanged();
+
+        duoHome = new com.limelight.duo.DuoHomeView(this, duoHomeHost());
+        addContentView(duoHome, new android.view.ViewGroup.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT));
+        pushComputersToHome();
+    }
+
+    private void pushComputersToHome() {
+        if (duoHome == null) {
+            return;
+        }
+        java.util.List<ComputerDetails> list = new java.util.ArrayList<>();
+        for (int i = 0; i < pcGridAdapter.getCount(); i++) {
+            list.add(((ComputerObject) pcGridAdapter.getItem(i)).details);
+        }
+        duoHome.setComputers(list);
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
+        if (duoHome != null && duoHome.handleKey(event)) {
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
+    private com.limelight.duo.DuoHomeView.Host duoHomeHost() {
+        return new com.limelight.duo.DuoHomeView.Host() {
+            @Override
+            public void open(ComputerDetails c) {
+                if (c.state == ComputerDetails.State.UNKNOWN) {
+                    options(c);
+                } else if (c.state == ComputerDetails.State.OFFLINE) {
+                    doWakeOnLan(c);
+                } else if (c.pairState != PairState.PAIRED) {
+                    doPair(c, null, null);
+                } else {
+                    doAppList(c, false, false);
+                }
+            }
+
+            @Override
+            public void options(ComputerDetails c) {
+                // Reuse the PC grid's context menu (all host actions) for this host.
+                if (pcListView == null) {
+                    return;
+                }
+                for (int i = 0; i < pcGridAdapter.getCount(); i++) {
+                    if (((ComputerObject) pcGridAdapter.getItem(i)).details == c) {
+                        final int pos = i;
+                        pcListView.setSelection(pos);
+                        pcListView.post(() -> {
+                            View child = pcListView.getChildAt(pos - pcListView.getFirstVisiblePosition());
+                            if (child != null) {
+                                openContextMenu(child);
+                            }
+                        });
+                        return;
+                    }
+                }
+            }
+
+            @Override
+            public void playAgain(ComputerDetails c, com.limelight.duo.DuoPlayStats.Last last) {
+                if (managerBinder == null) {
+                    Toast.makeText(PcView.this, getResources().getString(R.string.error_manager_not_running), Toast.LENGTH_LONG).show();
+                    return;
+                }
+                if (c.runningGameId != 0 && c.runningGameId != last.appId) {
+                    // Something else is running on the host: let the app list ask what to do.
+                    doAppList(c, false, false);
+                    return;
+                }
+                NvApp app = new NvApp(last.name, last.appUuid, last.appId, last.hdr);
+                PreferenceConfiguration prefs = PreferenceConfiguration.readPreferences(PcView.this);
+                if (prefs.useVirtualDisplay && !(c.vDisplaySupported && c.vDisplayDriverReady)) {
+                    UiHelper.displayVdisplayConfirmationDialog(PcView.this, c,
+                            () -> ServerHelper.doStart(PcView.this, app, c, managerBinder, true), null);
+                } else {
+                    ServerHelper.doStart(PcView.this, app, c, managerBinder, prefs.useVirtualDisplay);
+                }
+            }
+
+            @Override
+            public void addHost() {
+                startActivity(new Intent(PcView.this, AddComputerManually.class));
+            }
+
+            @Override
+            public void profiles() {
+                startActivity(new Intent(PcView.this, ProfilesActivity.class));
+            }
+
+            @Override
+            public void settings() {
+                startActivity(new Intent(PcView.this, StreamSettings.class));
+            }
+
+            @Override
+            public void exit() {
+                finish();
+            }
+        };
     }
 
     @Override
@@ -375,6 +481,9 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
         UiHelper.showDecoderCrashDialog(this);
 
         refreshProfileButton();
+        if (duoHome != null) {
+            duoHome.refresh();
+        }
 
         inForeground = true;
         startComputerUpdates();
@@ -842,6 +951,7 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
 
                 pcGridAdapter.removeComputer(computer);
                 pcGridAdapter.notifyDataSetChanged();
+                pushComputersToHome();
 
                 if (pcGridAdapter.getCount() == 0) {
                     // Show the "Discovery in progress" view
@@ -880,6 +990,7 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
 
         // Notify the view that the data has changed
         pcGridAdapter.notifyDataSetChanged();
+        pushComputersToHome();
     }
 
     @Override
@@ -889,6 +1000,7 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
 
     @Override
     public void receiveAbsListView(AbsListView listView) {
+        pcListView = listView;
         listView.setAdapter(pcGridAdapter);
         listView.setOnItemClickListener(new OnItemClickListener() {
             @Override

@@ -1892,6 +1892,8 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
     protected void onDestroy() {
         super.onDestroy();
 
+        com.limelight.duo.DuoPlayStats.ended(this);
+
         if (duoController != null) {
             duoController.destroy();
             duoController = null;
@@ -4073,6 +4075,14 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
 
                 // Update GameManager state to indicate we're in game
                 UiHelper.notifyStreamConnected(Game.this);
+
+                // Artemide Duo start screen: last played app, play time and sessions.
+                com.limelight.duo.DuoPlayStats.started(Game.this,
+                        getIntent().getStringExtra(EXTRA_PC_UUID),
+                        getIntent().getIntExtra(EXTRA_APP_ID, 0),
+                        getIntent().getStringExtra(EXTRA_APP_NAME),
+                        getIntent().getStringExtra(EXTRA_APP_UUID),
+                        getIntent().getBooleanExtra(EXTRA_APP_HDR, false));
 
                 // Sync local clipboard to host
                 clipboardSyncOnFocus(true);
