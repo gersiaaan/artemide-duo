@@ -21,7 +21,7 @@ import com.limelight.nvstream.input.MouseButtonPacket;
  *  - 3 finger swipe                -> drag (left button held), e.g. move windows/files
  */
 public abstract class DuoTouchSurface extends View {
-    private enum Mode { NONE, PENDING, TYPED, HELD, MOUSE, DRAG, REPEAT, MULTI, SCROLL, DRAG3 }
+    private enum Mode { NONE, PENDING, TYPED, HELD, MOUSE, DRAG, REPEAT, MULTI, SCROLL, DRAG3, PINCH }
 
     private static final long LONG_PRESS_MS = 380;
     private static final long REPEAT_DELAY_MS = 55;
@@ -39,6 +39,7 @@ public abstract class DuoTouchSurface extends View {
     private Mode mode = Mode.NONE;
     private float downX, downY, lastX, lastY;
     private float lastCx, lastCy;
+    private float startSpan, lastSpan, zoomRem;
     private boolean resetCentroid;
     private long downTime;
     private int activeId;
@@ -120,6 +121,8 @@ public abstract class DuoTouchSurface extends View {
     protected boolean supportsRollover() { return false; }
     /** Called when the touch turns into mouse movement, dragging or scrolling. */
     protected void onPointerAction() {}
+    /** False for pure keyboards (compact mode): swipes don't move the mouse. */
+    protected boolean trackpadEnabled() { return true; }
 
     private void beginPending(MotionEvent event, int index) {
         mode = Mode.PENDING;
@@ -222,6 +225,9 @@ public abstract class DuoTouchSurface extends View {
                             sink.sendMouseButton(MouseButtonPacket.BUTTON_LEFT, false);
                         }
                         break;
+                    case PINCH:
+                        endPinch();
+                        break;
                     default:
                         break;
                 }
@@ -230,6 +236,9 @@ public abstract class DuoTouchSurface extends View {
 
             case MotionEvent.ACTION_CANCEL:
                 cancelTimers();
+                if (mode == Mode.PINCH) {
+                    endPinch();
+                }
                 if ((mode == Mode.DRAG || mode == Mode.DRAG3) && sink != null) {
                     sink.sendMouseButton(MouseButtonPacket.BUTTON_LEFT, false);
                 }
@@ -249,7 +258,7 @@ public abstract class DuoTouchSurface extends View {
 
         switch (mode) {
             case PENDING:
-                if (Math.hypot(x - downX, y - downY) > slop) {
+                if (trackpadEnabled() && Math.hypot(x - downX, y - downY) > slop) {
                     cancelTimers();
                     onCancelPress();
                     mode = Mode.MOUSE;
@@ -280,7 +289,8 @@ public abstract class DuoTouchSurface extends View {
 
             case MULTI:
             case SCROLL:
-            case DRAG3: {
+            case DRAG3:
+            case PINCH: {
                 if (event.getPointerCount() < 2) {
                     resetCentroid = true;
                     break;
@@ -293,14 +303,41 @@ public abstract class DuoTouchSurface extends View {
                 }
                 cx /= n;
                 cy /= n;
+                float span = (float) Math.hypot(event.getX(0) - event.getX(1), event.getY(0) - event.getY(1));
                 if (resetCentroid) {
                     lastCx = cx;
                     lastCy = cy;
+                    lastSpan = span;
+                    if (mode == Mode.MULTI) {
+                        startSpan = span;
+                    }
                     resetCentroid = false;
                     break;
                 }
                 float dx = cx - lastCx;
                 float dy = cy - lastCy;
+                if (mode == Mode.PINCH) {
+                    zoom(span - lastSpan);
+                    lastSpan = span;
+                    lastCx = cx;
+                    lastCy = cy;
+                    break;
+                }
+                if (mode == Mode.MULTI && maxPointers == 2 && event.getPointerCount() == 2
+                        && Math.abs(span - startSpan) > slop * 1.5f
+                        && Math.abs(span - startSpan) > Math.hypot(dx, dy)) {
+                    // Two fingers apart/together: zoom like a laptop trackpad (Ctrl + wheel).
+                    mode = Mode.PINCH;
+                    onPointerAction();
+                    zoomRem = 0;
+                    if (sink != null) {
+                        sink.sendKey(DuoKeys.VK_LCONTROL, true, (byte) 0);
+                    }
+                    lastSpan = span;
+                    lastCx = cx;
+                    lastCy = cy;
+                    break;
+                }
                 if (mode == Mode.MULTI) {
                     if (Math.hypot(dx, dy) > slop) {
                         onPointerAction();
@@ -388,8 +425,30 @@ public abstract class DuoTouchSurface extends View {
         onCancelPress();
     }
 
+    private void zoom(float dSpan) {
+        if (sink == null) {
+            return;
+        }
+        // About one wheel notch per 30dp of finger spread; apart = zoom in.
+        zoomRem += dSpan * 120f / (30f * density);
+        short v = (short) zoomRem;
+        zoomRem -= v;
+        if (v != 0) {
+            sink.sendScroll(v, (short) 0);
+        }
+    }
+
+    private void endPinch() {
+        if (sink != null) {
+            sink.sendKey(DuoKeys.VK_LCONTROL, false, (byte) 0);
+        }
+    }
+
     @Override
     protected void onDetachedFromWindow() {
+        if (mode == Mode.PINCH) {
+            endPinch();
+        }
         cancelTimers();
         if ((mode == Mode.DRAG || mode == Mode.DRAG3) && sink != null) {
             sink.sendMouseButton(MouseButtonPacket.BUTTON_LEFT, false);
