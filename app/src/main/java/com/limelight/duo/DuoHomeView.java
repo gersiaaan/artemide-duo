@@ -138,7 +138,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         title.setText(brand());
         title.setLetterSpacing(0.18f);
         titles.addView(title);
-        titles.addView(text("an Artemide fork for Surface Duo", 10.5f, DuoTheme.TEXT2, false));
+        titles.addView(text("an Artemide fork for Surface Duo and Galaxy Tab S6", 10.5f, DuoTheme.TEXT2, false));
         LinearLayout clockCol = new LinearLayout(context);
         clockCol.setOrientation(LinearLayout.VERTICAL);
         clockCol.setGravity(Gravity.END);
@@ -613,20 +613,14 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         return s;
     }
 
+    /** iOS-style app icon: squircle-ish rounded square, accent gradient, white glyph. */
     private View logoBox(int sizeDp) {
-        FrameLayout box = new FrameLayout(getContext());
-        box.setBackground(rounded(DuoTheme.CARD, DuoTheme.LINE, sizeDp * 0.29f));
-        ImageView i = new ImageView(getContext());
-        i.setImageDrawable(tinted(R.drawable.ic_duo_logo));
-        int pad = Math.round(sizeDp * 0.2f * d);
-        i.setPadding(pad, pad, pad, pad);
-        box.addView(i, match());
-        return box;
+        return DuoTheme.appIcon(getContext(), accent, sizeDp);
     }
 
     private android.graphics.drawable.Drawable tinted(int res) {
         android.graphics.drawable.Drawable dr = getContext().getDrawable(res).mutate();
-        dr.setTint(res == R.drawable.ic_duo_logo ? accent : DuoTheme.TEXT);
+        dr.setTint(DuoTheme.TEXT);
         return dr;
     }
 

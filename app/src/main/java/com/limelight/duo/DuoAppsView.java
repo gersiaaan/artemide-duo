@@ -623,14 +623,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     }
 
     private View logoBox() {
-        FrameLayout box = new FrameLayout(getContext());
-        box.setBackground(rounded(DuoTheme.CARD, DuoTheme.LINE, 9));
-        ImageView i = new ImageView(getContext());
-        i.setImageDrawable(tinted(R.drawable.ic_duo_logo, accent));
-        int pad = dp(6);
-        i.setPadding(pad, pad, pad, pad);
-        box.addView(i, match());
-        return box;
+        return DuoTheme.appIcon(getContext(), accent, 30);
     }
 
     private android.graphics.drawable.Drawable tinted(int res, int color) {

@@ -72,4 +72,24 @@ public final class DuoTheme {
         double s = c / 255.0;
         return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
     }
+
+    /** iOS-style app icon: rounded square (22 % radius), accent gradient with a soft top light, white glyph. */
+    public static android.view.View appIcon(Context c, int accent, int sizeDp) {
+        float d = c.getResources().getDisplayMetrics().density;
+        android.widget.FrameLayout box = new android.widget.FrameLayout(c);
+        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{mix(0xFFFFFFFF, accent, 0.18f), mix(0xFF000000, accent, 0.38f)});
+        bg.setCornerRadius(sizeDp * 0.225f * d);
+        box.setBackground(bg);
+        box.setElevation(sizeDp * 0.08f * d);
+        android.widget.ImageView glyph = new android.widget.ImageView(c);
+        android.graphics.drawable.Drawable dr = c.getDrawable(com.limelight.R.drawable.ic_duo_logo).mutate();
+        dr.setTint(0xFFFFFFFF);
+        glyph.setImageDrawable(dr);
+        int pad = Math.round(sizeDp * 0.2f * d);
+        glyph.setPadding(pad, pad, pad, pad);
+        box.addView(glyph, new android.widget.FrameLayout.LayoutParams(-1, -1));
+        return box;
+    }
 }
