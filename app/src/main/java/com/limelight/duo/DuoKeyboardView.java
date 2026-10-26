@@ -34,9 +34,9 @@ public class DuoKeyboardView extends DuoTouchSurface {
     /** Row heights in dp; rows shrink if the panel is smaller. */
     private static final float FN_ROW_DP = 24f;
     private static final float ROW_DP = 58f;
-    private static final float COMPACT_ROW_DP = 60f;
+    private static final float COMPACT_ROW_DP = 54f;
     /** Compact space-bar row: a bit flatter than the letter rows. */
-    private static final float COMPACT_SPACE_ROW_DP = 50f;
+    private static final float COMPACT_SPACE_ROW_DP = 46f;
     /** Compact: keys end above the Links/Rechts buttons of the trackpad column (52 + 6). */
     private static final float COMPACT_BOTTOM_DP = 58f;
     /** Room above the keys for the suggestion bar, which floats right on top of them. */
