@@ -131,7 +131,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         // Controller mode for desktop / remote streams: G = gamepad, D = desktop (mouse).
         if (DuoGamepadMouse.available()) {
             FrameLayout pad = new FrameLayout(context);
-            ImageButton padIcon = iconButton(context.getDrawable(R.drawable.ic_duo_gamepad), "Controller: gamepad or desktop");
+            ImageButton padIcon = iconButton(context.getDrawable(R.drawable.ic_duo_gamepad), "Controller: gamepad, desktop or off");
             pad.addView(padIcon, new FrameLayout.LayoutParams(-1, -1));
             final TextView padLetter = new TextView(context);
             padLetter.setTextSize(9);
@@ -141,9 +141,10 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
             ll.bottomMargin = dp(2);
             pad.addView(padLetter, ll);
             final Runnable paint = () -> {
-                boolean d = DuoGamepadMouse.isDesktop();
-                padLetter.setText(d ? "D" : "G");
-                // Same frame as the other buttons; only the letter shows the mode.
+                // G = gamepad, D = desktop (mouse), crossed out = controller ignored in the stream.
+                boolean off = DuoGamepadMouse.isOff();
+                padIcon.setImageDrawable(context.getDrawable(off ? R.drawable.ic_duo_gamepad_off : R.drawable.ic_duo_gamepad));
+                padLetter.setText(off ? "" : DuoGamepadMouse.isDesktop() ? "D" : "G");
                 padLetter.setTextColor(DuoColors.TEXT);
             };
             padIcon.setOnClickListener(v -> {

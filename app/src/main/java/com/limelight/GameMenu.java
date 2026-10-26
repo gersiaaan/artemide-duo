@@ -344,7 +344,7 @@ public class GameMenu implements Game.GameMenuCallbacks {
             // Controller: gamepad or desktop (mouse) mode, only for desktop / remote streams.
             if (com.limelight.duo.DuoGamepadMouse.available()) {
                 options.add(new MenuOption("Controller mode ("
-                        + (com.limelight.duo.DuoGamepadMouse.isDesktop() ? "Desktop" : "Gamepad") + ")", false,
+                        + com.limelight.duo.DuoGamepadMouse.modeName() + ")", false,
                         () -> com.limelight.duo.DuoGamepadMouse.toggle(game)));
             }
             options.add(new MenuOption("Speed (trackpad & gamepad cursor)", false,

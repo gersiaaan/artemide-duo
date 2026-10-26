@@ -47,39 +47,75 @@ public final class DuoGamepadMouse {
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
 
     /** Called when a stream starts. Desktop mode only exists for desktop / remote apps. */
+    public static final String KEY_OFF = "duo_pad_off";
+
+    private static boolean off;
+    private static boolean inStream;
+
+    /** Called when a stream starts. Desktop mode only exists for desktop / remote apps. */
     public static void init(Context c, boolean desktopStream, DuoInputSink s) {
+        inStream = true;
         streamIsDesktop = desktopStream;
         sink = s;
-        desktop = desktopStream && PreferenceManager.getDefaultSharedPreferences(c).getBoolean(KEY_DESKTOP, false);
-        speed = PreferenceManager.getDefaultSharedPreferences(c).getInt(KEY_SPEED, 5);
+        android.content.SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(c);
+        desktop = desktopStream && p.getBoolean(KEY_DESKTOP, false);
+        off = p.getBoolean(KEY_OFF, false);
+        speed = p.getInt(KEY_SPEED, 5);
         reset();
     }
 
     public static void end() {
         reset();
+        inStream = false;
         streamIsDesktop = false;
         desktop = false;
+        off = false;
         sink = null;
     }
 
+    /** The G / D / off button exists in every stream; D only for desktop / remote apps. */
     public static boolean available() {
+        return inStream;
+    }
+
+    public static boolean canDesktop() {
         return streamIsDesktop;
     }
 
     public static boolean isDesktop() {
-        return desktop && streamIsDesktop;
+        return desktop && streamIsDesktop && !off;
+    }
+
+    /** Controller ignored in the stream (only the LB + RB shortcuts still work). */
+    public static boolean isOff() {
+        return off && inStream;
+    }
+
+    /** "Gamepad", "Desktop" or "Off". */
+    public static String modeName() {
+        return isOff() ? "Off" : isDesktop() ? "Desktop" : "Gamepad";
     }
 
     public static void setListener(Runnable r) {
         listener = r;
     }
 
+    /** Cycles Gamepad → Desktop (desktop / remote only) → Off → Gamepad. */
     public static void toggle(Context c) {
-        if (!streamIsDesktop) {
+        if (!inStream) {
             return;
         }
-        desktop = !desktop;
-        PreferenceManager.getDefaultSharedPreferences(c).edit().putBoolean(KEY_DESKTOP, desktop).apply();
+        if (off) {
+            off = false;
+            desktop = false;
+        } else if (!desktop && streamIsDesktop) {
+            desktop = true;
+        } else {
+            off = true;
+            desktop = false;
+        }
+        PreferenceManager.getDefaultSharedPreferences(c).edit()
+                .putBoolean(KEY_DESKTOP, desktop).putBoolean(KEY_OFF, off).apply();
         reset();
         if (listener != null) {
             listener.run();
@@ -103,6 +139,9 @@ public final class DuoGamepadMouse {
 
     /** Face buttons. Returns true when consumed. */
     public static boolean onKey(KeyEvent e) {
+        if (isOff() && fromPad(e.getDevice(), e.getSource())) {
+            return true; // controller ignored (shortcuts were handled before)
+        }
         if (!isDesktop() || sink == null || !fromPad(e.getDevice(), e.getSource())) {
             return false;
         }
@@ -154,6 +193,9 @@ public final class DuoGamepadMouse {
 
     /** Sticks. Returns true when consumed. */
     public static boolean onMotion(MotionEvent e) {
+        if (isOff() && (e.getSource() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
+            return true;
+        }
         if (!isDesktop() || sink == null
                 || (e.getSource() & InputDevice.SOURCE_JOYSTICK) != InputDevice.SOURCE_JOYSTICK
                 || e.getAction() != MotionEvent.ACTION_MOVE) {
