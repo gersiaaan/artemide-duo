@@ -261,9 +261,9 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
 
     private void onTab(int m) {
         if (m == MODE_KEYBOARD && mode == MODE_KEYBOARD) {
-            // Tapping Keyboard again switches between the PC keyboard and the phone layout.
+            // Tapping Keyboard again cycles: PC keyboard -> Slim -> Wide -> PC keyboard.
             androidx.preference.PreferenceManager.getDefaultSharedPreferences(getContext()).edit()
-                    .putBoolean("duo_kb_phone", !phone).apply();
+                    .putInt("duo_kb_mode", (kbMode + 1) % 3).apply();
             applyPhone();
             return;
         }
@@ -345,9 +345,6 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         phoneKeyboard.setCompactRowsDp(58, 58);
         phoneKeyboardArea = keyboardWithSuggestions(context, phoneKeyboard);
         FrameLayout.LayoutParams pl = new FrameLayout.LayoutParams(-1, -1, Gravity.CENTER_HORIZONTAL);
-        int sideMargin = Math.round(context.getResources().getDisplayMetrics().widthPixels * 0.11f);
-        pl.leftMargin = sideMargin;
-        pl.rightMargin = sideMargin;
         area.addView(phoneKeyboardArea, pl);
         applyPhone();
 
@@ -361,12 +358,22 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
 
     private View fullKeyboardArea, phoneKeyboardArea;
     private DuoKeyboardView phoneKeyboard;
-    private boolean phone;
+    private int kbMode;
 
     private void applyPhone() {
-        phone = androidx.preference.PreferenceManager.getDefaultSharedPreferences(getContext()).getBoolean("duo_kb_phone", false);
+        android.content.SharedPreferences sp = androidx.preference.PreferenceManager.getDefaultSharedPreferences(getContext());
+        kbMode = sp.getInt("duo_kb_mode", sp.getBoolean("duo_kb_phone", false) ? 1 : 0);
+        boolean phone = kbMode != 0;
         fullKeyboardArea.setVisibility(phone ? GONE : VISIBLE);
         phoneKeyboardArea.setVisibility(phone ? VISIBLE : GONE);
+        // Slim: 11 % side margins, normal keys. Wide: full width, taller keys.
+        FrameLayout.LayoutParams pl = (FrameLayout.LayoutParams) phoneKeyboardArea.getLayoutParams();
+        int side = kbMode == 1 ? Math.round(getResources().getDisplayMetrics().widthPixels * 0.11f) : 0;
+        pl.leftMargin = side;
+        pl.rightMargin = side;
+        phoneKeyboardArea.setLayoutParams(pl);
+        float row = kbMode == 2 ? 68 : 58;
+        phoneKeyboard.setCompactRowsDp(row, row);
     }
 
     private View buildCompactMode(Context context) {
