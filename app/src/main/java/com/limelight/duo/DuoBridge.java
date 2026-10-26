@@ -58,8 +58,8 @@ public final class DuoBridge {
         c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(KEY_SPEED, speed).apply();
     }
 
-    /** Maps speed 1..10 to a pointer gain (5 -> 1.6). */
+    /** Maps speed 1..10 to a pointer gain (1 -> 0.15, 5 -> 0.62, 10 -> 1.2). */
     public static float gainFor(int speed) {
-        return 0.6f + speed * 0.2f;
+        return 0.15f + (speed - 1) * (1.05f / 9f);
     }
 }

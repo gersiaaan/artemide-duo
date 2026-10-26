@@ -252,9 +252,9 @@ public abstract class DuoTouchSurface extends View {
         float v = (float) Math.hypot(dx, dy) / density / dt;
         smoothVelocity = smoothVelocity * 0.6f + v * 0.4f;
 
-        // Pointer-precision curve: slow = precise (0.8x), fast = far (2.4x).
-        float t = Math.max(0f, Math.min(1f, (smoothVelocity - 0.1f) / 1.1f));
-        float gain = sensitivity * (0.8f + 1.6f * t * t * (3f - 2f * t));
+        // Pointer-precision curve: slow = precise (0.7x), fast = farther (1.8x).
+        float t = Math.max(0f, Math.min(1f, (smoothVelocity - 0.1f) / 1.4f));
+        float gain = sensitivity * (0.7f + 1.1f * t * t * (3f - 2f * t));
 
         remX += dx * gain;
         remY += dy * gain;
