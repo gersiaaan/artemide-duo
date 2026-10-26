@@ -1548,6 +1548,18 @@ public class StreamSettings extends AppCompatActivity {
         public void onCreatePreferences(Bundle bundle, String s) {
             initializePreferences();
             duoShowTab();
+            // Controller shortcuts: tap a row, then press the button on the controller.
+            String[][] pad = {{"quit", "A"}, {"pause", "Y"}, {"perf", "X"}, {"menu", "B"}, {"panel", "START"}, {"mode", "SELECT"}};
+            for (String[] sc : pad) {
+                Preference p = findPreference("duo_pad_sc_" + sc[0]);
+                if (p instanceof androidx.preference.ListPreference) {
+                    final String def = sc[1];
+                    p.setOnPreferenceClickListener(pr -> {
+                        com.limelight.duo.DuoRebindDialog.show(getActivity(), (androidx.preference.ListPreference) pr, def);
+                        return true;
+                    });
+                }
+            }
             final Preference gpuPathPref = findPreference("checkbox_gpu_path_mode");
             if (gpuPathPref != null) {
                 gpuPathPref.setOnPreferenceChangeListener((preference, newValue) -> {

@@ -32,6 +32,8 @@ public final class DuoPadShortcuts {
             case KeyEvent.KEYCODE_BUTTON_Y: return "Y";
             case KeyEvent.KEYCODE_BUTTON_START: return "START";
             case KeyEvent.KEYCODE_BUTTON_SELECT: return "SELECT";
+            case KeyEvent.KEYCODE_BUTTON_THUMBL: return "THUMBL";
+            case KeyEvent.KEYCODE_BUTTON_THUMBR: return "THUMBR";
             default: return null;
         }
     }

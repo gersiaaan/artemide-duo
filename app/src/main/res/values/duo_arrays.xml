@@ -88,8 +88,10 @@
         <item>LB + RB + B</item>
         <item>LB + RB + X</item>
         <item>LB + RB + Y</item>
-        <item>LB + RB + Start</item>
-        <item>LB + RB + Select</item>
+        <item>LB + RB + Menu</item>
+        <item>LB + RB + View</item>
+        <item>LB + RB + L3</item>
+        <item>LB + RB + R3</item>
         <item>Off</item>
     </string-array>
     <string-array name="duo_pad_keys_values" translatable="false">
@@ -99,6 +101,8 @@
         <item>Y</item>
         <item>START</item>
         <item>SELECT</item>
+        <item>THUMBL</item>
+        <item>THUMBR</item>
         <item>OFF</item>
     </string-array>
     <string-array name="duo_overlay_style_names">
