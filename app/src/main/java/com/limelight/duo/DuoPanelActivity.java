@@ -16,8 +16,8 @@ import android.view.animation.PathInterpolator;
  */
 public class DuoPanelActivity extends Activity {
 
-    private static final long IN_MS = 280;
-    private static final long OUT_MS = 200;
+    private static final long IN_MS = 460;
+    private static final long OUT_MS = 300;
 
     private View panel;
     private boolean finishing;
@@ -62,13 +62,19 @@ public class DuoPanelActivity extends Activity {
 
         // Slide in from the top once the panel has its size.
         panel.post(() -> {
-            panel.setTranslationY(-panel.getHeight());
+            // Comes down from the stream screen above: slides in, grows from 94 % and lands softly
+            // with a tiny overshoot (spring-like, iOS sheet).
+            panel.setPivotX(panel.getWidth() / 2f);
+            panel.setPivotY(0f);
+            panel.setTranslationY(-panel.getHeight() * 0.6f);
+            panel.setScaleX(0.94f);
+            panel.setScaleY(0.94f);
             panel.animate()
                     .translationY(0f)
+                    .scaleX(1f).scaleY(1f)
                     .alpha(1f)
                     .setDuration(IN_MS)
-                    // iOS-like: fast start, long soft landing
-                    .setInterpolator(new PathInterpolator(0.32f, 0.72f, 0f, 1f))
+                    .setInterpolator(new android.view.animation.OvershootInterpolator(0.6f))
                     .start();
         });
     }
@@ -102,11 +108,15 @@ public class DuoPanelActivity extends Activity {
             return;
         }
         // Slide back up towards the stream, then close.
+        panel.setPivotX(panel.getWidth() / 2f);
+        panel.setPivotY(0f);
         panel.animate()
-                .translationY(-panel.getHeight())
+                .translationY(-panel.getHeight() * 0.7f)
+                .scaleX(0.92f).scaleY(0.92f)
                 .alpha(0f)
                 .setDuration(OUT_MS)
-                .setInterpolator(new PathInterpolator(0.4f, 0f, 0.9f, 0.6f))
+                // Back up into the stream screen: gentle start, quick finish.
+                .setInterpolator(new PathInterpolator(0.4f, 0f, 0.7f, 0.2f))
                 .withEndAction(() -> {
                     DuoPanelActivity.super.finish();
                     overridePendingTransition(0, 0);
