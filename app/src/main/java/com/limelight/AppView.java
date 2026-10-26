@@ -317,6 +317,10 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
         findViewById(R.id.profilesButton)
             .setOnClickListener(v -> startActivity(new Intent(this, ProfilesActivity.class)));
 
+        // Global settings right in the app list (above the profiles button)
+        findViewById(R.id.settingsFab)
+            .setOnClickListener(v -> startActivity(new Intent(this, com.limelight.preferences.StreamSettings.class)));
+
         showHiddenApps = getIntent().getBooleanExtra(SHOW_HIDDEN_APPS_EXTRA, false);
         uuidString = getIntent().getStringExtra(UUID_EXTRA);
 
