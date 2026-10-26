@@ -234,8 +234,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams b2 = new LinearLayout.LayoutParams(-2, -1);
         b2.leftMargin = dp(8);
         bottom.addView(button("Settings", "Y", false, v -> host.settings()), b2);
-        // Options: the Menu button (≡, right of the Xbox button).
-        optionsButton = button("Options", "≡", false, v -> {
+        // Options: the View button (⧉, left of the Xbox button).
+        optionsButton = button("Options", "⧉", false, v -> {
             App a = selectedApp();
             if (a != null) {
                 host.options(a);
@@ -552,14 +552,14 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         bl.topMargin = dp(12);
         info.addView(buttons, bl);
         // Outline only (no accent fill), like the other buttons.
-        playButton = button("Open", "A", false, v -> {
+        playButton = button("Open", "X", false, v -> {
             App a = selectedApp();
             if (a != null) {
                 host.start(a);
             }
         });
         buttons.addView(playButton, new LinearLayout.LayoutParams(-2, -1));
-        quitButton = button("Quit", null, false, v -> {
+        quitButton = button("Quit", "≡", false, v -> {
             App a = selectedApp();
             if (a != null) {
                 host.quit(a);
@@ -568,6 +568,9 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams ol = new LinearLayout.LayoutParams(-2, -1);
         ol.leftMargin = dp(8);
         buttons.addView(quitButton, ol);
+        // Play / Resume (X) and Quit (Menu ≡) are pressed on the controller, not selected.
+        playButton.setFocusable(false);
+        quitButton.setFocusable(false);
         pinButton = button("☆", null, false, v -> {
             App a = selectedApp();
             if (a != null) {
@@ -742,9 +745,10 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             case "B": c = 0xFFE0645A; break;
             case "X": c = 0xFF5A9BE0; break;
             case "≡": c = 0xFF3A434A; break;
+            case "⧉": c = 0xFF3A434A; break;
             default: c = 0xFFE8C15A; break;
         }
-        TextView g = text(letter, 9.5f, "≡".equals(letter) ? Color.WHITE : Color.BLACK, true);
+        TextView g = text(letter, 9.5f, ("≡".equals(letter) || "⧉".equals(letter)) ? Color.WHITE : Color.BLACK, true);
         g.setGravity(Gravity.CENTER);
         GradientDrawable circle = new GradientDrawable();
         circle.setShape(GradientDrawable.OVAL);
@@ -887,11 +891,22 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             return false;
         }
         boolean inList = f.getParent() == list;
-        if (inList && key == KeyEvent.KEYCODE_DPAD_RIGHT) {
-            return playButton.getVisibility() == VISIBLE && playButton.requestFocus();
+        if (inList && (key == KeyEvent.KEYCODE_DPAD_RIGHT || key == KeyEvent.KEYCODE_DPAD_LEFT)) {
+            return true; // the detail buttons work with X / Menu
         }
-        if (inList && key == KeyEvent.KEYCODE_DPAD_DOWN && f == lastRow()) {
-            return true; // last row: stay (bottom bar is button-only)
+        if (inList && (key == KeyEvent.KEYCODE_DPAD_DOWN || key == KeyEvent.KEYCODE_DPAD_UP)) {
+            // Step row by row in list order (LAST PLAYED → FAVOURITES → ALL), never skipping a section.
+            int i = list.indexOfChild(f);
+            int step = key == KeyEvent.KEYCODE_DPAD_DOWN ? 1 : -1;
+            for (int j = i + step; j >= 0 && j < list.getChildCount(); j += step) {
+                View v = list.getChildAt(j);
+                if (v.isFocusable() && v.getVisibility() == VISIBLE) {
+                    v.requestFocus();
+                    v.requestRectangleOnScreen(new android.graphics.Rect(0, 0, v.getWidth(), v.getHeight()));
+                    return true;
+                }
+            }
+            return true;
         }
         if ((f == playButton || f == quitButton || f == pinButton) && key == KeyEvent.KEYCODE_DPAD_LEFT
                 && f == playButton) {
@@ -933,7 +948,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         }
         int k = e.getKeyCode();
         boolean ours = k == KeyEvent.KEYCODE_BUTTON_L1 || k == KeyEvent.KEYCODE_BUTTON_R1 || k == KeyEvent.KEYCODE_BUTTON_X
-                || k == KeyEvent.KEYCODE_BUTTON_START || k == KeyEvent.KEYCODE_BUTTON_Y || k == KeyEvent.KEYCODE_BUTTON_B || k == KeyEvent.KEYCODE_BUTTON_A;
+                || k == KeyEvent.KEYCODE_BUTTON_START || k == KeyEvent.KEYCODE_BUTTON_SELECT || k == KeyEvent.KEYCODE_BUTTON_Y || k == KeyEvent.KEYCODE_BUTTON_B || k == KeyEvent.KEYCODE_BUTTON_A;
         if (!ours) {
             return false;
         }
@@ -950,7 +965,17 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             case KeyEvent.KEYCODE_BUTTON_Y:
                 host.settings();
                 break;
+            case KeyEvent.KEYCODE_BUTTON_X:
+                if (playButton.getVisibility() == VISIBLE) {
+                    playButton.performClick();
+                }
+                break;
             case KeyEvent.KEYCODE_BUTTON_START:
+                if (quitButton.getVisibility() == VISIBLE) {
+                    quitButton.performClick();
+                }
+                break;
+            case KeyEvent.KEYCODE_BUTTON_SELECT:
                 optionsButton.performClick();
                 break;
             case KeyEvent.KEYCODE_BUTTON_B:

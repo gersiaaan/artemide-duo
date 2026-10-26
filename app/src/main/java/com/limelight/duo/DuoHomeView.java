@@ -578,7 +578,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(-2, -1);
         pp.leftMargin = dp(8);
         buttons.addView(profiles, pp);
-        View options = button("Options", null, false, v -> {
+        View options = button("Options", "⧉", false, v -> {
             ComputerDetails c = selected();
             if (c != null) {
                 host.options(c);
@@ -699,7 +699,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         int bg = primaryStyle ? DuoTheme.focus(accent) : 0x17FFFFFF;
         b.setBackground(focusable(bg, primaryStyle ? 0 : 0x29FFFFFF, 10));
         // Card buttons: the A glyph follows focus; X etc. show while not focused.
-        boolean follow = glyph == null || "A".equals(glyph) || "X".equals(glyph) || "≡".equals(glyph);
+        boolean follow = glyph == null || "A".equals(glyph) || "X".equals(glyph) || "≡".equals(glyph) || "⧉".equals(glyph);
         if (follow) {
             View a = glyph("A");
             LinearLayout.LayoutParams ap = new LinearLayout.LayoutParams(dp(23), dp(23));
@@ -735,9 +735,10 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             case "B": c = 0xFFE0645A; break;
             case "X": c = 0xFF5A9BE0; break;
             case "≡": c = 0xFF3A434A; break;
+            case "⧉": c = 0xFF3A434A; break;
             default: c = 0xFFE8C15A; break;
         }
-        TextView g = text(letter, 9.5f, "≡".equals(letter) ? Color.WHITE : Color.BLACK, true);
+        TextView g = text(letter, 9.5f, ("≡".equals(letter) || "⧉".equals(letter)) ? Color.WHITE : Color.BLACK, true);
         g.setGravity(Gravity.CENTER);
         g.setBackground(DuoTheme.padButton(c, d));
         glyphs.add(g);
@@ -953,6 +954,11 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
                     quitRunning.performClick();
                 }
                 return true;
+            case KeyEvent.KEYCODE_BUTTON_SELECT:
+                if (optionsBtn != null && optionsBtn.getVisibility() == VISIBLE) {
+                    optionsBtn.performClick();
+                }
+                return true;
             case KeyEvent.KEYCODE_BUTTON_A: {
                 View f = findFocus();
                 if (f != null) {
@@ -972,6 +978,6 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
 
     private static boolean isShortcut(int k) {
         return k == KeyEvent.KEYCODE_BUTTON_L1 || k == KeyEvent.KEYCODE_BUTTON_R1 || k == KeyEvent.KEYCODE_BUTTON_X
-                || k == KeyEvent.KEYCODE_BUTTON_START || k == KeyEvent.KEYCODE_BUTTON_Y || k == KeyEvent.KEYCODE_BUTTON_B || k == KeyEvent.KEYCODE_BUTTON_A;
+                || k == KeyEvent.KEYCODE_BUTTON_START || k == KeyEvent.KEYCODE_BUTTON_SELECT || k == KeyEvent.KEYCODE_BUTTON_Y || k == KeyEvent.KEYCODE_BUTTON_B || k == KeyEvent.KEYCODE_BUTTON_A;
     }
 }
