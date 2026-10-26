@@ -366,8 +366,9 @@ public abstract class DuoTouchSurface extends View {
                     break;
                 }
                 if (mode == Mode.MULTI) {
-                    // Two fingers start scrolling after a short way (6dp) instead of the tap slop.
-                    float start = maxPointers >= 3 ? slop : Math.min(slop, 6f * density);
+                    // Trackpad: two fingers start scrolling after a short way (6dp).
+                    // Keyboard keeps its larger slop so two thumbs typing don't scroll.
+                    float start = maxPointers >= 3 || supportsRollover() ? slop : Math.min(slop, 6f * density);
                     if (Math.hypot(dx, dy) > start) {
                         onPointerAction();
                         if (maxPointers >= 3) {
