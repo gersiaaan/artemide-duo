@@ -15,6 +15,8 @@ public final class DuoBridge {
     /** Shared with the "Surface Duo" section in the Artemide settings. */
     public static final String KEY_SPEED = "duo_trackpad_speed";
     public static final int DEFAULT_SPEED = 5;
+    /** Keyboard button bottom-left in the stream: "desktop", "all" or "off". */
+    public static final String KEY_STREAM_BUTTON = "duo_stream_button";
 
     public interface SpeedListener {
         void onSpeedChanged(int speed);

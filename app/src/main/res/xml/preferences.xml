@@ -18,6 +18,15 @@
             app:min="1"
             app:showSeekBarValue="true"
             app:iconSpaceReserved="false" />
+        <ListPreference
+            android:key="duo_stream_button"
+            android:title="Tastatur-Button im Stream"
+            android:dialogTitle="Tastatur-Button im Stream"
+            android:entries="@array/duo_stream_button_names"
+            android:entryValues="@array/duo_stream_button_values"
+            android:defaultValue="desktop"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
     </PreferenceCategory>
 
     <PreferenceCategory

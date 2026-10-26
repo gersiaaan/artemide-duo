@@ -80,7 +80,11 @@ public class DuoController {
         this.backgroundTouch = backgroundTouch;
         this.streamGravity = gravityOf(stream);
         this.backgroundGravity = gravityOf(backgroundTouch);
-        this.desktopApp = isDesktopApp(activity.getIntent().getStringExtra(Game.EXTRA_APP_NAME));
+        // Settings: "desktop" (default) = only apps like Desktop, "all" = also games, "off" = never.
+        String buttonMode = androidx.preference.PreferenceManager.getDefaultSharedPreferences(activity)
+                .getString(DuoBridge.KEY_STREAM_BUTTON, "desktop");
+        this.desktopApp = "all".equals(buttonMode)
+                || (!"off".equals(buttonMode) && isDesktopApp(activity.getIntent().getStringExtra(Game.EXTRA_APP_NAME)));
         float density = activity.getResources().getDisplayMetrics().density;
 
         DuoBridge.setSink(sink);
