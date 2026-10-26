@@ -244,6 +244,10 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams b4 = new LinearLayout.LayoutParams(-2, -1);
         b4.leftMargin = dp(8);
         bottom.addView(optionsButton, b4);
+        // Bottom row works with B / Y / Menu; the stick never lands on it.
+        for (int i = 0; i < bottom.getChildCount(); i++) {
+            bottom.getChildAt(i).setFocusable(false);
+        }
 
         setTab(0);
         updateGlyphs();
@@ -887,7 +891,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             return playButton.getVisibility() == VISIBLE && playButton.requestFocus();
         }
         if (inList && key == KeyEvent.KEYCODE_DPAD_DOWN && f == lastRow()) {
-            return bottomFirst != null && bottomFirst.requestFocus();
+            return true; // last row: stay (bottom bar is button-only)
         }
         if ((f == playButton || f == quitButton || f == pinButton) && key == KeyEvent.KEYCODE_DPAD_LEFT
                 && f == playButton) {

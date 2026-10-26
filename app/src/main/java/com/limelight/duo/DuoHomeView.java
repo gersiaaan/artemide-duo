@@ -208,6 +208,9 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams ep = new LinearLayout.LayoutParams(-2, -1);
         ep.leftMargin = dp(8);
         bottom.addView(exit, ep);
+        // Bottom row works with Y / B; the stick never lands on it.
+        settings.setFocusable(false);
+        exit.setFocusable(false);
         bottom.addView(new View(context), new LinearLayout.LayoutParams(0, 1, 1f));
         bottom.addView(text(version(), 10.5f, 0xFF4A4F57, false));
 
