@@ -330,7 +330,7 @@ public class StreamSettings extends AppCompatActivity {
         duoTabScroll.post(() -> duoTabScroll.smoothScrollTo(Math.max(0, cur.getLeft() - Math.round(40 * d)), 0));
     }
 
-    private void selectDuoTab(int t) {
+    void selectDuoTab(int t) {
         duoTab = (t + duoTabViews.length) % duoTabViews.length;
         styleDuoTabs();
         if (prefsFragment != null) {
@@ -1556,6 +1556,45 @@ public class StreamSettings extends AppCompatActivity {
         public void onCreatePreferences(Bundle bundle, String s) {
             initializePreferences();
             duoShowTab();
+            // "New in Artemide Duo": copies on the Duo tab, kept in sync with the real settings.
+            final android.content.SharedPreferences sp =
+                    androidx.preference.PreferenceManager.getDefaultSharedPreferences(requireContext());
+            for (String real : new String[]{"duo_overlay_style", "duo_overlay_opacity"}) {
+                androidx.preference.ListPreference dup = findPreference("dup_" + real);
+                final androidx.preference.ListPreference orig = findPreference(real);
+                if (dup == null) {
+                    continue;
+                }
+                String cur = sp.getString(real, orig != null ? orig.getValue() : null);
+                if (cur != null) {
+                    dup.setValue(cur);
+                }
+                dup.setSummaryProvider(androidx.preference.ListPreference.SimpleSummaryProvider.getInstance());
+                dup.setOnPreferenceChangeListener((pr, v) -> {
+                    sp.edit().putString(real, (String) v).apply();
+                    if (orig != null) {
+                        orig.setValue((String) v);
+                    }
+                    return true;
+                });
+                if (orig != null) {
+                    final androidx.preference.ListPreference d2 = dup;
+                    orig.setOnPreferenceChangeListener((pr, v) -> {
+                        d2.setValue((String) v);
+                        return true;
+                    });
+                }
+            }
+            Preference scLink = findPreference("dup_duo_shortcuts");
+            if (scLink != null) {
+                scLink.setOnPreferenceClickListener(pr -> {
+                    if (getActivity() instanceof StreamSettings) {
+                        ((StreamSettings) getActivity()).selectDuoTab(5);
+                    }
+                    return true;
+                });
+            }
+
             // Controller shortcuts: tap a row, then press the button on the controller.
             String[][] pad = {{"quit", "A"}, {"pause", "Y"}, {"perf", "X"}, {"menu", "B"}, {"panel", "START"}, {"mode", "SELECT"}};
             for (String[] sc : pad) {
