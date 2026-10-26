@@ -58,7 +58,7 @@ public class DuoStatusView extends LinearLayout {
 
         // Lightning bolt next to the battery while charging.
         bolt = new BoltIcon(context);
-        LayoutParams bp = new LayoutParams(dp(9), dp(13));
+        LayoutParams bp = new LayoutParams(dp(7), dp(10));
         bp.leftMargin = dp(4);
         bolt.setVisibility(GONE);
         addView(bolt, bp);

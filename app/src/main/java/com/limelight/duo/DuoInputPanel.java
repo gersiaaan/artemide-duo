@@ -82,16 +82,10 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         addView(ime, new LayoutParams(1, 1));
 
         // ---------- top bar (mirrored: buttons left, tabs right) ----------
-        FrameLayout barFrame = new FrameLayout(context);
-        addView(barFrame, new LayoutParams(LayoutParams.MATCH_PARENT, dp(44)));
         LinearLayout bar = new LinearLayout(context);
         bar.setOrientation(HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        barFrame.addView(bar, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-        // Clock and battery of the Duo, centred over the whole bar.
-        barFrame.addView(new DuoStatusView(context), new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.CENTER));
+        addView(bar, new LayoutParams(LayoutParams.MATCH_PARENT, dp(44)));
 
         boolean first = true;
         if (onHide != null) {
@@ -127,7 +121,13 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         });
         addBarView(bar, gboard, dp(44), true);
 
-        bar.addView(new View(context), new LayoutParams(0, 1, 1f));
+        // Clock and battery of the Duo, centred between the buttons and the tabs.
+        DuoStatusView status = new DuoStatusView(context);
+        status.setGravity(Gravity.CENTER);
+        LayoutParams sp = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1f);
+        sp.leftMargin = dp(6);
+        sp.rightMargin = dp(6);
+        bar.addView(status, sp);
 
         LinearLayout segment = new LinearLayout(context);
         segment.setOrientation(HORIZONTAL);
