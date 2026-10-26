@@ -99,13 +99,14 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         menu.setTextSize(18);
         addBarView(bar, menu, dp(44), !first);
 
-        ImageButton mouse = iconButton(context.getDrawable(R.drawable.ic_duo_mouse), "Trackpad-Tempo");
-        mouse.setOnClickListener(v -> {
-            if (getContext() instanceof Activity) {
-                DuoController.showSpeedDialog((Activity) getContext());
-            }
-        });
-        addBarView(bar, mouse, dp(44), true);
+        // Disconnect: hold 1.5 s (a ring runs around the button), letting go early cancels.
+        DuoHoldButton disconnect = new DuoHoldButton(context, 1500, sink::disconnect);
+        disconnect.setImageDrawable(context.getDrawable(R.drawable.ic_duo_power));
+        disconnect.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        disconnect.setPadding(dp(12), dp(12), dp(12), dp(12));
+        disconnect.setBackground(pressable(DuoColors.SURFACE, 10));
+        disconnect.setContentDescription("Verbindung trennen, 1,5 Sekunden halten");
+        addBarView(bar, disconnect, dp(44), true);
 
         langButton = actionButton(DuoBridge.getLanguage(context).toUpperCase(), v -> toggleLanguage());
         langButton.setTextSize(12);

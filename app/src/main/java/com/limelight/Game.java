@@ -2048,6 +2048,11 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
             }
 
             @Override
+            public void disconnect() {
+                runOnUiThread(Game.this::disconnect);
+            }
+
+            @Override
             public void togglePerformanceOverlay() {
                 toggleHUD();
             }

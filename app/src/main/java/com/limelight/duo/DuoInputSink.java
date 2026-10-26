@@ -22,6 +22,9 @@ public interface DuoInputSink {
 
     void showStreamMenu();
 
+    /** Ends the stream (like "Disconnect" in the quick menu; the PC session keeps running). */
+    void disconnect();
+
     /** Performance overlay (HUD) on/off. */
     void togglePerformanceOverlay();
 
