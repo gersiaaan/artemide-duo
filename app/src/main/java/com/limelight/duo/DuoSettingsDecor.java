@@ -35,11 +35,9 @@ public final class DuoSettingsDecor {
             return 10;
         }
         switch (key) {
-            case "category_duo": return 0;
             case "category_video_settings": return 1;
             case "category_audio_settings": return 2;
-            case "category_input_settings":
-            case "category_virtual_trackpad_settings": return 3;
+            case "category_input_settings": return 3;
             case "category_gamepad_settings": return 4;
             case "category_shortcuts": return 5;
             case "category_onscreen_controls":
@@ -47,9 +45,18 @@ public final class DuoSettingsDecor {
             case "category_perf_monitor_settings": return 7;
             case "category_ui_settings": return 8;
             case "category_artemide_tweaks":
+            case "category_cpu_warmup":
             case "category_advanced_settings": return 9;
-            default: return 10;
+            default: break;
         }
+        String[] prefixes = {"cat_duo", "cat_video", "cat_audio", "cat_input", "cat_pad", "cat_sc", "cat_osc", "cat_overlay",
+                "cat_ui", "cat_adv", "cat_gen"};
+        for (int i = 0; i < prefixes.length; i++) {
+            if (key.startsWith(prefixes[i])) {
+                return i;
+            }
+        }
+        return 10;
     }
 
     public static void decorate(PreferenceViewHolder holder, Preference pref) {
