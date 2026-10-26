@@ -1,0 +1,29 @@
+name: Rename old releases (one-time)
+
+# Run manually: Actions -> "Rename old releases (one-time)" -> Run workflow.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - name: duo-build-N -> v0.N
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          for n in $(seq 1 14); do
+            old="duo-build-$n"
+            if gh release view "$old" -R "$REPO" >/dev/null 2>&1; then
+              echo "Renaming $old -> v0.$n"
+              gh release edit "$old" -R "$REPO" --tag "v0.$n" --title "Artemide Duo v0.$n" --prerelease=false --latest=false
+              gh api -X DELETE "repos/$REPO/git/refs/tags/$old" || true
+            fi
+          done
+          # Keep the newest release marked as latest.
+          newest=$(gh release list -R "$REPO" --limit 100 --json tagName --jq '[.[].tagName | select(startswith("v0."))] | sort_by(ltrimstr("v0.") | tonumber) | last')
+          gh release edit "$newest" -R "$REPO" --latest
