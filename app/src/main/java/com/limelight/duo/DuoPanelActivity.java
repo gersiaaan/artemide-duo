@@ -51,6 +51,9 @@ public class DuoPanelActivity extends Activity {
 
         Window w = getWindow();
         w.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // Touch only: the stream keeps focus, so controller, mouse and shortcuts keep working
+        // while you tap the keyboard. Focus is taken only while Gboard (Aa) is open.
+        w.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
         hideSystemUi();
 
         panel = new DuoInputPanel(this, sink, this::hideByUser);
@@ -138,5 +141,15 @@ public class DuoPanelActivity extends Activity {
         DuoBridge.clearPanelActivity(this);
         DuoBridge.reportFocus(false, false);
         super.onDestroy();
+    }
+
+    /** Gboard needs a focused window; everything else works without focus. */
+    void setTakesFocus(boolean focus) {
+        Window w = getWindow();
+        if (focus) {
+            w.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+        } else {
+            w.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+        }
     }
 }

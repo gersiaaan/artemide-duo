@@ -43,10 +43,15 @@ public class DuoImeView extends View {
             imm.hideSoftInputFromWindow(getWindowToken(), 0);
             clearFocus();
             shown = false;
+            panelFocus(false);
         } else {
-            requestFocus();
-            imm.restartInput(this);
-            imm.showSoftInput(this, InputMethodManager.SHOW_FORCED);
+            panelFocus(true);
+            // The window becomes focusable a moment later.
+            post(() -> {
+                requestFocus();
+                imm.restartInput(this);
+                imm.showSoftInput(this, InputMethodManager.SHOW_FORCED);
+            });
             shown = true;
         }
     }
@@ -56,6 +61,13 @@ public class DuoImeView extends View {
         super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
         if (!gainFocus) {
             shown = false;
+            panelFocus(false);
+        }
+    }
+
+    private void panelFocus(boolean focus) {
+        if (getContext() instanceof DuoPanelActivity) {
+            ((DuoPanelActivity) getContext()).setTakesFocus(focus);
         }
     }
 
