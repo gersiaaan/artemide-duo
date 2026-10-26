@@ -58,6 +58,9 @@ public class DuoKeyboardView extends DuoTouchSurface {
         Key rep() { repeatable = true; return this; }
         Key quiet() { subtle = true; return this; }
         Key stacked(int s) { stack = s; return this; }
+        /** Empty space (no key, part of the trackpad). */
+        boolean spacer;
+        Key space() { spacer = true; return this; }
 
         boolean isLetter() {
             return label.length() == 1 && Character.isLetter(label.charAt(0));
@@ -189,7 +192,8 @@ public class DuoKeyboardView extends DuoTouchSurface {
         Key[] home = letters("asdfghjkl", "asdfghjkl");
         home[0].hold("ä", VK_OEM_7);
         addRow(false, concat(
-                k("Caps", VK_CAPITAL, 2.5f).quiet(),
+                // No Caps Lock (tap Shift twice instead); keeps the Gboard stagger.
+                k("", 0, 2.5f).space(),
                 home,
                 k("↵", VK_RETURN, 3.5f)));
 
@@ -281,6 +285,9 @@ public class DuoKeyboardView extends DuoTouchSurface {
 
         for (List<Key> row : rows) {
             for (Key key : row) {
+                if (key.spacer) {
+                    continue;
+                }
                 int state = key.modifier ? modState[key.vk] : 0;
                 boolean quiet = key.subtle && state == 0;
 
@@ -375,6 +382,9 @@ public class DuoKeyboardView extends DuoTouchSurface {
         float bestDist = Float.MAX_VALUE;
         for (List<Key> row : rows) {
             for (Key key : row) {
+                if (key.spacer) {
+                    continue;
+                }
                 if (key.rect.contains(x, y)) {
                     return key;
                 }
@@ -391,9 +401,22 @@ public class DuoKeyboardView extends DuoTouchSurface {
         return bestDist < (8 * density) * (8 * density) ? best : null;
     }
 
+    /** Fingers land a little below where they aim; shift the hit point up like Gboard. */
+    private Key keyAtTouch(float x, float y) {
+        return keyAt(x, y - 4 * density);
+    }
+
+    private long lastTypeTime;
+
     @Override
     protected boolean supportsRollover() {
         return true;
+    }
+
+    /** While typing (a key within the last second), keys fire on touch-down. */
+    @Override
+    protected boolean fireOnDown(float x, float y) {
+        return android.os.SystemClock.uptimeMillis() - lastTypeTime < 1000 && keyAtTouch(x, y) != null;
     }
 
     /** Generous: slight finger slips while typing still count as a key, not a mouse move. */
@@ -409,10 +432,16 @@ public class DuoKeyboardView extends DuoTouchSurface {
     }
 
     @Override
-    protected boolean onLongPress(float x, float y) {
-        Key key = keyAt(x, y);
+    protected boolean onLongPress(float x, float y, boolean alreadyTyped) {
+        Key key = keyAtTouch(x, y);
         if (key == null || key.longLabel == null) {
             return false;
+        }
+        if (alreadyTyped) {
+            // The plain letter went out on touch-down: remove it, the umlaut replaces it.
+            if (autocorrect == null || !autocorrect.onBackspace()) {
+                DuoKeys.sendComboNow(sink, VK_BACK);
+            }
         }
         held = key;
         invalidate();
@@ -427,6 +456,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
         if (key == null) {
             return;
         }
+        lastTypeTime = android.os.SystemClock.uptimeMillis();
         boolean shift = modState[VK_LSHIFT] > 0;
         if (shift) {
             DuoKeys.sendComboNow(sink, VK_LSHIFT, key.longVk);
@@ -442,7 +472,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
 
     @Override
     protected void onPress(float x, float y) {
-        pressed = keyAt(x, y);
+        pressed = keyAtTouch(x, y);
         if (pressed != null) {
             // Immediate feedback on touch-down, like Gboard.
             performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
@@ -461,6 +491,8 @@ public class DuoKeyboardView extends DuoTouchSurface {
 
     @Override
     protected void onPointerAction() {
+        // Mouse use ends the typing burst.
+        lastTypeTime = 0;
         if (autocorrect != null) {
             autocorrect.onBoundary();
         }
@@ -468,16 +500,17 @@ public class DuoKeyboardView extends DuoTouchSurface {
 
     @Override
     protected boolean isRepeatable(float x, float y) {
-        Key key = keyAt(x, y);
+        Key key = keyAtTouch(x, y);
         return key != null && key.repeatable;
     }
 
     @Override
     protected void onTap(float x, float y) {
-        Key key = keyAt(x, y);
+        Key key = keyAtTouch(x, y);
         if (key == null) {
             return;
         }
+        lastTypeTime = android.os.SystemClock.uptimeMillis();
 
         if (key.modifier) {
             modState[key.vk] = (modState[key.vk] + 1) % 3;

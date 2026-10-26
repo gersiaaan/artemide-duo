@@ -21,7 +21,7 @@ import com.limelight.nvstream.input.MouseButtonPacket;
  *  - 3 finger swipe                -> drag (left button held), e.g. move windows/files
  */
 public abstract class DuoTouchSurface extends View {
-    private enum Mode { NONE, PENDING, HELD, MOUSE, DRAG, REPEAT, MULTI, SCROLL, DRAG3 }
+    private enum Mode { NONE, PENDING, TYPED, HELD, MOUSE, DRAG, REPEAT, MULTI, SCROLL, DRAG3 }
 
     private static final long LONG_PRESS_MS = 380;
     private static final long REPEAT_DELAY_MS = 55;
@@ -50,17 +50,18 @@ public abstract class DuoTouchSurface extends View {
     private final Runnable longPress = new Runnable() {
         @Override
         public void run() {
-            if (mode != Mode.PENDING) {
+            if (mode != Mode.PENDING && mode != Mode.TYPED) {
                 return;
             }
+            boolean typed = mode == Mode.TYPED;
             if (isRepeatable(downX, downY)) {
                 mode = Mode.REPEAT;
                 onTap(downX, downY);
                 handler.postDelayed(repeat, REPEAT_DELAY_MS);
-            } else if (onLongPress(downX, downY)) {
+            } else if (onLongPress(downX, downY, typed)) {
                 mode = Mode.HELD;
                 performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-            } else if (dragOnLongPress()) {
+            } else if (!typed && dragOnLongPress()) {
                 mode = Mode.DRAG;
                 onCancelPress();
                 onPointerAction();
@@ -107,7 +108,9 @@ public abstract class DuoTouchSurface extends View {
     protected abstract void onTap(float x, float y);
     protected boolean isRepeatable(float x, float y) { return false; }
     /** Return true to take over a long press (finger still down); onLongRelease follows. */
-    protected boolean onLongPress(float x, float y) { return false; }
+    protected boolean onLongPress(float x, float y, boolean alreadyTyped) { return false; }
+    /** Return true to fire the key immediately on touch-down (fast typing). */
+    protected boolean fireOnDown(float x, float y) { return false; }
     protected void onLongRelease(float x, float y) {}
     /** Long press without movement starts a drag (trackpad); keyboards return false. */
     protected boolean dragOnLongPress() { return true; }
@@ -130,6 +133,11 @@ public abstract class DuoTouchSurface extends View {
         remX = remY = 0;
         handler.postDelayed(longPress, LONG_PRESS_MS);
         onPress(downX, downY);
+        if (fireOnDown(downX, downY)) {
+            // Typing burst: no need to wait for a swipe, type right away.
+            mode = Mode.TYPED;
+            onTap(downX, downY);
+        }
     }
 
     /** Commits whatever the current single finger means (key or held key). */
@@ -154,7 +162,7 @@ public abstract class DuoTouchSurface extends View {
 
             case MotionEvent.ACTION_POINTER_DOWN:
                 if (supportsRollover()
-                        && (mode == Mode.PENDING || mode == Mode.HELD || mode == Mode.NONE)
+                        && (mode == Mode.PENDING || mode == Mode.TYPED || mode == Mode.HELD || mode == Mode.NONE)
                         && (mode != Mode.PENDING || event.getEventTime() - downTime > ROLLOVER_MS)) {
                     // Fast typing: commit the first key now, the new finger is the next key.
                     cancelTimers();
@@ -163,7 +171,7 @@ public abstract class DuoTouchSurface extends View {
                     return true;
                 }
                 maxPointers = Math.max(maxPointers, event.getPointerCount());
-                if (mode == Mode.PENDING || mode == Mode.HELD || mode == Mode.MOUSE || mode == Mode.REPEAT) {
+                if (mode == Mode.PENDING || mode == Mode.TYPED || mode == Mode.HELD || mode == Mode.MOUSE || mode == Mode.REPEAT) {
                     cancelTimers();
                     onCancelPress();
                     mode = Mode.MULTI;
@@ -177,7 +185,7 @@ public abstract class DuoTouchSurface extends View {
 
             case MotionEvent.ACTION_POINTER_UP: {
                 int upId = event.getPointerId(event.getActionIndex());
-                if (supportsRollover() && (mode == Mode.PENDING || mode == Mode.HELD)) {
+                if (supportsRollover() && (mode == Mode.PENDING || mode == Mode.TYPED || mode == Mode.HELD)) {
                     if (upId == activeId) {
                         // The newest finger lifted first: type it, ignore the rest.
                         cancelTimers();
