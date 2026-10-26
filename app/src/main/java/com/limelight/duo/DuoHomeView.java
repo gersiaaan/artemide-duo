@@ -581,21 +581,6 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(-2, -2);
         tl.topMargin = dp(18);
         s.addView(t, tl);
-        // Loading bar: a short segment gliding across a faint track.
-        FrameLayout track = new FrameLayout(getContext());
-        track.setBackground(rounded(0x0FFFFFFF, 0, 2));
-        track.setClipToOutline(true);
-        LinearLayout.LayoutParams trp = new LinearLayout.LayoutParams(dp(160), dp(3));
-        trp.topMargin = dp(22);
-        s.addView(track, trp);
-        View seg = new View(getContext());
-        seg.setBackground(rounded(accent, 0, 2));
-        track.addView(seg, new FrameLayout.LayoutParams(dp(64), -1));
-        android.animation.ObjectAnimator a = android.animation.ObjectAnimator.ofFloat(seg, View.TRANSLATION_X, -dp(64), dp(160));
-        a.setDuration(2400);
-        a.setRepeatCount(android.animation.ValueAnimator.INFINITE);
-        a.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
-        a.start();
         s.setAlpha(0f);
         s.animate().alpha(1f).setDuration(1200).start();
         return s;
