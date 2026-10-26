@@ -168,6 +168,12 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         scroll.setHorizontalScrollBarEnabled(false);
         hostChips = row();
         scroll.addView(hostChips);
+        // Host tabs: LB / RB or touch only, never a stick target (incl. the scroll container).
+        scroll.setFocusable(false);
+        scroll.setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            scroll.setDefaultFocusHighlightEnabled(false);
+        }
         LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-2, -1);
         sp.leftMargin = dp(10);
         sp.rightMargin = dp(10);
