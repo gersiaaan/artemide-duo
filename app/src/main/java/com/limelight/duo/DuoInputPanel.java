@@ -108,19 +108,19 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         disconnect.setContentDescription("Verbindung trennen, 1,5 Sekunden halten");
         addBarView(bar, disconnect, dp(44), true);
 
-        langButton = actionButton(DuoBridge.getLanguage(context).toUpperCase(), v -> toggleLanguage());
-        langButton.setTextSize(12);
-        langButton.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
-        langButton.setContentDescription("Sprache umschalten");
-        langButton.setPadding(0, 0, 0, 0);
-        addBarView(bar, langButton, dp(44), true);
-
         ImageButton gboard = iconButton(new DuoAaDrawable(density, DuoColors.TEXT), "Handy-Tastatur (Gboard)");
         gboard.setOnClickListener(v -> {
             autocorrect.onBoundary();
             ime.toggle();
         });
         addBarView(bar, gboard, dp(44), true);
+
+        langButton = actionButton(DuoBridge.getLanguage(context).toUpperCase(), v -> toggleLanguage());
+        langButton.setTextSize(12);
+        langButton.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        langButton.setContentDescription("Sprache umschalten");
+        langButton.setPadding(0, 0, 0, 0);
+        addBarView(bar, langButton, dp(44), true);
 
         ImageButton perf = iconButton(context.getDrawable(R.drawable.ic_duo_perf), "Performance-Overlay ein/aus");
         perf.setOnClickListener(v -> {
