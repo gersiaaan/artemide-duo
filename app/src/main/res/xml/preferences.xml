@@ -1198,7 +1198,7 @@
             android:title="Overlay opacity (new style)"
             android:entries="@array/duo_overlay_opacity_names"
             android:entryValues="@array/duo_overlay_opacity_values"
-            android:defaultValue="55"
+            android:defaultValue="40"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
         <CheckBoxPreference

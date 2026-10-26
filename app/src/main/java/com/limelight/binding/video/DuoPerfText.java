@@ -39,9 +39,9 @@ public final class DuoPerfText {
 
     public static float opacity(Context c) {
         try {
-            return Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(c).getString(KEY_OPACITY, "55")) / 100f;
+            return Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(c).getString(KEY_OPACITY, "40")) / 100f;
         } catch (NumberFormatException e) {
-            return 0.55f;
+            return 0.40f;
         }
     }
 
@@ -90,22 +90,22 @@ public final class DuoPerfText {
             b.append(DIM).append("Net / Render: ").append(f1(fps.receivedFps)).append(" / ")
                     .append(f1(fps.renderedFps)).append(" FPS").append(END).append("<br>");
         }
-        b.append(DIM).append("Total     ").append(END).append("<b>≈ ").append(f1(total)).append(" ms</b><br>");
-        b.append(DIM).append("Network   ").append(END).append("<b>").append(f0(netMs)).append(" ms</b> ")
+        b.append(DIM).append("Total  ").append(END).append("<b>≈ ").append(f1(total)).append(" ms</b><br>");
+        b.append(DIM).append("Network  ").append(END).append("<b>").append(f0(netMs)).append(" ms</b> ")
                 .append(DIM).append("±").append(f0(netVar)).append(" · dec").append(END).append(" <b>")
                 .append(f2(decodeMs)).append(" ms</b><br>");
-        b.append(DIM).append("Rendering ").append(END).append("<b>").append(f2(renderMs)).append(" ms</b><br>");
-        b.append(DIM).append("Dropped   ").append(END).append("<b>").append(f2(lossPct)).append("%</b> ")
+        b.append(DIM).append("Rendering  ").append(END).append("<b>").append(f2(renderMs)).append(" ms</b><br>");
+        b.append(DIM).append("Dropped  ").append(END).append("<b>").append(f2(lossPct)).append("%</b> ")
                 .append(DIM).append("net · ").append(END).append("<b>").append(f2(pacingPct)).append("%</b> ")
                 .append(DIM).append("pacing").append(END);
         if (detailed && s.framesWithHostProcessingLatency > 0) {
-            b.append("<br>").append(DIM).append("Host      ").append(END)
+            b.append("<br>").append(DIM).append("Host  ").append(END)
                     .append(f1(s.minHostProcessingLatency / 10f)).append(" / ")
                     .append(f1(s.maxHostProcessingLatency / 10f)).append(" / <b>").append(f1(hostMs)).append(" ms</b>")
-                    .append("<br>").append(DIM).append("Sum       ").append(f1(hostMs)).append(" + ").append(f0(netMs))
+                    .append("<br>").append(DIM).append("Sum  ").append(f1(hostMs)).append(" + ").append(f0(netMs))
                     .append(" + ").append(f1(decodeMs)).append(" + ").append(f1(renderMs)).append(END);
         }
-        return b.toString().replace("  ", "&nbsp;&nbsp;");
+        return b.toString().replace("  ", "&nbsp;");
     }
 
     private static String f0(float v) {

@@ -4664,20 +4664,27 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         lp.topMargin = Math.round(10 * d);
         performanceOverlayBig.setLayoutParams(lp);
         performanceOverlayBig.setGravity(Gravity.START);
-        performanceOverlayBig.setTypeface(android.graphics.Typeface.MONOSPACE);
-        performanceOverlayBig.setTextSize(9.5f * k);
-        performanceOverlayBig.setLineSpacing(0, 1.15f);
-        performanceOverlayBig.setTextColor(0xFFF3F7F8);
+        performanceOverlayBig.setTypeface(com.limelight.duo.DuoFonts.regular());
+        performanceOverlayBig.setTextSize(10f * k);
+        performanceOverlayBig.setLineSpacing(0, 1.12f);
+        performanceOverlayBig.setTextColor(0xFFF8FBFC);
+        performanceOverlayBig.setShadowLayer(2 * d, 0, 0.5f * d, 0x66000000);
         performanceOverlayBig.setSingleLine(false);
         performanceOverlayBig.setHorizontallyScrolling(false);
         int p = Math.round(8 * d);
-        performanceOverlayBig.setPadding(Math.round(10 * d), p, Math.round(10 * d), p);
-        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
-        bg.setCornerRadius(12 * d);
+        performanceOverlayBig.setPadding(Math.round(11 * d), p, Math.round(11 * d), p);
+        // Glass look: tinted see-through fill, light sheen from the top, bright hairline edge.
         int a = Math.round(com.limelight.binding.video.DuoPerfText.opacity(this) * 255);
-        bg.setColor((a << 24) | 0x465866);
-        bg.setStroke(Math.max(1, Math.round(d)), 0x1AFFFFFF);
-        performanceOverlayBig.setBackground(bg);
+        android.graphics.drawable.GradientDrawable tint = new android.graphics.drawable.GradientDrawable();
+        tint.setCornerRadius(14 * d);
+        tint.setColor((a << 24) | 0x3A4C5A);
+        android.graphics.drawable.GradientDrawable sheen = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{0x2EFFFFFF, 0x0DFFFFFF, 0x05FFFFFF});
+        sheen.setCornerRadius(14 * d);
+        sheen.setStroke(Math.max(1, Math.round(d)), 0x40FFFFFF);
+        performanceOverlayBig.setBackground(new android.graphics.drawable.LayerDrawable(
+                new android.graphics.drawable.Drawable[]{tint, sheen}));
     }
 
     public void toggleHUD() {
