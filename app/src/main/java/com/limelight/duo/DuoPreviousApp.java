@@ -34,6 +34,8 @@ final class DuoPreviousApp {
     private static final long LOOKBACK_MS = 6L * 60 * 60 * 1000;
 
     private static String previousPackage;
+    /** The stream activity: the app is launched next to it, i.e. on the panel's screen. */
+    private static java.lang.ref.WeakReference<Activity> stream;
 
     static boolean hasAccess(Context c) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
@@ -52,6 +54,7 @@ final class DuoPreviousApp {
     /** Called right before the panel opens (asks once for the permission if missing). */
     static void remember(Activity activity) {
         previousPackage = null;
+        stream = new java.lang.ref.WeakReference<>(activity);
         if (!hasAccess(activity)) {
             askOnce(activity);
             return;
@@ -64,30 +67,37 @@ final class DuoPreviousApp {
         }
     }
 
-    /** Brings the remembered app back. Must be called from the activity on that screen. */
-    static boolean restore(Activity from) {
-        String pkg = previousPackage;
+    /**
+     * Brings the remembered app back on the panel's screen. Call after the panel has closed:
+     * the app is started next to the stream (launch adjacent), never on top of it.
+     */
+    static void restoreLater() {
+        final String pkg = previousPackage;
         previousPackage = null;
-        if (pkg == null) {
-            return false;
+        final Activity from = stream == null ? null : stream.get();
+        if (pkg == null || from == null || from.isFinishing()) {
+            return;
         }
-        try {
-            Intent launch = from.getPackageManager().getLaunchIntentForPackage(pkg);
-            if (launch == null) {
-                return false;
+        // Give the panel a moment to leave its screen first.
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (from.isFinishing()) {
+                return;
             }
-            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            if (!from.hasWindowFocus() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                // Hidden from the stream screen: open next to it, i.e. on the panel's screen.
-                launch.addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT);
+            try {
+                Intent launch = from.getPackageManager().getLaunchIntentForPackage(pkg);
+                if (launch == null) {
+                    return;
+                }
+                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    launch.addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT);
+                }
+                from.startActivity(launch);
+                from.overridePendingTransition(0, 0);
+            } catch (Throwable t) {
+                LimeLog.warning("Duo: could not restore " + pkg + ": " + t);
             }
-            from.startActivity(launch);
-            from.overridePendingTransition(0, 0);
-            return true;
-        } catch (Throwable t) {
-            LimeLog.warning("Duo: could not restore " + pkg + ": " + t);
-            return false;
-        }
+        }, 150);
     }
 
     static void forget() {

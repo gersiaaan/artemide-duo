@@ -85,16 +85,15 @@ public class DuoPanelActivity extends Activity {
             return;
         }
         finishing = true;
-        if (restoreOnFinish && DuoPreviousApp.restore(this)) {
-            // The app covers this screen again: close without the slide.
-            super.finish();
-            overridePendingTransition(0, 0);
-            return;
+        if (!restoreOnFinish) {
+            DuoPreviousApp.forget();
         }
-        DuoPreviousApp.forget();
         if (panel == null || panel.getHeight() == 0) {
             super.finish();
             overridePendingTransition(0, 0);
+            if (restoreOnFinish) {
+                DuoPreviousApp.restoreLater();
+            }
             return;
         }
         // Slide back up towards the stream, then close.
@@ -106,6 +105,9 @@ public class DuoPanelActivity extends Activity {
                 .withEndAction(() -> {
                     DuoPanelActivity.super.finish();
                     overridePendingTransition(0, 0);
+                    if (restoreOnFinish) {
+                        DuoPreviousApp.restoreLater();
+                    }
                 })
                 .start();
     }
