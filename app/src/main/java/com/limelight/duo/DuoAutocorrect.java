@@ -40,7 +40,8 @@ public class DuoAutocorrect {
     private final Handler main = new Handler(Looper.getMainLooper());
     private HandlerThread worker;
     private Handler workerHandler;
-    private Listener listener;
+    private final List<Listener> listeners = new ArrayList<>();
+    private Map<String, Integer> learnedAtStart;
 
     private final StringBuilder word = new StringBuilder();
     private final List<Float> tapX = new ArrayList<>();
@@ -67,12 +68,20 @@ public class DuoAutocorrect {
     public DuoAutocorrect(Context context, DuoInputSink sink) {
         this.context = context.getApplicationContext();
         this.sink = sink;
-        DuoDictionary.load(context, readLearned());
+        learnedAtStart = readLearned();
+        DuoDictionary.setLanguage(context, DuoBridge.getLanguage(context), learnedAtStart);
     }
 
-    public void setListener(Listener l) {
-        listener = l;
+    public void addListener(Listener l) {
+        listeners.add(l);
         publish();
+    }
+
+    /** "de" or "en": switches dictionary and autocorrect language. */
+    public void setLanguage(String lang) {
+        persistLearned();
+        DuoDictionary.setLanguage(context, lang, readLearned());
+        onBoundary();
     }
 
     public void close() {
@@ -115,6 +124,16 @@ public class DuoAutocorrect {
 
     /** Punctuation, digits and other printable characters. */
     public void onChar(char c) {
+        // English contractions: the apostrophe is part of the word (don't, I'm).
+        if (c == '\'' && word.length() > 0 && "en".equals(DuoDictionary.language())) {
+            undoOriginal = null;
+            word.append(c);
+            tapX.add(Float.NaN);
+            tapY.add(Float.NaN);
+            lastChar = c;
+            request();
+            return;
+        }
         finishWord(true);
         undoOriginal = null;
         autoShift = false;
@@ -177,6 +196,7 @@ public class DuoAutocorrect {
      */
     public boolean onSpace() {
         long now = SystemClock.uptimeMillis();
+        char before = lastChar;
 
         // Double space after a word: ". " like Gboard.
         if (word.length() == 0 && lastChar == ' ' && now - lastSpaceTime < DOUBLE_SPACE_MS && !sentenceEnded) {
@@ -217,7 +237,8 @@ public class DuoAutocorrect {
         resetWord();
 
         // Only arm double-space after a word, not after a run of spaces.
-        lastSpaceTime = wasWord ? now : 0;
+        // Arm double space after any typed character (word, number, symbol), not after a space.
+        lastSpaceTime = (wasWord || (before != 0 && before != ' ' && before != '\n')) ? now : 0;
         if (sentenceEnded) {
             autoShift = true;
             sentenceEnded = false;
@@ -305,12 +326,15 @@ public class DuoAutocorrect {
     }
 
     private void persistLearned() {
-        DuoDictionary d = DuoDictionary.get();
-        if (d == null) {
+        Map<String, Integer> all = DuoDictionary.learnedAll();
+        if (all.isEmpty()) {
             return;
         }
+        // Keep words learned earlier that aren't loaded right now.
+        Map<String, Integer> merged = new HashMap<>(readLearned());
+        merged.putAll(all);
         Set<String> set = new HashSet<>();
-        for (Map.Entry<String, Integer> e : d.learnedSnapshot().entrySet()) {
+        for (Map.Entry<String, Integer> e : merged.entrySet()) {
             set.add(e.getKey() + ":" + e.getValue());
         }
         SharedPreferences p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
@@ -412,12 +436,14 @@ public class DuoAutocorrect {
             }
             highlight = 1;
         }
-        if (listener != null) {
+        if (!listeners.isEmpty()) {
             String[] cells = new String[3];
             for (int i = 0; i < 3; i++) {
                 cells[i] = (cellIsTyped[i] && i == 0) ? "„" + cellText[i] + "“" : cellText[i];
             }
-            listener.onSuggestions(cells, highlight);
+            for (Listener l : listeners) {
+                l.onSuggestions(cells, highlight);
+            }
         }
     }
 

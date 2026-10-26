@@ -46,7 +46,7 @@ public class DuoSuggestionBar extends LinearLayout implements DuoAutocorrect.Lis
             cells[i] = t;
             addView(t, new LayoutParams(0, LayoutParams.MATCH_PARENT, 1f));
         }
-        autocorrect.setListener(this);
+        autocorrect.addListener(this);
     }
 
     @Override

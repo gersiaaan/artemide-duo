@@ -34,8 +34,10 @@ public final class DuoDictionary {
         public final List<String> suggestions = new ArrayList<>();
     }
 
-    private static volatile DuoDictionary instance;
-    private static boolean loading;
+    /** Language code ("de"/"en") -> loaded dictionary. */
+    private static final Map<String, DuoDictionary> instances = new ConcurrentHashMap<>();
+    private static final java.util.Set<String> loading = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    private static volatile String current = "de";
 
     private String[] display;      // display spelling (nouns capitalized), sorted by plain form
     private String[] lower;        // lowercase
@@ -48,46 +50,54 @@ public final class DuoDictionary {
     private final Map<String, Integer> learnedCount = new ConcurrentHashMap<>();
     private final Map<String, String> learnedDisplay = new ConcurrentHashMap<>();
 
+    /** Dictionary of the current language (null while loading). */
     public static DuoDictionary get() {
-        return instance;
+        return instances.get(current);
+    }
+
+    public static String language() {
+        return current;
+    }
+
+    /** Switches language and loads its word list if needed. */
+    public static void setLanguage(Context context, String lang, Map<String, Integer> learned) {
+        current = lang;
+        load(context, learned, lang);
     }
 
     /** Starts loading in the background (no-op if already loaded or loading). */
-    public static synchronized void load(final Context context, final Map<String, Integer> learned) {
-        if (instance != null || loading) {
+    public static void load(final Context context, final Map<String, Integer> learned, final String lang) {
+        if (instances.containsKey(lang) || !loading.add(lang)) {
             return;
         }
-        loading = true;
         final Context app = context.getApplicationContext();
         new Thread(() -> {
             try {
                 DuoDictionary d = new DuoDictionary();
-                d.read(app);
+                d.read(app, "duo_words_" + lang + ".txt");
                 if (learned != null) {
                     for (Map.Entry<String, Integer> e : learned.entrySet()) {
                         d.learnedCount.put(e.getKey().toLowerCase(), e.getValue());
                         d.learnedDisplay.put(e.getKey().toLowerCase(), e.getKey());
                     }
                 }
-                instance = d;
-                LimeLog.info("Duo: dictionary loaded, " + d.display.length + " words");
+                instances.put(lang, d);
+                LimeLog.info("Duo: dictionary " + lang + " loaded, " + d.display.length + " words");
             } catch (Throwable t) {
                 LimeLog.warning("Duo: dictionary failed to load: " + t);
             } finally {
-                synchronized (DuoDictionary.class) {
-                    loading = false;
-                }
+                loading.remove(lang);
             }
         }, "DuoDictionary").start();
     }
 
     private DuoDictionary() {}
 
-    private void read(Context context) throws Exception {
+    private void read(Context context, String asset) throws Exception {
         List<String> w = new ArrayList<>(90000);
         List<Integer> f = new ArrayList<>(90000);
         try (BufferedReader r = new BufferedReader(new InputStreamReader(
-                context.getAssets().open("duo_words.txt"), StandardCharsets.UTF_8))) {
+                context.getAssets().open(asset), StandardCharsets.UTF_8))) {
             String line;
             while ((line = r.readLine()) != null) {
                 if (line.isEmpty() || line.charAt(0) == '#') {
@@ -171,6 +181,18 @@ public final class DuoDictionary {
             learnedDisplay.put(key, word);
         }
         return c;
+    }
+
+    /** Learned words of all loaded languages (display spelling -> count). */
+    public static Map<String, Integer> learnedAll() {
+        Map<String, Integer> out = new HashMap<>();
+        for (DuoDictionary d : instances.values()) {
+            for (Map.Entry<String, Integer> e : d.learnedSnapshot().entrySet()) {
+                Integer prev = out.get(e.getKey());
+                out.put(e.getKey(), prev == null ? e.getValue() : Math.max(prev, e.getValue()));
+            }
+        }
+        return out;
     }
 
     /** Learned words worth persisting (display spelling -> count). */

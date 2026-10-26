@@ -97,6 +97,39 @@ public final class DuoBridge {
         speedListeners.remove(l);
     }
 
+    // ---------------- remembered panel state ----------------
+
+    private static final String KEY_LANG = "duo_language";
+    private static final String KEY_MODE = "duo_panel_mode";
+    private static final String KEY_SWAP = "duo_compact_swapped";
+
+    /** "de" or "en". */
+    public static String getLanguage(Context c) {
+        return PreferenceManager.getDefaultSharedPreferences(c).getString(KEY_LANG, "de");
+    }
+
+    public static void setLanguage(Context c, String lang) {
+        PreferenceManager.getDefaultSharedPreferences(c).edit().putString(KEY_LANG, lang).apply();
+    }
+
+    /** 0 = keyboard, 1 = trackpad, 2 = compact. */
+    public static int getPanelMode(Context c) {
+        return PreferenceManager.getDefaultSharedPreferences(c).getInt(KEY_MODE, 0);
+    }
+
+    public static void setPanelMode(Context c, int mode) {
+        PreferenceManager.getDefaultSharedPreferences(c).edit().putInt(KEY_MODE, mode).apply();
+    }
+
+    /** Compact mode: keyboard on the left instead of the right. */
+    public static boolean isCompactSwapped(Context c) {
+        return PreferenceManager.getDefaultSharedPreferences(c).getBoolean(KEY_SWAP, false);
+    }
+
+    public static void setCompactSwapped(Context c, boolean swapped) {
+        PreferenceManager.getDefaultSharedPreferences(c).edit().putBoolean(KEY_SWAP, swapped).apply();
+    }
+
     /** Maps speed 1..10 to a pointer gain (1 -> 0.15, 5 -> 0.62, 10 -> 1.2). */
     public static float gainFor(int speed) {
         return 0.15f + (speed - 1) * (1.05f / 9f);
