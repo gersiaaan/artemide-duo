@@ -61,6 +61,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         void resume(ComputerDetails c);
         void quit(ComputerDetails c);
         void addHost();
+        void refreshHosts();
         void profiles();
         void settings();
         void exit();
@@ -83,6 +84,8 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     private final TextView clock, dateLine;
     private TextView badge, name, subline, address, addressLabel;
     private LinearLayout chips;
+    private boolean addMode;
+    private View profilesBtn, optionsBtn, searchRow;
     private TextView primaryLabel;
     private View primary;
     private LinearLayout lastPanel;
@@ -249,17 +252,23 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     }
 
     private void select(ComputerDetails c) {
+        addMode = false;
         selectedUuid = c.uuid;
         PreferenceManager.getDefaultSharedPreferences(getContext()).edit().putString(KEY_SELECTED, c.uuid).apply();
         render();
     }
 
     private void cycle(int dir) {
-        if (computers.size() < 2) {
-            return;
+        // Tabs: every host, then "Add a host".
+        int n = computers.size() + 1;
+        int i = addMode ? n - 1 : computers.indexOf(selected());
+        int j = (i + dir + n) % n;
+        if (j == n - 1) {
+            addMode = true;
+            render();
+        } else {
+            select(computers.get(j));
         }
-        int i = computers.indexOf(selected());
-        select(computers.get((i + dir + computers.size()) % computers.size()));
     }
 
     /** Re-reads the last played app (e.g. after returning from a stream). */
@@ -273,7 +282,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         // host chips
         hostChips.removeAllViews();
         for (ComputerDetails pc : computers) {
-            boolean sel = pc == c;
+            boolean sel = pc == c && !addMode;
             LinearLayout chip = row();
             chip.setPadding(dp(12), 0, dp(12), 0);
             chip.setBackground(focusable(sel ? DuoTheme.mix(accent, DuoTheme.CARD, 0.16f) : 0,
@@ -292,20 +301,30 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             cp.rightMargin = dp(6);
             hostChips.addView(chip, cp);
         }
-        TextView add = text("+  Add a host", 12, DuoTheme.TEXT2, false);
+        boolean addSel = addMode || c == null;
+        TextView add = text("+  Add a host", 12, addSel ? DuoTheme.TEXT : DuoTheme.TEXT2, addSel);
         add.setGravity(Gravity.CENTER_VERTICAL);
         add.setPadding(dp(10), 0, dp(10), 0);
-        add.setBackground(focusable(0, 0, 9));
+        add.setBackground(focusable(addSel ? DuoTheme.mix(accent, DuoTheme.CARD, 0.16f) : 0,
+                addSel ? DuoTheme.withAlpha(accent, 0.45f) : 0, 9));
         add.setFocusable(true);
-        add.setOnClickListener(v -> host.addHost());
+        add.setOnClickListener(v -> {
+            addMode = true;
+            render();
+        });
         hostChips.addView(add, new LinearLayout.LayoutParams(-2, -1));
 
         // card
-        if (c == null) {
-            badge.setText("SEARCHING");
-            badge.setCompoundDrawablesRelativeWithIntrinsicBounds(dotDrawable(DuoTheme.WARN), null, null, null);
-            name.setText("No host yet");
-            subline.setText("Looking for PCs on your network, or add one by address.");
+        boolean addPage = c == null || addMode;
+        badge.setVisibility(addPage ? GONE : VISIBLE);
+        searchRow.setVisibility(addPage ? VISIBLE : GONE);
+        optionsBtn.setVisibility(addPage ? GONE : VISIBLE);
+        ((TextView) profilesBtn.getTag()).setText(addPage ? "Refresh" : "Profiles");
+        profilesBtn.setOnClickListener(addPage ? v -> host.refreshHosts() : v -> host.profiles());
+        if (addPage) {
+            // StreamLight's "Add a host" tab: search runs in the background, manual add by address.
+            name.setText("Add a host");
+            subline.setText("Searching your local network…");
             chips.setVisibility(GONE);
             address.setVisibility(GONE);
             addressLabel.setVisibility(GONE);
@@ -485,6 +504,19 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         cl.topMargin = dp(6);
         card.addView(cs, cl);
 
+        LinearLayout sr = row();
+        android.widget.ProgressBar spin = new android.widget.ProgressBar(getContext());
+        spin.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(accent));
+        sr.addView(spin, new LinearLayout.LayoutParams(dp(16), dp(16)));
+        TextView sh = text("Hosts found on the network appear as tabs above.", 12, DuoTheme.TEXT2, false);
+        LinearLayout.LayoutParams shp = new LinearLayout.LayoutParams(-2, -2);
+        shp.leftMargin = dp(10);
+        sr.addView(sh, shp);
+        searchRow = sr;
+        LinearLayout.LayoutParams srp = new LinearLayout.LayoutParams(-1, -2);
+        srp.topMargin = dp(18);
+        card.addView(sr, srp);
+
         addressLabel = text("ADDRESS", 9.5f, DuoTheme.TEXT2, false);
         addressLabel.setLetterSpacing(0.15f);
         LinearLayout.LayoutParams al = new LinearLayout.LayoutParams(-2, -2);
@@ -501,6 +533,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         primaryLabel = (TextView) primary.getTag();
         buttons.addView(primary, new LinearLayout.LayoutParams(-2, -1));
         View profiles = button("Profiles", null, false, v -> host.profiles());
+        profilesBtn = profiles;
         LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(-2, -1);
         pp.leftMargin = dp(8);
         buttons.addView(profiles, pp);
@@ -513,6 +546,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams op = new LinearLayout.LayoutParams(-2, -1);
         op.leftMargin = dp(8);
         buttons.addView(options, op);
+        optionsBtn = options;
         primary.post(primary::requestFocus);
         return card;
     }
@@ -531,7 +565,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         lastPanel.addView(lastInfo, new LinearLayout.LayoutParams(-2, -2));
 
         FrameLayout coverBox = new FrameLayout(getContext());
-        int cw = Math.round((landscape ? 128 : 108) * (scale > 1.15f ? 1.25f : 1f));
+        int cw = Math.round((landscape ? 128 : 108) * (scale > 1.15f ? 1.25f : 1.2f));
         coverWidthDp = cw;
         // Box art proportions (about 1 : 1.41, like Moonlight's covers).
         LinearLayout.LayoutParams cb = new LinearLayout.LayoutParams(dp(cw), dp(cw * 1.41f));

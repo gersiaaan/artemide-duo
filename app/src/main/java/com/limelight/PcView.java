@@ -338,6 +338,12 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
             }
 
             @Override
+            public void refreshHosts() {
+                stopComputerUpdates(false);
+                startComputerUpdates();
+            }
+
+            @Override
             public void profiles() {
                 startActivity(new Intent(PcView.this, ProfilesActivity.class));
             }

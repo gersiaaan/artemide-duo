@@ -408,7 +408,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         if (c != null) {
             DuoCovers.into(getContext(), c.uuid, a.id, iv, ph, dp(64));
         }
-        r.addView(thumb, new LinearLayout.LayoutParams(dp(30), dp(42)));
+        r.addView(thumb, new LinearLayout.LayoutParams(dp(38), dp(54)));
 
         LinearLayout texts = new LinearLayout(getContext());
         texts.setOrientation(LinearLayout.VERTICAL);
@@ -456,7 +456,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
                 select(a);
             }
         });
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(52));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(62));
         lp.topMargin = dp(5);
         r.setLayoutParams(lp);
         return r;
@@ -482,7 +482,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         cover.setForeground(rounded(0, DuoTheme.LINE, 12));
         cover.setClipToOutline(true);
         cover.setElevation(dp(10));
-        int cw = Math.round((landscape ? 124 : 92) * (scale > 1.15f ? 1.25f : 1f));
+        int cw = Math.round((landscape ? 124 : 92) * (scale > 1.15f ? 1.25f : 1.2f));
         LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(dp(cw), dp(cw * 1.41f));
         if (landscape) {
             cl.topMargin = dp(10);
