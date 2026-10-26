@@ -74,6 +74,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
 
     private final Host host;
     private final float d;
+    private final float scale;
     private final int accent;
     private final boolean landscape;
     private final List<View> glyphs = new ArrayList<>();
@@ -108,7 +109,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     public DuoAppsView(Context context, Host host, String title) {
         super(context);
         this.host = host;
-        this.d = context.getResources().getDisplayMetrics().density;
+        this.scale = DuoTheme.uiScale(context);
+        this.d = context.getResources().getDisplayMetrics().density * scale;
         this.accent = DuoTheme.accent(context);
         this.landscape = context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
         setClickable(true);
@@ -479,7 +481,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         cover.setForeground(rounded(0, DuoTheme.LINE, 12));
         cover.setClipToOutline(true);
         cover.setElevation(dp(10));
-        int cw = landscape ? 124 : 92;
+        int cw = Math.round((landscape ? 124 : 92) * (scale > 1.15f ? 1.25f : 1f));
         LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(dp(cw), dp(cw * 1.41f));
         if (landscape) {
             cl.topMargin = dp(10);
@@ -661,8 +663,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
 
     private StateListDrawable rowBackground() {
         StateListDrawable s = new StateListDrawable();
-        GradientDrawable focused = rounded(DuoTheme.withAlpha(accent, 0.10f), 0, 10);
-        focused.setStroke(Math.round(1.5f * d), accent);
+        GradientDrawable focused = rounded(DuoTheme.withAlpha(accent, 0.07f), 0, 10);
+        focused.setStroke(Math.round(1.5f * d), DuoTheme.focus(accent));
         s.addState(new int[]{android.R.attr.state_focused}, focused);
         s.addState(new int[]{android.R.attr.state_selected}, focused);
         s.addState(new int[]{android.R.attr.state_pressed}, rounded(0x14FFFFFF, 0, 10));
@@ -687,7 +689,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         int bg = primaryStyle ? accent : DuoTheme.CARD_HIGH;
         StateListDrawable s = new StateListDrawable();
         GradientDrawable ring = rounded(bg, 0, 10);
-        ring.setStroke(Math.round(2 * d), primaryStyle ? DuoTheme.TEXT : accent);
+        ring.setStroke(Math.round(2 * d), primaryStyle ? DuoTheme.TEXT : DuoTheme.focus(accent));
         s.addState(new int[]{android.R.attr.state_focused}, ring);
         s.addState(new int[]{android.R.attr.state_pressed}, rounded(DuoTheme.mix(Color.WHITE, bg, 0.08f), 0, 10));
         s.addState(new int[]{}, rounded(bg, primaryStyle ? 0 : DuoTheme.LINE, 10));
@@ -746,7 +748,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     private TextView text(String s, float sp, int color, boolean bold) {
         TextView t = new TextView(getContext());
         t.setText(s);
-        t.setTextSize(sp);
+        t.setTextSize(sp * scale);
         t.setTextColor(color);
         t.setTypeface(Typeface.create(bold ? "sans-serif-medium" : "sans-serif", Typeface.NORMAL));
         t.setIncludeFontPadding(false);

@@ -95,7 +95,7 @@ public final class DuoSettingsDecor {
                     t.setPadding(Math.round(10 * d), 0, Math.round(10 * d), 0);
                     StateListDrawable s = new StateListDrawable();
                     GradientDrawable focus = rounded(on ? DuoTheme.mix(accent, DuoTheme.CARD, 0.16f) : 0, 0, 7, d);
-                    focus.setStroke(Math.round(1.5f * d), accent);
+                    focus.setStroke(Math.round(1.5f * d), DuoTheme.focus(accent));
                     s.addState(new int[]{android.R.attr.state_focused}, focus);
                     s.addState(new int[]{}, rounded(on ? DuoTheme.mix(accent, DuoTheme.CARD, 0.16f) : 0, 0, 7, d));
                     t.setBackground(s);
@@ -135,7 +135,7 @@ public final class DuoSettingsDecor {
     private static StateListDrawable rowBackground(int accent, float d) {
         StateListDrawable s = new StateListDrawable();
         GradientDrawable focused = rounded(DuoTheme.CARD, 0, 12, d);
-        focused.setStroke(Math.round(1.5f * d), accent);
+        focused.setStroke(Math.round(1.5f * d), DuoTheme.focus(accent));
         s.addState(new int[]{android.R.attr.state_focused}, focused);
         s.addState(new int[]{android.R.attr.state_pressed}, rounded(DuoTheme.CARD_HIGH, DuoTheme.LINE, 12, d));
         s.addState(new int[]{}, rounded(DuoTheme.withAlpha(DuoTheme.CARD, 0.88f), DuoTheme.LINE, 12, d));

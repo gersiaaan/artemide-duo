@@ -91,4 +91,16 @@ public final class DuoTheme {
         box.addView(glyph, new android.widget.FrameLayout.LayoutParams(-1, -1));
         return box;
     }
+
+    /** UI scale for big screens (Galaxy Tab S6 etc.): 1 on the Duo, up to 1.5. */
+    public static float uiScale(Context c) {
+        android.content.res.Configuration cf = c.getResources().getConfiguration();
+        float k = Math.min(cf.screenWidthDp / 720f, cf.screenHeightDp / 540f);
+        return Math.max(1f, Math.min(1.5f, k));
+    }
+
+    /** Focus / highlight colour: the accent a bit darker so it doesn't glare. */
+    public static int focus(int accent) {
+        return mix(0xFF000000, accent, 0.28f);
+    }
 }

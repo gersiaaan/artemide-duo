@@ -189,7 +189,7 @@ public class StreamSettings extends AppCompatActivity {
             android.graphics.drawable.GradientDrawable focus = new android.graphics.drawable.GradientDrawable();
             focus.setCornerRadius(8 * d);
             focus.setColor(on ? com.limelight.duo.DuoTheme.mix(accent, com.limelight.duo.DuoTheme.CARD, 0.16f) : 0);
-            focus.setStroke(Math.round(1.5f * d), accent);
+            focus.setStroke(Math.round(1.5f * d), com.limelight.duo.DuoTheme.focus(accent));
             android.graphics.drawable.GradientDrawable normal = new android.graphics.drawable.GradientDrawable();
             normal.setCornerRadius(8 * d);
             normal.setColor(on ? com.limelight.duo.DuoTheme.mix(accent, com.limelight.duo.DuoTheme.CARD, 0.16f) : 0);

@@ -71,6 +71,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
 
     private final Host host;
     private final float d;
+    private final float scale;
     private final int accent;
     private final boolean landscape;
     private final List<ComputerDetails> computers = new ArrayList<>();
@@ -110,7 +111,8 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     public DuoHomeView(Context context, Host host) {
         super(context);
         this.host = host;
-        this.d = context.getResources().getDisplayMetrics().density;
+        this.scale = DuoTheme.uiScale(context);
+        this.d = context.getResources().getDisplayMetrics().density * scale;
         this.accent = DuoTheme.accent(context);
         this.landscape = context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
         selectedUuid = PreferenceManager.getDefaultSharedPreferences(context).getString(KEY_SELECTED, null);
@@ -528,7 +530,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         lastPanel.addView(lastInfo, new LinearLayout.LayoutParams(-2, -2));
 
         FrameLayout coverBox = new FrameLayout(getContext());
-        int cw = landscape ? 128 : 108;
+        int cw = Math.round((landscape ? 128 : 108) * (scale > 1.15f ? 1.25f : 1f));
         coverWidthDp = cw;
         // Box art proportions (about 1 : 1.41, like Moonlight's covers).
         LinearLayout.LayoutParams cb = new LinearLayout.LayoutParams(dp(cw), dp(cw * 1.41f));
@@ -661,7 +663,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     private TextView text(String s, float sp, int color, boolean bold) {
         TextView t = new TextView(getContext());
         t.setText(s);
-        t.setTextSize(sp);
+        t.setTextSize(sp * scale);
         t.setTextColor(color);
         t.setTypeface(Typeface.create(bold ? "sans-serif-medium" : "sans-serif", Typeface.NORMAL));
         t.setIncludeFontPadding(false);
@@ -702,7 +704,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     private StateListDrawable focusable(int color, int stroke, float radiusDp) {
         StateListDrawable s = new StateListDrawable();
         GradientDrawable ring = rounded(color, 0, radiusDp);
-        ring.setStroke(Math.round(2 * d), color == accent ? DuoTheme.TEXT : accent);
+        ring.setStroke(Math.round(2 * d), color == accent ? DuoTheme.TEXT : DuoTheme.focus(accent));
         GradientDrawable pressed = rounded(color == 0 ? 0x14FFFFFF : DuoTheme.mix(Color.WHITE, color, 0.08f), stroke, radiusDp);
         s.addState(new int[]{android.R.attr.state_focused}, ring);
         s.addState(new int[]{android.R.attr.state_pressed}, pressed);
