@@ -366,7 +366,9 @@ public abstract class DuoTouchSurface extends View {
                     break;
                 }
                 if (mode == Mode.MULTI) {
-                    if (Math.hypot(dx, dy) > slop) {
+                    // Two fingers start scrolling after a short way (6dp) instead of the tap slop.
+                    float start = maxPointers >= 3 ? slop : Math.min(slop, 6f * density);
+                    if (Math.hypot(dx, dy) > start) {
                         onPointerAction();
                         if (maxPointers >= 3) {
                             // Three-finger drag: hold the left button while moving.
@@ -378,6 +380,8 @@ public abstract class DuoTouchSurface extends View {
                             }
                         } else {
                             mode = Mode.SCROLL;
+                            // Use the way already travelled, so the page moves right away.
+                            scroll(dx, dy);
                         }
                         lastCx = cx;
                         lastCy = cy;
