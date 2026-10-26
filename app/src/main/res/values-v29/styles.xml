@@ -10,5 +10,6 @@
     </style>
 
     <style name="SettingsTheme" parent="AppTheme">
+        <item name="preferenceTheme">@style/DuoPreferenceTheme</item>
     </style>
 </resources>

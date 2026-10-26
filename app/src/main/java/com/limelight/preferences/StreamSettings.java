@@ -106,8 +106,119 @@ public class StreamSettings extends AppCompatActivity {
         UiHelper.setLocale(this);
 
         setContentView(R.layout.activity_stream_settings);
+        buildDuoHeader();
 
 //        UiHelper.notifyNewRootView(this);
+    }
+
+    // ---------------- Artemide Duo: waves, header and tabs ----------------
+
+    static int duoTab = 1; // Video
+    private final android.widget.TextView[] duoTabViews = new android.widget.TextView[com.limelight.duo.DuoSettingsDecor.TABS.length];
+    private android.widget.HorizontalScrollView duoTabScroll;
+
+    private void buildDuoHeader() {
+        float d = getResources().getDisplayMetrics().density;
+        int accent = com.limelight.duo.DuoTheme.accent(this);
+        android.widget.FrameLayout root = findViewById(R.id.duo_settings_root);
+        root.addView(new com.limelight.duo.DuoWavesView(this, false), 0,
+                new android.widget.FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        android.widget.LinearLayout column = findViewById(R.id.duo_settings_column);
+
+        android.widget.LinearLayout header = new android.widget.LinearLayout(this);
+        header.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        header.setPadding(Math.round(12 * d), Math.round(14 * d), Math.round(16 * d), 0);
+        android.widget.TextView back = new android.widget.TextView(this);
+        back.setText("‹");
+        back.setTextSize(26);
+        back.setTextColor(com.limelight.duo.DuoTheme.TEXT);
+        back.setGravity(android.view.Gravity.CENTER);
+        back.setFocusable(true);
+        back.setContentDescription("Back");
+        back.setOnClickListener(v -> onBackPressed());
+        header.addView(back, new android.widget.LinearLayout.LayoutParams(Math.round(36 * d), Math.round(36 * d)));
+        android.widget.TextView title = new android.widget.TextView(this);
+        title.setText("Settings");
+        title.setTextSize(18);
+        title.setTextColor(com.limelight.duo.DuoTheme.TEXT);
+        title.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
+        header.addView(title);
+        column.addView(header, 0);
+
+        duoTabScroll = new android.widget.HorizontalScrollView(this);
+        duoTabScroll.setHorizontalScrollBarEnabled(false);
+        android.widget.LinearLayout tabs = new android.widget.LinearLayout(this);
+        tabs.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        tabs.setPadding(Math.round(16 * d), Math.round(10 * d), Math.round(16 * d), Math.round(6 * d));
+        duoTabScroll.addView(tabs);
+        for (int i = 0; i < duoTabViews.length; i++) {
+            final int t = i;
+            android.widget.TextView tv = new android.widget.TextView(this);
+            tv.setText(com.limelight.duo.DuoSettingsDecor.TABS[i]);
+            tv.setTextSize(12);
+            tv.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
+            tv.setGravity(android.view.Gravity.CENTER);
+            tv.setPadding(Math.round(11 * d), 0, Math.round(11 * d), 0);
+            tv.setFocusable(true);
+            tv.setOnClickListener(v -> selectDuoTab(t));
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, Math.round(30 * d));
+            lp.rightMargin = Math.round(4 * d);
+            tabs.addView(tv, lp);
+            duoTabViews[i] = tv;
+        }
+        column.addView(duoTabScroll, 1);
+        styleDuoTabs();
+    }
+
+    private void styleDuoTabs() {
+        float d = getResources().getDisplayMetrics().density;
+        int accent = com.limelight.duo.DuoTheme.accent(this);
+        for (int i = 0; i < duoTabViews.length; i++) {
+            boolean on = i == duoTab;
+            android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
+            android.graphics.drawable.GradientDrawable focus = new android.graphics.drawable.GradientDrawable();
+            focus.setCornerRadius(8 * d);
+            focus.setColor(on ? com.limelight.duo.DuoTheme.mix(accent, com.limelight.duo.DuoTheme.CARD, 0.16f) : 0);
+            focus.setStroke(Math.round(1.5f * d), accent);
+            android.graphics.drawable.GradientDrawable normal = new android.graphics.drawable.GradientDrawable();
+            normal.setCornerRadius(8 * d);
+            normal.setColor(on ? com.limelight.duo.DuoTheme.mix(accent, com.limelight.duo.DuoTheme.CARD, 0.16f) : 0);
+            if (on) {
+                normal.setStroke(Math.max(1, Math.round(d)), com.limelight.duo.DuoTheme.withAlpha(accent, 0.45f));
+            }
+            s.addState(new int[]{android.R.attr.state_focused}, focus);
+            s.addState(new int[]{}, normal);
+            duoTabViews[i].setBackground(s);
+            duoTabViews[i].setTextColor(on ? accent : com.limelight.duo.DuoTheme.TEXT2);
+        }
+        final android.widget.TextView cur = duoTabViews[duoTab];
+        duoTabScroll.post(() -> duoTabScroll.smoothScrollTo(Math.max(0, cur.getLeft() - Math.round(40 * d)), 0));
+    }
+
+    private void selectDuoTab(int t) {
+        duoTab = (t + duoTabViews.length) % duoTabViews.length;
+        styleDuoTabs();
+        if (prefsFragment != null) {
+            prefsFragment.duoShowTab();
+        }
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
+        int k = event.getKeyCode();
+        if (k == android.view.KeyEvent.KEYCODE_BUTTON_L1 || k == android.view.KeyEvent.KEYCODE_BUTTON_R1
+                || k == android.view.KeyEvent.KEYCODE_BUTTON_B) {
+            if (event.getAction() == android.view.KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+                if (k == android.view.KeyEvent.KEYCODE_BUTTON_B) {
+                    onBackPressed();
+                } else {
+                    selectDuoTab(duoTab + (k == android.view.KeyEvent.KEYCODE_BUTTON_R1 ? 1 : -1));
+                }
+            }
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
     }
 
     @Override
@@ -170,6 +281,45 @@ public class StreamSettings extends AppCompatActivity {
     }
 
     public static class SettingsFragment extends PreferenceFragmentCompat {
+
+        // ---------------- Artemide Duo: card rows, toggles, pills, tabs ----------------
+
+        @Override
+        protected androidx.recyclerview.widget.RecyclerView.Adapter onCreateAdapter(PreferenceScreen preferenceScreen) {
+            return new androidx.preference.PreferenceGroupAdapter(preferenceScreen) {
+                @Override
+                public void onBindViewHolder(@NonNull androidx.preference.PreferenceViewHolder holder, int position) {
+                    super.onBindViewHolder(holder, position);
+                    com.limelight.duo.DuoSettingsDecor.decorate(holder, getItem(position));
+                }
+            };
+        }
+
+        @Override
+        public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
+            super.onViewCreated(view, savedInstanceState);
+            view.setBackgroundColor(0);
+            getListView().setClipToPadding(false);
+            getListView().setPadding(0, 0, 0, Math.round(24 * getResources().getDisplayMetrics().density));
+        }
+
+        /** Shows only the categories of the current tab, fully expanded. */
+        void duoShowTab() {
+            PreferenceScreen screen = getPreferenceScreen();
+            if (screen == null) {
+                return;
+            }
+            for (int i = 0; i < screen.getPreferenceCount(); i++) {
+                Preference p = screen.getPreference(i);
+                if (p instanceof PreferenceGroup) {
+                    ((PreferenceGroup) p).setInitialExpandedChildrenCount(Integer.MAX_VALUE);
+                }
+                p.setVisible(com.limelight.duo.DuoSettingsDecor.tabFor(p.getKey()) == duoTab);
+            }
+            if (getListView() != null) {
+                getListView().scrollToPosition(0);
+            }
+        }
         // --- UI state listeners ---
         SharedPreferences.OnSharedPreferenceChangeListener lockWatcher =
                 (sp, key) -> {
@@ -1243,6 +1393,7 @@ public class StreamSettings extends AppCompatActivity {
         @Override
         public void onCreatePreferences(Bundle bundle, String s) {
             initializePreferences();
+            duoShowTab();
             final Preference gpuPathPref = findPreference("checkbox_gpu_path_mode");
             if (gpuPathPref != null) {
                 gpuPathPref.setOnPreferenceChangeListener((preference, newValue) -> {

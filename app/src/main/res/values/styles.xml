@@ -53,6 +53,7 @@
     </style>
 
     <style name="SettingsTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="preferenceTheme">@style/DuoPreferenceTheme</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:colorBackground">@android:color/transparent</item>
@@ -84,6 +85,31 @@
         <item name="android:textColorPrimary">#FFE6E8EB</item>
         <item name="android:textColorSecondary">#FFC4C8CE</item>
         <item name="android:backgroundDimAmount">0.35</item>
+    </style>
+
+    <!-- Artemide Duo settings: card rows, toggles, quiet category headers -->
+    <style name="DuoPreferenceTheme" parent="PreferenceThemeOverlay">
+        <item name="preferenceStyle">@style/DuoPref</item>
+        <item name="checkBoxPreferenceStyle">@style/DuoPref.CheckBox</item>
+        <item name="dialogPreferenceStyle">@style/DuoPref.Dialog</item>
+        <item name="editTextPreferenceStyle">@style/DuoPref.EditText</item>
+        <item name="preferenceCategoryStyle">@style/DuoPref.Category</item>
+    </style>
+    <style name="DuoPref" parent="@style/Preference.Material">
+        <item name="android:layout">@layout/duo_pref_row</item>
+    </style>
+    <style name="DuoPref.CheckBox" parent="@style/Preference.CheckBoxPreference.Material">
+        <item name="android:layout">@layout/duo_pref_row</item>
+        <item name="android:widgetLayout">@layout/duo_pref_toggle</item>
+    </style>
+    <style name="DuoPref.Dialog" parent="@style/Preference.DialogPreference.Material">
+        <item name="android:layout">@layout/duo_pref_row</item>
+    </style>
+    <style name="DuoPref.EditText" parent="@style/Preference.DialogPreference.EditTextPreference.Material">
+        <item name="android:layout">@layout/duo_pref_row</item>
+    </style>
+    <style name="DuoPref.Category" parent="@style/Preference.Category.Material">
+        <item name="android:layout">@layout/duo_pref_category</item>
     </style>
 
     <declare-styleable name="ApertureViewGroup">

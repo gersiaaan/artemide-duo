@@ -132,6 +132,18 @@ public class SeekBarPreference extends Preference
 
         layout.addView(seekBar, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
+        // Holding ◀ ▶ (D-pad / controller) speeds up: up to 10 steps per repeat.
+        seekBar.setOnKeyListener((v, keyCode, ev) -> {
+            if (ev.getAction() != android.view.KeyEvent.ACTION_DOWN || ev.getRepeatCount() == 0
+                    || (keyCode != android.view.KeyEvent.KEYCODE_DPAD_LEFT && keyCode != android.view.KeyEvent.KEYCODE_DPAD_RIGHT)) {
+                return false;
+            }
+            int step = (keyStepSize != 0 ? keyStepSize : Math.max(1, stepSize)) * Math.min(10, 1 + ev.getRepeatCount() / 4);
+            int dir = keyCode == android.view.KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1;
+            seekBar.setProgress(Math.max(0, Math.min(seekBar.getMax(), seekBar.getProgress() + dir * step)));
+            return true;
+        });
+
         if (shouldPersist()) {
             currentValue = getPersistedInt(defaultValue);
         }
