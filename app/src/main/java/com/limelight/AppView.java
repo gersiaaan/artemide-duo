@@ -873,6 +873,14 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
     }
 
     @Override
+    public boolean dispatchGenericMotionEvent(android.view.MotionEvent event) {
+        if (duoApps != null && duoApps.handleMotion(event)) {
+            return true;
+        }
+        return super.dispatchGenericMotionEvent(event);
+    }
+
+    @Override
     public boolean dispatchKeyEvent(android.view.KeyEvent event) {
         if (duoApps != null && duoApps.handleKey(event)) {
             return true;

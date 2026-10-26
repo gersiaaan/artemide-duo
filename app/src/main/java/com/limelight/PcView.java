@@ -241,6 +241,14 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
     }
 
     @Override
+    public boolean dispatchGenericMotionEvent(android.view.MotionEvent event) {
+        if (duoHome != null && duoHome.handleMotion(event)) {
+            return true;
+        }
+        return super.dispatchGenericMotionEvent(event);
+    }
+
+    @Override
     public boolean dispatchKeyEvent(android.view.KeyEvent event) {
         if (duoHome != null && duoHome.handleKey(event)) {
             return true;

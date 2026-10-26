@@ -843,8 +843,15 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         super.onDetachedFromWindow();
     }
 
+    public boolean handleMotion(android.view.MotionEvent e) {
+        return DuoPadNav.onMotion(this, e, list.getChildCount() > 1 ? list.getChildAt(1) : playButton);
+    }
+
     /** Controller shortcuts; returns true if handled. */
     public boolean handleKey(KeyEvent e) {
+        if (DuoPadNav.onKey(this, e, list.getChildCount() > 1 ? list.getChildAt(1) : playButton)) {
+            return true;
+        }
         int k = e.getKeyCode();
         boolean ours = k == KeyEvent.KEYCODE_BUTTON_L1 || k == KeyEvent.KEYCODE_BUTTON_R1 || k == KeyEvent.KEYCODE_BUTTON_X
                 || k == KeyEvent.KEYCODE_BUTTON_Y || k == KeyEvent.KEYCODE_BUTTON_B || k == KeyEvent.KEYCODE_BUTTON_A;

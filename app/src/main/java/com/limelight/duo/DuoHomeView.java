@@ -800,6 +800,9 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
 
     /** Controller shortcuts; returns true if handled. */
     public boolean handleKey(KeyEvent e) {
+        if (DuoPadNav.onKey(this, e, primary)) {
+            return true;
+        }
         if (e.getAction() != KeyEvent.ACTION_DOWN || e.getRepeatCount() > 0) {
             return e.getAction() == KeyEvent.ACTION_UP && isShortcut(e.getKeyCode());
         }
@@ -833,6 +836,10 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             }
         }
         return false;
+    }
+
+    public boolean handleMotion(android.view.MotionEvent e) {
+        return DuoPadNav.onMotion(this, e, primary);
     }
 
     private static boolean isShortcut(int k) {

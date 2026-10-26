@@ -214,8 +214,21 @@ public class StreamSettings extends AppCompatActivity {
     }
 
     @Override
+    public boolean dispatchGenericMotionEvent(android.view.MotionEvent event) {
+        android.view.ViewGroup duoRoot = findViewById(R.id.duo_settings_root);
+        if (duoRoot != null && com.limelight.duo.DuoPadNav.onMotion(duoRoot, event, duoTabViews[duoTab])) {
+            return true;
+        }
+        return super.dispatchGenericMotionEvent(event);
+    }
+
+    @Override
     public boolean dispatchKeyEvent(android.view.KeyEvent event) {
         int k = event.getKeyCode();
+        android.view.ViewGroup duoRoot = findViewById(R.id.duo_settings_root);
+        if (duoRoot != null && com.limelight.duo.DuoPadNav.onKey(duoRoot, event, duoTabViews[duoTab])) {
+            return true;
+        }
         if (k == android.view.KeyEvent.KEYCODE_BUTTON_L1 || k == android.view.KeyEvent.KEYCODE_BUTTON_R1
                 || k == android.view.KeyEvent.KEYCODE_BUTTON_B) {
             if (event.getAction() == android.view.KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
