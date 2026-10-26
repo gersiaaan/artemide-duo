@@ -87,6 +87,7 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
     private final static int START_OR_RESUME_ID = 1;
     private final static int QUIT_ID = 2;
     private final static int DUO_GAME_SETTINGS_ID = 900;
+    private final static int DUO_FAVOURITE_ID = 901;
     private final static int START_WITH_QUIT = 4;
     private final static int VIEW_DETAILS_ID = 5;
     private final static int CREATE_SHORTCUT_ID = 6;
@@ -437,6 +438,14 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
     protected void onResume() {
         super.onResume();
 
+        if (duoStreamStarted) {
+            // Session closed: back to the host overview.
+            duoStreamStarted = false;
+            finish();
+            overridePendingTransition(0, 0);
+            return;
+        }
+
         // Display a decoder crash notification if we've returned after a crash
         UiHelper.showDecoderCrashDialog(this);
 
@@ -499,6 +508,8 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
         menu.setHeaderTitle(selectedApp.app.getAppName());
         // Artemide Duo: own settings for this game (saved as a profile) and game/app type.
         menu.add(Menu.NONE, DUO_GAME_SETTINGS_ID, 0, "Game settings & type…");
+        boolean fav = com.limelight.duo.DuoPlayStats.isPinned(this, computer.uuid, selectedApp.app.getAppId());
+        menu.add(Menu.NONE, DUO_FAVOURITE_ID, 0, fav ? "Remove from favourites" : "Add to favourites");
 
         if (lastRunningAppId == 0) {
             if (prefConfig.useVirtualDisplay) {
@@ -557,6 +568,15 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
         AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
         final AppObject app = (AppObject) appGridAdapter.getItem(info.position);
         int itemId = item.getItemId();
+        if (itemId == DUO_FAVOURITE_ID) {
+            int id = app.app.getAppId();
+            com.limelight.duo.DuoPlayStats.setPinned(this, computer.uuid, id,
+                    !com.limelight.duo.DuoPlayStats.isPinned(this, computer.uuid, id));
+            if (duoApps != null) {
+                duoApps.refresh();
+            }
+            return true;
+        }
         if (itemId == DUO_GAME_SETTINGS_ID) {
             com.limelight.duo.DuoGameSettings.show(this, computer.uuid, app.app.getAppId(), app.app.getAppName(),
                     () -> {
@@ -844,8 +864,12 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
     /** Start a stream with the game's own profile switched on (if it has one). */
     private void duoLaunch(NvApp app, boolean withVDisplay) {
         com.limelight.duo.DuoGameSettings.applyForLaunch(this, computer.uuid, app.getAppId());
+        duoStreamStarted = true;
         ServerHelper.doStart(AppView.this, app, computer, managerBinder, withVDisplay);
     }
+
+    /** Set when a stream was started from here: after it ends we go back to the host page. */
+    private boolean duoStreamStarted;
 
     /** Quit the running session (with the usual confirmation). */
     private void quitApp(AppObject app) {

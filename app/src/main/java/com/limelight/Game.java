@@ -2258,6 +2258,10 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
             return null;
         }
         String letter = name.substring(8);
+        if (letter != null) {
+            // Keyboard shortcuts were replaced by controller shortcuts (Settings → Shortcuts).
+            return null;
+        }
         android.content.SharedPreferences p = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
         String[][] actions = {{"menu", "M"}, {"panel", "K"}, {"perf", "P"}, {"disconnect", "Q"}, {"grab", "Z"}, {"cursor", "C"}};
         for (String[] a : actions) {
@@ -2266,6 +2270,18 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
             }
         }
         return null;
+    }
+
+    private void duoRunPadAction(String action) {
+        switch (action) {
+            case "quit": quit(); break;
+            case "pause": disconnect(); break;
+            case "perf": toggleHUD(); break;
+            case "menu": showGameMenu(null); break;
+            case "panel": toggleDuoPanel(); break;
+            case "mode": com.limelight.duo.DuoGamepadMouse.toggle(this); break;
+            default: break;
+        }
     }
 
     private boolean handleSpecialKeys(int androidKeyCode, boolean down) {
@@ -2418,6 +2434,10 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         if ((event.getFlags() & KeyEvent.FLAG_VIRTUAL_HARD_KEY) != 0) {
             return false;
         }
+        // Duo controller shortcuts: LB + RB + button (Settings → Shortcuts).
+        if (com.limelight.duo.DuoPadShortcuts.onKey(this, event, this::duoRunPadAction)) {
+            return true;
+        }
         // Duo desktop mode: face buttons drive the mouse / Win / Alt+Tab.
         if (com.limelight.duo.DuoGamepadMouse.onKey(event)) {
             return true;
@@ -2512,6 +2532,10 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         // Pass-through virtual navigation keys
         if ((event.getFlags() & KeyEvent.FLAG_VIRTUAL_HARD_KEY) != 0) {
             return false;
+        }
+        // Duo controller shortcuts: LB + RB + button (Settings → Shortcuts).
+        if (com.limelight.duo.DuoPadShortcuts.onKey(this, event, this::duoRunPadAction)) {
+            return true;
         }
         // Duo desktop mode: face buttons drive the mouse / Win / Alt+Tab.
         if (com.limelight.duo.DuoGamepadMouse.onKey(event)) {

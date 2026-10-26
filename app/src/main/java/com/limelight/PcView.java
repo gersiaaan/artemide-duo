@@ -332,7 +332,11 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
                 NvApp app = last != null && last.appId == c.runningGameId
                         ? new NvApp(last.name, last.appUuid, last.appId, last.hdr)
                         : new NvApp("app", null, c.runningGameId, false);
-                ServerHelper.doStart(PcView.this, app, c, managerBinder, false);
+                // Same virtual display choice as a normal start: if the session ended meanwhile,
+                // the host starts fresh and must not fall back to its own monitor.
+                PreferenceConfiguration prefs = PreferenceConfiguration.readPreferences(PcView.this);
+                boolean vd = prefs.useVirtualDisplay && c.vDisplaySupported && c.vDisplayDriverReady;
+                ServerHelper.doStart(PcView.this, app, c, managerBinder, vd);
             }
 
             @Override

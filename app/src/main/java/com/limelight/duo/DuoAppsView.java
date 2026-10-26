@@ -300,6 +300,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             }
             if (last != null && a.id == last.appId && lastApp == null) {
                 lastApp = a;
+            } else if (c != null && DuoPlayStats.isPinned(getContext(), c.uuid, a.id)) {
+                pinned.add(a);
             } else {
                 rest.add(a);
             }
