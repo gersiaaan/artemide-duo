@@ -48,7 +48,7 @@ public class DuoStatusView extends LinearLayout {
         time = new TextView(context);
         time.setTextColor(DuoColors.TEXT);
         time.setTextSize(13);
-        time.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        time.setTypeface(DuoFonts.medium());
         addView(time, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 
         icon = new BatteryIcon(context);
@@ -66,7 +66,7 @@ public class DuoStatusView extends LinearLayout {
         percent = new TextView(context);
         percent.setTextColor(DuoColors.MUTED);
         percent.setTextSize(13);
-        percent.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        percent.setTypeface(DuoFonts.medium());
         LayoutParams pp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
         pp.leftMargin = dp(5);
         addView(percent, pp);

@@ -172,7 +172,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
         borderPaint.setStyle(Paint.Style.STROKE);
         borderPaint.setStrokeWidth(density);
         textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        textPaint.setTypeface(DuoFonts.medium());
         altPaint.setColor(DuoColors.MUTED);
         altPaint.setTextSize(10 * density);
         hintPaint.setColor(DuoColors.MUTED);
@@ -186,7 +186,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
         popupText.setColor(DuoColors.HI_TEXT);
         popupText.setTextAlign(Paint.Align.CENTER);
         popupText.setTextSize(24 * density);
-        popupText.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        popupText.setTypeface(DuoFonts.bold());
 
         if (layout == LAYOUT_FULL) {
             buildFull();

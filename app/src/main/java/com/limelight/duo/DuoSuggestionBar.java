@@ -18,8 +18,6 @@ public class DuoSuggestionBar extends LinearLayout implements DuoAutocorrect.Lis
     private final String[] shown = {null, null, null};
     private int shownHighlight = -2;
     private boolean shownAny;
-    private static final Typeface REGULAR = Typeface.create("sans-serif", Typeface.NORMAL);
-    private static final Typeface BOLD = Typeface.create("sans-serif", Typeface.BOLD);
 
     public DuoSuggestionBar(Context context, final DuoAutocorrect autocorrect) {
         super(context);
@@ -85,7 +83,7 @@ public class DuoSuggestionBar extends LinearLayout implements DuoAutocorrect.Lis
             }
             cells[i].setClickable(!s.isEmpty());
             boolean bold = i == highlight;
-            Typeface tf = bold ? BOLD : REGULAR;
+            Typeface tf = bold ? DuoFonts.bold() : DuoFonts.regular();
             if (cells[i].getTypeface() != tf) {
                 cells[i].setTypeface(tf);
             }

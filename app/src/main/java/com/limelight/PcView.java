@@ -363,6 +363,7 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        com.limelight.duo.DuoFonts.init(this);
 
         // Assume we're in the foreground when created to avoid a race
         // between binding to CMS and onResume()

@@ -61,6 +61,14 @@ public final class DuoSettingsDecor {
         float d = c.getResources().getDisplayMetrics().density;
         int accent = DuoTheme.accent(c);
         row.setBackground(rowBackground(accent, d));
+        View title = row.findViewById(android.R.id.title);
+        if (title instanceof TextView) {
+            ((TextView) title).setTypeface(DuoFonts.medium());
+        }
+        View sum = row.findViewById(android.R.id.summary);
+        if (sum instanceof TextView) {
+            ((TextView) sum).setTypeface(DuoFonts.regular());
+        }
 
         LinearLayout pills = row.findViewById(R.id.duo_pills);
         View summary = row.findViewById(android.R.id.summary);
@@ -89,7 +97,7 @@ public final class DuoSettingsDecor {
                     TextView t = new TextView(c);
                     t.setText(names[i]);
                     t.setTextSize(11.5f);
-                    t.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+                    t.setTypeface(DuoFonts.medium());
                     t.setTextColor(on ? accent : DuoTheme.TEXT);
                     t.setGravity(Gravity.CENTER);
                     t.setPadding(Math.round(10 * d), 0, Math.round(10 * d), 0);

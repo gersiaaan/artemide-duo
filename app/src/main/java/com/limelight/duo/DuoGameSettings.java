@@ -249,7 +249,7 @@ public final class DuoGameSettings {
             TextView t = new TextView(c);
             t.setText(r.choices[i].label);
             t.setTextSize(12);
-            t.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+            t.setTypeface(DuoFonts.medium());
             t.setGravity(Gravity.CENTER);
             t.setPadding(Math.round(11 * d), 0, Math.round(11 * d), 0);
             t.setFocusable(true);

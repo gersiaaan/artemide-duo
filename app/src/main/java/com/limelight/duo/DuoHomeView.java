@@ -723,7 +723,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         t.setText(s);
         t.setTextSize(sp * scale);
         t.setTextColor(color);
-        t.setTypeface(Typeface.create(bold ? "sans-serif-medium" : "sans-serif", Typeface.NORMAL));
+        t.setTypeface((bold ? DuoFonts.semibold() : DuoFonts.regular()));
         t.setIncludeFontPadding(false);
         return t;
     }

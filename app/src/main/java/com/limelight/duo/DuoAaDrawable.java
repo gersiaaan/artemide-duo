@@ -20,7 +20,7 @@ class DuoAaDrawable extends Drawable {
         this.density = density;
         text.setColor(color);
         text.setTextAlign(Paint.Align.CENTER);
-        text.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        text.setTypeface(DuoFonts.bold());
         text.setTextSize(9 * density);
         stroke.setColor(color);
         stroke.setStyle(Paint.Style.STROKE);

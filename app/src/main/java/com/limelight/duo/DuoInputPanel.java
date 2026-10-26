@@ -116,7 +116,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
 
         langButton = actionButton(DuoBridge.getLanguage(context).toUpperCase(), v -> toggleLanguage());
         langButton.setTextSize(12);
-        langButton.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        langButton.setTypeface(DuoFonts.bold());
         langButton.setContentDescription("Switch language");
         langButton.setPadding(0, 0, 0, 0);
         addBarView(bar, langButton, dp(44), true);
@@ -468,7 +468,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         t.setText(text);
         t.setTextColor(DuoColors.TEXT);
         t.setTextSize(12);
-        t.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        t.setTypeface(DuoFonts.medium());
         t.setGravity(Gravity.CENTER);
         t.setBackground(pressable(color, 10));
         t.setPadding(dp(12), 0, dp(12), 0);
@@ -494,7 +494,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         TextView t = new TextView(getContext());
         t.setText(text);
         t.setTextSize(13);
-        t.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        t.setTypeface(DuoFonts.bold());
         t.setGravity(Gravity.CENTER);
         t.setPadding(dp(14), 0, dp(14), 0);
         t.setClickable(true);
@@ -577,7 +577,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         name.setText(label);
         name.setTextColor(DuoColors.TEXT);
         name.setTextSize(13);
-        name.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        name.setTypeface(DuoFonts.medium());
         row.addView(name, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
 
         TextView hint = new TextView(getContext());

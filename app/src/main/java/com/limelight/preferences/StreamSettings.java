@@ -109,6 +109,7 @@ public class StreamSettings extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
 //        setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
+        com.limelight.duo.DuoFonts.init(this);
 
         previousPrefs = PreferenceConfiguration.readPreferences(this);
 
@@ -150,7 +151,7 @@ public class StreamSettings extends AppCompatActivity {
         title.setText("Settings");
         title.setTextSize(18);
         title.setTextColor(com.limelight.duo.DuoTheme.TEXT);
-        title.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
+        title.setTypeface(com.limelight.duo.DuoFonts.semibold());
         header.addView(title);
         column.addView(header, 0);
 
@@ -165,7 +166,7 @@ public class StreamSettings extends AppCompatActivity {
             android.widget.TextView tv = new android.widget.TextView(this);
             tv.setText(com.limelight.duo.DuoSettingsDecor.TABS[i]);
             tv.setTextSize(12);
-            tv.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
+            tv.setTypeface(com.limelight.duo.DuoFonts.semibold());
             tv.setGravity(android.view.Gravity.CENTER);
             tv.setPadding(Math.round(11 * d), 0, Math.round(11 * d), 0);
             tv.setFocusable(true);

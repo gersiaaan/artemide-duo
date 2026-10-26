@@ -451,6 +451,7 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        com.limelight.duo.DuoFonts.init(this);
 
         instance = this;
         timerHandler = new Handler(Looper.getMainLooper());
