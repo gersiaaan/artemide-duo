@@ -21,4 +21,16 @@ public interface DuoInputSink {
     void toggleSystemKeyboard();
 
     void showStreamMenu();
+
+    /** After Ctrl+C / Ctrl+X: pull the PC clipboard to Android once the PC has it. */
+    void fetchClipboardFromPc();
+
+    /**
+     * Before Ctrl+V: if Android has a new clipboard (copied in an Android app), send it to
+     * the PC first; runs paste afterwards (or right away if there is nothing new).
+     */
+    void pushClipboardThen(Runnable paste);
+
+    /** Stream window and panel window count as one: called with the combined focus. */
+    void onUnitFocusChanged(boolean hasFocus);
 }

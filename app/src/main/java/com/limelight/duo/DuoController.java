@@ -157,6 +157,7 @@ public class DuoController {
     public void destroy() {
         stop();
         DuoBridge.setPanelListener(null);
+        DuoBridge.resetFocus();
         DuoBridge.closePanel();
         DuoBridge.setSink(null);
     }
@@ -222,7 +223,7 @@ public class DuoController {
 
     public void togglePanel() {
         if (DuoBridge.isPanelOpen()) {
-            DuoBridge.closePanel();
+            DuoBridge.hidePanelByUser();
         } else {
             DuoPanelActivity.open(activity);
         }

@@ -65,6 +65,9 @@ public class DuoAutocorrect {
 
     private final Runnable saveLearned = this::persistLearned;
 
+    /** Bumped on every input event; a late correction only applies if nothing happened since. */
+    private int generation;
+
     public DuoAutocorrect(Context context, DuoInputSink sink) {
         this.context = context.getApplicationContext();
         this.sink = sink;
@@ -112,6 +115,7 @@ public class DuoAutocorrect {
 
     /** tx/ty: touch position in key units (q = 0,0), NaN if unknown. */
     public void onLetter(char c, float tx, float ty) {
+        generation++;
         undoOriginal = null;
         autoShift = false;
         sentenceEnded = false;
@@ -124,6 +128,7 @@ public class DuoAutocorrect {
 
     /** Punctuation, digits and other printable characters. */
     public void onChar(char c) {
+        generation++;
         // English contractions: the apostrophe is part of the word (don't, I'm).
         if (c == '\'' && word.length() > 0 && "en".equals(DuoDictionary.language())) {
             undoOriginal = null;
@@ -142,6 +147,7 @@ public class DuoAutocorrect {
     }
 
     public void onEnter() {
+        generation++;
         finishWord(true);
         undoOriginal = null;
         lastChar = '\n';
@@ -155,6 +161,7 @@ public class DuoAutocorrect {
      *         false if the keyboard should send a normal backspace.
      */
     public boolean onBackspace() {
+        generation++;
         autoShift = false;
         if (undoOriginal != null) {
             // Gboard behaviour: backspace right after an autocorrect restores the typed word,
@@ -195,6 +202,7 @@ public class DuoAutocorrect {
      * @return true if the space was already sent here.
      */
     public boolean onSpace() {
+        generation++;
         long now = SystemClock.uptimeMillis();
         char before = lastChar;
 
@@ -217,10 +225,14 @@ public class DuoAutocorrect {
         String typed = word.toString();
         DuoDictionary.Result r = typed.equals(resultWord) ? result : null;
         if (r == null && wasWord && DuoDictionary.get() != null) {
-            // Result not back yet: decide now.
-            r = DuoDictionary.get().lookup(typed, floats(tapX), floats(tapY));
+            // Result not back yet: send the space right away (no waiting on the
+            // dictionary in the UI thread) and correct the word as soon as it's known.
+            DuoKeys.tap(sink, DuoKeys.VK_SPACE, 1);
+            correctLater(typed, floats(tapX), floats(tapY));
+            undoOriginal = null;
+            sent = true;
         }
-        if (r != null && r.autocorrect && !r.suggestions.isEmpty()) {
+        if (!sent && r != null && r.autocorrect && !r.suggestions.isEmpty()) {
             String corrected = matchCase(typed, r.suggestions.get(0));
             if (!corrected.equals(typed)) {
                 replaceWord(typed, corrected);
@@ -250,6 +262,7 @@ public class DuoAutocorrect {
 
     /** Any other key, a click or a mouse movement: context unknown, start fresh. */
     public void onBoundary() {
+        generation++;
         undoOriginal = null;
         autoShift = false;
         sentenceEnded = false;
@@ -263,6 +276,7 @@ public class DuoAutocorrect {
 
     /** A suggestion cell was tapped. */
     public void pick(int cell) {
+        generation++;
         if (cell < 0 || cell > 2 || cellText[cell].isEmpty()) {
             return;
         }
@@ -282,6 +296,39 @@ public class DuoAutocorrect {
     }
 
     // ---------------- internals ----------------
+
+    /** Space already sent; looks the word up off the UI thread and fixes it if nothing was typed since. */
+    private void correctLater(final String typed, final float[] tx, final float[] ty) {
+        final DuoDictionary dict = DuoDictionary.get();
+        if (dict == null) {
+            return;
+        }
+        final int gen = generation;
+        Handler h = worker();
+        h.removeCallbacksAndMessages(null);
+        h.post(() -> {
+            final DuoDictionary.Result r = dict.lookup(typed, tx, ty);
+            main.post(() -> {
+                if (generation != gen) {
+                    return; // more was typed meanwhile: leave the word as it is
+                }
+                if (r != null && r.autocorrect && !r.suggestions.isEmpty()) {
+                    String corrected = matchCase(typed, r.suggestions.get(0));
+                    if (!corrected.equals(typed)) {
+                        DuoKeys.tap(sink, DuoKeys.VK_BACK, typed.length() + 1);
+                        sink.sendText(corrected);
+                        DuoKeys.tap(sink, DuoKeys.VK_SPACE, 1);
+                        undoOriginal = typed;
+                        undoCorrected = corrected;
+                        return;
+                    }
+                }
+                if (r != null && !r.known && typed.length() >= 2) {
+                    learn(typed, 1);
+                }
+            });
+        });
+    }
 
     /** The word ends without a correction: learn it if it's new. */
     private void finishWord(boolean resetAfter) {

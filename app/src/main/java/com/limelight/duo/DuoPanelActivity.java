@@ -21,9 +21,11 @@ public class DuoPanelActivity extends Activity {
 
     private View panel;
     private boolean finishing;
+    private boolean restoreOnFinish;
 
     /** Opens the panel on the adjacent screen. */
     public static void open(Activity from) {
+        DuoPreviousApp.remember(from);
         Intent intent = new Intent(from, DuoPanelActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -51,7 +53,7 @@ public class DuoPanelActivity extends Activity {
         w.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         hideSystemUi();
 
-        panel = new DuoInputPanel(this, sink, this::finish);
+        panel = new DuoInputPanel(this, sink, this::hideByUser);
         panel.setAlpha(0f);
         setContentView(panel);
 
@@ -68,12 +70,28 @@ public class DuoPanelActivity extends Activity {
         });
     }
 
+    /**
+     * Hidden by the user (button, swipe, stream button, menu):
+     * the app that was on this screen before comes back.
+     */
+    void hideByUser() {
+        restoreOnFinish = true;
+        finish();
+    }
+
     @Override
     public void finish() {
         if (finishing) {
             return;
         }
         finishing = true;
+        if (restoreOnFinish && DuoPreviousApp.restore(this)) {
+            // The app covers this screen again: close without the slide.
+            super.finish();
+            overridePendingTransition(0, 0);
+            return;
+        }
+        DuoPreviousApp.forget();
         if (panel == null || panel.getHeight() == 0) {
             super.finish();
             overridePendingTransition(0, 0);
@@ -105,6 +123,7 @@ public class DuoPanelActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
+        DuoBridge.reportFocus(false, hasFocus);
         if (hasFocus) {
             hideSystemUi();
         }
@@ -113,6 +132,7 @@ public class DuoPanelActivity extends Activity {
     @Override
     protected void onDestroy() {
         DuoBridge.clearPanelActivity(this);
+        DuoBridge.reportFocus(false, false);
         super.onDestroy();
     }
 }

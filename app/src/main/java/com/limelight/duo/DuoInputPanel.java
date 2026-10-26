@@ -129,15 +129,17 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         segment.setPadding(dp(3), dp(3), dp(3), dp(3));
         bar.addView(segment, new LayoutParams(LayoutParams.WRAP_CONTENT, dp(44)));
         String[] names = {"Tastatur", "Trackpad", "Kompakt"};
-        for (int i = 0; i < 3; i++) {
-            final int m = i;
-            tabs[i] = tab(names[i]);
-            tabs[i].setOnClickListener(v -> onTab(m));
+        // Shown left to right: Kompakt | Trackpad | Tastatur.
+        int[] order = {MODE_COMPACT, MODE_TRACKPAD, MODE_KEYBOARD};
+        for (int pos = 0; pos < 3; pos++) {
+            final int m = order[pos];
+            tabs[m] = tab(names[m]);
+            tabs[m].setOnClickListener(v -> onTab(m));
             LayoutParams lp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
-            if (i > 0) {
+            if (pos > 0) {
                 lp.leftMargin = dp(3);
             }
-            segment.addView(tabs[i], lp);
+            segment.addView(tabs[m], lp);
         }
 
         // ---------- content ----------
@@ -258,7 +260,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
 
     private LayoutParams columnParams(View v, boolean margin) {
         LayoutParams lp = v == compactKeyColumn
-                ? new LayoutParams(dp(320), LayoutParams.MATCH_PARENT)
+                ? new LayoutParams(dp(360), LayoutParams.MATCH_PARENT)
                 : new LayoutParams(0, LayoutParams.MATCH_PARENT, 1f);
         if (margin) {
             lp.leftMargin = dp(8);
@@ -490,7 +492,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         row.setOnClickListener(v -> {
             v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
             autocorrect.onBoundary();
-            sendCombo(sink, vks);
+            sendWithClipboard(sink, false, vks);
         });
 
         TextView name = new TextView(getContext());

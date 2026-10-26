@@ -63,6 +63,38 @@ public final class DuoKeys {
         }
     }
 
+    private static boolean isCtrl(int[] vks, char letter) {
+        return vks.length == 2 && vks[0] == VK_LCONTROL && vks[1] == vk(letter);
+    }
+
+    /**
+     * Sends a combo; Ctrl+C/X/V also keep the Android and PC clipboards in sync.
+     * @param now release immediately (typing) instead of after a short hold
+     */
+    public static void sendWithClipboard(final DuoInputSink sink, final boolean now, final int... vks) {
+        if (sink == null) {
+            return;
+        }
+        if (isCtrl(vks, 'v')) {
+            sink.pushClipboardThen(() -> {
+                if (now) {
+                    sendComboNow(sink, vks);
+                } else {
+                    sendCombo(sink, vks);
+                }
+            });
+            return;
+        }
+        if (now) {
+            sendComboNow(sink, vks);
+        } else {
+            sendCombo(sink, vks);
+        }
+        if (isCtrl(vks, 'c') || isCtrl(vks, 'x')) {
+            sink.fetchClipboardFromPc();
+        }
+    }
+
     /** Presses all keys in order, then releases them in reverse order. */
     public static void sendCombo(final DuoInputSink sink, final int... vks) {
         if (sink == null || vks.length == 0) {

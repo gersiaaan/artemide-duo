@@ -47,6 +47,9 @@ public abstract class DuoTouchSurface extends View {
     private float remX, remY, scrollRemV, scrollRemH;
     private long lastMoveTime;
     private float smoothVelocity;
+    /** Keyboard: two fingers landed almost together; typed as two keys unless they move. */
+    private boolean multiKeys;
+    private float secondX, secondY;
 
     private final Runnable longPress = new Runnable() {
         @Override
@@ -134,6 +137,7 @@ public abstract class DuoTouchSurface extends View {
         smoothVelocity = 0;
         maxPointers = 1;
         remX = remY = 0;
+        multiKeys = false;
         handler.postDelayed(longPress, LONG_PRESS_MS);
         onPress(downX, downY);
         if (fireOnDown(downX, downY)) {
@@ -141,6 +145,13 @@ public abstract class DuoTouchSurface extends View {
             mode = Mode.TYPED;
             onTap(downX, downY);
         }
+    }
+
+    /** Two quick fingers on the keyboard: both keys, in the order they touched down. */
+    private void typeBothKeys() {
+        multiKeys = false;
+        onTap(downX, downY);
+        onTap(secondX, secondY);
     }
 
     /** Commits whatever the current single finger means (key or held key). */
@@ -174,6 +185,14 @@ public abstract class DuoTouchSurface extends View {
                     return true;
                 }
                 maxPointers = Math.max(maxPointers, event.getPointerCount());
+                if (supportsRollover() && mode == Mode.PENDING && event.getPointerCount() == 2) {
+                    // Two thumbs typing at nearly the same moment: remember the second key.
+                    multiKeys = true;
+                    secondX = event.getX(event.getActionIndex());
+                    secondY = event.getY(event.getActionIndex());
+                } else {
+                    multiKeys = false;
+                }
                 if (mode == Mode.PENDING || mode == Mode.TYPED || mode == Mode.HELD || mode == Mode.MOUSE || mode == Mode.REPEAT) {
                     cancelTimers();
                     onCancelPress();
@@ -199,6 +218,12 @@ public abstract class DuoTouchSurface extends View {
                     // An older, already typed finger lifted: nothing to do.
                     return true;
                 }
+                if (mode == Mode.MULTI && multiKeys) {
+                    // One of the two fingers lifted without moving: that was typing.
+                    typeBothKeys();
+                    mode = Mode.NONE;
+                    return true;
+                }
                 resetCentroid = true;
                 return true;
             }
@@ -211,7 +236,9 @@ public abstract class DuoTouchSurface extends View {
                         commitSingle();
                         break;
                     case MULTI:
-                        if (event.getEventTime() - downTime <= MULTI_TAP_MAX_MS) {
+                        if (multiKeys) {
+                            typeBothKeys();
+                        } else if (event.getEventTime() - downTime <= MULTI_TAP_MAX_MS) {
                             if (maxPointers >= 3) {
                                 onThreeFingerTap();
                             } else if (maxPointers == 2) {

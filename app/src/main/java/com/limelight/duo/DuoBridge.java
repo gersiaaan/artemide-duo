@@ -66,10 +66,51 @@ public final class DuoBridge {
         notifyPanel();
     }
 
+    /** Hidden on purpose by the user: brings back the app that was on that screen. */
+    public static void hidePanelByUser() {
+        Activity a = panelActivity == null ? null : panelActivity.get();
+        if (a instanceof DuoPanelActivity && !a.isFinishing()) {
+            ((DuoPanelActivity) a).hideByUser();
+        }
+        panelActivity = null;
+        notifyPanel();
+    }
+
     private static void notifyPanel() {
         if (panelListener != null) {
             panelListener.run();
         }
+    }
+
+    // ---------------- combined focus (clipboard sync) ----------------
+
+    private static final android.os.Handler MAIN = new android.os.Handler(android.os.Looper.getMainLooper());
+    private static boolean gameFocus, panelFocus, unitFocus;
+    private static final Runnable FOCUS_CHECK = () -> {
+        boolean now = gameFocus || panelFocus;
+        if (now != unitFocus) {
+            unitFocus = now;
+            if (sink != null) {
+                sink.onUnitFocusChanged(now);
+            }
+        }
+    };
+
+    /** Focus of the stream window (game = true) or of the panel window. */
+    public static void reportFocus(boolean game, boolean hasFocus) {
+        if (game) {
+            gameFocus = hasFocus;
+        } else {
+            panelFocus = hasFocus;
+        }
+        // Moving between stream and panel loses one focus just before the other gains it.
+        MAIN.removeCallbacks(FOCUS_CHECK);
+        MAIN.postDelayed(FOCUS_CHECK, 250);
+    }
+
+    public static void resetFocus() {
+        MAIN.removeCallbacks(FOCUS_CHECK);
+        gameFocus = panelFocus = unitFocus = false;
     }
 
     // ---------------- trackpad speed ----------------

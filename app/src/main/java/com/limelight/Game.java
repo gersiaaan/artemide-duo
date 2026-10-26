@@ -2041,6 +2041,49 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
             public void showStreamMenu() {
                 showGameMenu(null);
             }
+
+            @Override
+            public void fetchClipboardFromPc() {
+                if (connected && httpConn != null) {
+                    // Give the PC a moment to put the copied text on its clipboard.
+                    getClipboard(400);
+                }
+            }
+
+            @Override
+            public void pushClipboardThen(Runnable paste) {
+                if (!connected || httpConn == null) {
+                    paste.run();
+                    return;
+                }
+                // Only text copied in an Android app is new; our own synced text is skipped.
+                final String text = getClipboardContent(false);
+                if (text == null) {
+                    paste.run();
+                    return;
+                }
+                final java.util.concurrent.atomic.AtomicBoolean done = new java.util.concurrent.atomic.AtomicBoolean();
+                final Runnable once = () -> {
+                    if (done.compareAndSet(false, true)) {
+                        paste.run();
+                    }
+                };
+                // Never leave the paste hanging if the PC doesn't answer.
+                new Handler(Looper.getMainLooper()).postDelayed(once, 1000);
+                new Thread(() -> {
+                    try {
+                        httpConn.sendClipboard(text);
+                    } catch (Exception e) {
+                        LimeLog.warning("Duo: clipboard upload failed: " + e);
+                    }
+                    runOnUiThread(once);
+                }).start();
+            }
+
+            @Override
+            public void onUnitFocusChanged(boolean hasFocus) {
+                clipboardSyncOnFocus(hasFocus);
+            }
         };
     }
 
@@ -2529,6 +2572,16 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
     }
 
     public boolean handleFocusChange(boolean hasFocus) {
+        if (duoController != null) {
+            // Surface Duo: stream and keyboard panel are one unit; moving between them
+            // must not trigger a clipboard sync.
+            com.limelight.duo.DuoBridge.reportFocus(true, hasFocus);
+            return connected && prefConfig.smartClipboardSync;
+        }
+        return clipboardSyncOnFocus(hasFocus);
+    }
+
+    private boolean clipboardSyncOnFocus(boolean hasFocus) {
         if (connected && prefConfig.smartClipboardSync) {
             if (hasFocus) {
                 return sendClipboard(false);
@@ -4007,7 +4060,7 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                 UiHelper.notifyStreamConnected(Game.this);
 
                 // Sync local clipboard to host
-                handleFocusChange(true);
+                clipboardSyncOnFocus(true);
 
                 // Ensure overlay toggle button visibility is properly set
                 setupOverlayToggleButton();

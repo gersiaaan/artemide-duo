@@ -15,6 +15,11 @@ import android.widget.TextView;
 public class DuoSuggestionBar extends LinearLayout implements DuoAutocorrect.Listener {
     private final TextView[] cells = new TextView[3];
     private final View[] dividers = new View[2];
+    private final String[] shown = {null, null, null};
+    private int shownHighlight = -2;
+    private boolean shownAny;
+    private static final Typeface REGULAR = Typeface.create("sans-serif", Typeface.NORMAL);
+    private static final Typeface BOLD = Typeface.create("sans-serif", Typeface.BOLD);
 
     public DuoSuggestionBar(Context context, final DuoAutocorrect autocorrect) {
         super(context);
@@ -58,17 +63,32 @@ public class DuoSuggestionBar extends LinearLayout implements DuoAutocorrect.Lis
             }
         }
         // Dividers only when there is something to separate.
-        for (View d : dividers) {
-            if (d != null) {
-                d.setVisibility(any ? VISIBLE : INVISIBLE);
+        if (any != shownAny || shownHighlight == -2) {
+            shownAny = any;
+            for (View d : dividers) {
+                if (d != null) {
+                    d.setVisibility(any ? VISIBLE : INVISIBLE);
+                }
             }
         }
+        // Only touch cells that really changed: keeps typing smooth (no relayout per key).
+        boolean highlightChanged = highlight != shownHighlight;
+        shownHighlight = highlight;
         for (int i = 0; i < 3; i++) {
             String s = texts[i] == null ? "" : texts[i];
-            cells[i].setText(s);
+            if (!highlightChanged && s.equals(shown[i])) {
+                continue;
+            }
+            shown[i] = s;
+            if (!s.contentEquals(cells[i].getText())) {
+                cells[i].setText(s);
+            }
             cells[i].setClickable(!s.isEmpty());
             boolean bold = i == highlight;
-            cells[i].setTypeface(Typeface.create("sans-serif", bold ? Typeface.BOLD : Typeface.NORMAL));
+            Typeface tf = bold ? BOLD : REGULAR;
+            if (cells[i].getTypeface() != tf) {
+                cells[i].setTypeface(tf);
+            }
             cells[i].setTextColor(bold ? 0xFFFFFFFF : (s.startsWith("„") ? DuoColors.MUTED : DuoColors.TEXT));
         }
     }

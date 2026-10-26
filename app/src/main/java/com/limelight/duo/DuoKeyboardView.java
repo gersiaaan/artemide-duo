@@ -35,6 +35,10 @@ public class DuoKeyboardView extends DuoTouchSurface {
     private static final float FN_ROW_DP = 24f;
     private static final float ROW_DP = 58f;
     private static final float COMPACT_ROW_DP = 60f;
+    /** Compact space-bar row: a bit flatter than the letter rows. */
+    private static final float COMPACT_SPACE_ROW_DP = 50f;
+    /** Compact: keys end above the Links/Rechts buttons of the trackpad column (52 + 6). */
+    private static final float COMPACT_BOTTOM_DP = 58f;
     /** Room above the keys for the suggestion bar, which floats right on top of them. */
     private static final float SUGGESTION_DP = 35f;
     /** Full layout: free space between the hint line and the click buttons below. */
@@ -332,6 +336,16 @@ public class DuoKeyboardView extends DuoTouchSurface {
         return layout == LAYOUT_FULL && rows == fullRows && fullFn.get(ri);
     }
 
+    private float rowDpFor(int ri, float rowDp) {
+        if (isFnRow(ri)) {
+            return FN_ROW_DP;
+        }
+        if (layout == LAYOUT_COMPACT && ri == rows.size() - 1) {
+            return COMPACT_SPACE_ROW_DP;
+        }
+        return rowDp;
+    }
+
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
@@ -345,11 +359,11 @@ public class DuoKeyboardView extends DuoTouchSurface {
         float hgap = 5 * density;
         float vgap = (layout == LAYOUT_FULL ? 4 : 6) * density;
         float rowDp = layout == LAYOUT_FULL ? ROW_DP : COMPACT_ROW_DP;
-        float bottomReserve = layout == LAYOUT_FULL ? hintHeight + BOTTOM_GAP_DP * density : 0;
+        float bottomReserve = layout == LAYOUT_FULL ? hintHeight + BOTTOM_GAP_DP * density : COMPACT_BOTTOM_DP * density;
 
         float wanted = 0;
         for (int ri = 0; ri < rows.size(); ri++) {
-            wanted += (isFnRow(ri) ? FN_ROW_DP : rowDp) * density;
+            wanted += rowDpFor(ri, rowDp) * density;
         }
         float minTop = SUGGESTION_DP * density;
         float available = height - minTop - bottomReserve - vgap * (rows.size() - 1);
@@ -363,7 +377,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
 
         for (int ri = 0; ri < rows.size(); ri++) {
             List<Key> row = rows.get(ri);
-            float h = isFnRow(ri) ? FN_ROW_DP * density * scale : rowH;
+            float h = rowDpFor(ri, rowDp) * density * scale;
             float units = 0;
             int visible = 0;
             for (Key key : row) {
@@ -737,7 +751,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
             for (int i = 0; i < vks.length; i++) {
                 vks[i] = combo.get(i);
             }
-            DuoKeys.sendComboNow(sink, vks);
+            DuoKeys.sendWithClipboard(sink, true, vks);
 
             if (autocorrect != null && key.vk != VK_SPACE && key.vk != VK_BACK) {
                 if (plain && key.isLetter()) {
