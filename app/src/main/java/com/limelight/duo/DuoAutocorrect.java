@@ -486,7 +486,7 @@ public class DuoAutocorrect {
         if (!listeners.isEmpty()) {
             String[] cells = new String[3];
             for (int i = 0; i < 3; i++) {
-                cells[i] = (cellIsTyped[i] && i == 0) ? "„" + cellText[i] + "“" : cellText[i];
+                cells[i] = (cellIsTyped[i] && i == 0) ? "“" + cellText[i] + "”" : cellText[i];
             }
             for (Listener l : listeners) {
                 l.onSuggestions(cells, highlight);

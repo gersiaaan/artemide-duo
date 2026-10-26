@@ -2,9 +2,9 @@
 <resources>
     <!-- Surface Duo: keyboard button bottom-left in the stream -->
     <string-array name="duo_stream_button_names">
-        <item>Nur Anwendungen (Desktop, Virtual Display, Remote)</item>
-        <item>Immer (auch Spiele)</item>
-        <item>Aus</item>
+        <item>Apps only (Desktop, Virtual Display, Remote)</item>
+        <item>Always (games too)</item>
+        <item>Off</item>
     </string-array>
     <string-array name="duo_stream_button_values" translatable="false">
         <item>desktop</item>

@@ -339,9 +339,9 @@ public class GameMenu implements Game.GameMenuCallbacks {
         if (duo) {
             // Panel on the other screen (not shown while spanned: the panel is built in then).
             if (!game.isDuoSplit()) {
-                options.add(new MenuOption("Tastatur & Trackpad ein/aus", false, game::toggleDuoPanel));
+                options.add(new MenuOption("Keyboard & trackpad on/off", false, game::toggleDuoPanel));
             }
-            options.add(new MenuOption("Trackpad-Tempo", false,
+            options.add(new MenuOption("Trackpad speed", false,
                     () -> com.limelight.duo.DuoController.showSpeedDialog(game)));
         }
 

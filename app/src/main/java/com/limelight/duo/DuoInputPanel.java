@@ -89,13 +89,13 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
 
         boolean first = true;
         if (onHide != null) {
-            ImageButton hide = iconButton(context.getDrawable(R.drawable.ic_duo_keyboard), "Tastatur und Trackpad ausblenden");
+            ImageButton hide = iconButton(context.getDrawable(R.drawable.ic_duo_keyboard), "Hide keyboard and trackpad");
             hide.setOnClickListener(v -> onHide.run());
             addBarView(bar, hide, dp(44), false);
             first = false;
         }
         TextView menu = actionButton("⋯", v -> sink.showStreamMenu());
-        menu.setContentDescription("Stream-Menü");
+        menu.setContentDescription("Stream menu");
         menu.setTextSize(18);
         addBarView(bar, menu, dp(44), !first);
 
@@ -105,10 +105,10 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         disconnect.setScaleType(ImageView.ScaleType.FIT_CENTER);
         disconnect.setPadding(dp(12), dp(12), dp(12), dp(12));
         disconnect.setBackground(pressable(DuoColors.SURFACE, 10));
-        disconnect.setContentDescription("Verbindung trennen, 1,5 Sekunden halten");
+        disconnect.setContentDescription("Disconnect, hold for 1.5 seconds");
         addBarView(bar, disconnect, dp(44), true);
 
-        ImageButton gboard = iconButton(new DuoAaDrawable(density, DuoColors.TEXT), "Handy-Tastatur (Gboard)");
+        ImageButton gboard = iconButton(new DuoAaDrawable(density, DuoColors.TEXT), "Phone keyboard (Gboard)");
         gboard.setOnClickListener(v -> {
             autocorrect.onBoundary();
             ime.toggle();
@@ -118,11 +118,11 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         langButton = actionButton(DuoBridge.getLanguage(context).toUpperCase(), v -> toggleLanguage());
         langButton.setTextSize(12);
         langButton.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
-        langButton.setContentDescription("Sprache umschalten");
+        langButton.setContentDescription("Switch language");
         langButton.setPadding(0, 0, 0, 0);
         addBarView(bar, langButton, dp(44), true);
 
-        ImageButton perf = iconButton(context.getDrawable(R.drawable.ic_duo_perf), "Performance-Overlay ein/aus");
+        ImageButton perf = iconButton(context.getDrawable(R.drawable.ic_duo_perf), "Performance overlay on/off");
         perf.setOnClickListener(v -> {
             v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
             sink.togglePerformanceOverlay();
@@ -142,7 +142,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         segment.setBackground(outlined(DuoColors.SURFACE, 10));
         segment.setPadding(dp(3), dp(3), dp(3), dp(3));
         bar.addView(segment, new LayoutParams(LayoutParams.WRAP_CONTENT, dp(44)));
-        String[] names = {"Tastatur", "Trackpad", "Kompakt"};
+        String[] names = {"Keyboard", "Trackpad", "Compact"};
         // Shown left to right: Kompakt | Trackpad | Tastatur.
         int[] order = {MODE_COMPACT, MODE_TRACKPAD, MODE_KEYBOARD};
         for (int pos = 0; pos < 3; pos++) {
@@ -256,7 +256,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
             modes[i].setVisibility(i == m ? VISIBLE : GONE);
             styleTab(tabs[i], i == m);
         }
-        tabs[MODE_COMPACT].setText(m == MODE_COMPACT ? "Kompakt ⇄" : "Kompakt");
+        tabs[MODE_COMPACT].setText(m == MODE_COMPACT ? "Compact ⇄" : "Compact");
         DuoBridge.setPanelMode(getContext(), m);
         autocorrect.onBoundary();
     }
@@ -310,8 +310,8 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         LinearLayout clicks = new LinearLayout(context);
         clicks.setOrientation(HORIZONTAL);
         root.addView(clicks, new LayoutParams(LayoutParams.MATCH_PARENT, dp(48)));
-        addWeighted(clicks, holdButton("Linksklick", MouseButtonPacket.BUTTON_LEFT), 1f, false);
-        addWeighted(clicks, holdButton("Rechtsklick", MouseButtonPacket.BUTTON_RIGHT), 1f, true);
+        addWeighted(clicks, holdButton("Left click", MouseButtonPacket.BUTTON_LEFT), 1f, false);
+        addWeighted(clicks, holdButton("Right click", MouseButtonPacket.BUTTON_RIGHT), 1f, true);
         return root;
     }
 
@@ -327,8 +327,8 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         LayoutParams clp = new LayoutParams(LayoutParams.MATCH_PARENT, dp(52));
         clp.topMargin = dp(6);
         padCol.addView(clicks, clp);
-        addWeighted(clicks, holdButton("Links", MouseButtonPacket.BUTTON_LEFT), 1f, false);
-        addWeighted(clicks, holdButton("Rechts", MouseButtonPacket.BUTTON_RIGHT), 1f, true);
+        addWeighted(clicks, holdButton("Left", MouseButtonPacket.BUTTON_LEFT), 1f, false);
+        addWeighted(clicks, holdButton("Right", MouseButtonPacket.BUTTON_RIGHT), 1f, true);
         compactPadColumn = padCol;
 
         compactKeyColumn = keyboardWithSuggestions(context, compactKeyboard);
@@ -344,16 +344,16 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         root.addView(shortcuts, new LayoutParams(dp(168), LayoutParams.MATCH_PARENT));
 
         // Note: on a German host layout, Strg+Z is the key at the US "Y" position.
-        addShortcut(shortcuts, "Kopieren", "Strg+C", VK_LCONTROL, vk('c'));
-        addShortcut(shortcuts, "Ausschneiden", "Strg+X", VK_LCONTROL, vk('x'));
-        addShortcut(shortcuts, "Einfügen", "Strg+V", VK_LCONTROL, vk('v'));
-        addShortcut(shortcuts, "Rückgängig", "Strg+Z", VK_LCONTROL, vk('y'));
-        addShortcut(shortcuts, "Fenster", "Alt+Tab", VK_LMENU, VK_TAB);
-        addShortcut(shortcuts, "Tab wechseln", "Strg+Tab", VK_LCONTROL, VK_TAB);
-        addShortcut(shortcuts, "Übersicht", "Win+Tab", VK_LWIN, VK_TAB);
+        addShortcut(shortcuts, "Copy", "Ctrl+C", VK_LCONTROL, vk('c'));
+        addShortcut(shortcuts, "Cut", "Ctrl+X", VK_LCONTROL, vk('x'));
+        addShortcut(shortcuts, "Paste", "Ctrl+V", VK_LCONTROL, vk('v'));
+        addShortcut(shortcuts, "Undo", "Ctrl+Z", VK_LCONTROL, vk('y'));
+        addShortcut(shortcuts, "Switch window", "Alt+Tab", VK_LMENU, VK_TAB);
+        addShortcut(shortcuts, "Next tab", "Ctrl+Tab", VK_LCONTROL, VK_TAB);
+        addShortcut(shortcuts, "Task view", "Win+Tab", VK_LWIN, VK_TAB);
         addShortcut(shortcuts, "Desktop", "Win+D", VK_LWIN, vk('d'));
         // Strg+Alt+Entf can't be injected (Windows only accepts it from real hardware).
-        addShortcut(shortcuts, "Task-Manager", "Strg+⇧+Esc", VK_LCONTROL, VK_LSHIFT, VK_ESCAPE);
+        addShortcut(shortcuts, "Task Manager", "Ctrl+⇧+Esc", VK_LCONTROL, VK_LSHIFT, VK_ESCAPE);
         addShortcut(shortcuts, "Esc", "", VK_ESCAPE);
 
         LinearLayout right = new LinearLayout(context);
@@ -369,8 +369,8 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         LayoutParams clp = new LayoutParams(LayoutParams.MATCH_PARENT, dp(56));
         clp.topMargin = dp(6);
         right.addView(clicks, clp);
-        addWeighted(clicks, holdButton("Links", MouseButtonPacket.BUTTON_LEFT), 1f, false);
-        addWeighted(clicks, holdButton("Rechts", MouseButtonPacket.BUTTON_RIGHT), 1f, true);
+        addWeighted(clicks, holdButton("Left", MouseButtonPacket.BUTTON_LEFT), 1f, false);
+        addWeighted(clicks, holdButton("Right", MouseButtonPacket.BUTTON_RIGHT), 1f, true);
         return root;
     }
 

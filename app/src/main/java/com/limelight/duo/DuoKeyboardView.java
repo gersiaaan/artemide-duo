@@ -235,7 +235,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
         for (int i = 0; i < 12; i++) {
             fn[i + 1] = k("F" + (i + 1), VK_F1 + i).quiet();
         }
-        fn[13] = k("Entf", VK_DELETE, 2f).rep().quiet();
+        fn[13] = k("Del", VK_DELETE, 2f).rep().quiet();
         fullRows.add(row((Object) fn));
         fullFn.add(true);
 
@@ -282,8 +282,8 @@ public class DuoKeyboardView extends DuoTouchSurface {
         fullRows.add(row(
                 k("Alt", VK_LMENU, 1.3f).mod().quiet(),
                 k("Win", VK_LWIN, 1.2f).mod().quiet(),
-                k("Strg", VK_LCONTROL, 1.2f).mod().quiet(),
-                k("Leertaste", VK_SPACE, 7.1f).rep().quiet(),
+                k("Ctrl", VK_LCONTROL, 1.2f).mod().quiet(),
+                k("Space", VK_SPACE, 7.1f).rep().quiet(),
                 k("AltGr", VK_RMENU, 1.2f).mod().quiet(),
                 k("←", VK_LEFT).rep().quiet(),
                 k("↑", VK_UP).rep().quiet().stacked(1),
@@ -302,7 +302,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
         letterRows.add(row(
                 k("?123", 0, 1.5f).quiet().action(ACTION_SYMBOLS),
                 k(",", VK_OEM_COMMA).quiet(),
-                k("Leertaste", VK_SPACE, 5f).rep().quiet(),
+                k("Space", VK_SPACE, 5f).rep().quiet(),
                 k(".", VK_OEM_PERIOD).quiet(),
                 k("↵", VK_RETURN, 1.5f).fn()));
 
@@ -319,7 +319,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
         symbolRows.add(row(
                 k("ABC", 0, 1.5f).quiet().action(ACTION_LETTERS),
                 k(",", VK_OEM_COMMA).quiet(),
-                k("Leertaste", VK_SPACE, 5f).rep().quiet(),
+                k("Space", VK_SPACE, 5f).rep().quiet(),
                 k(".", VK_OEM_PERIOD).quiet(),
                 k("↵", VK_RETURN, 1.5f).fn()));
     }
@@ -504,7 +504,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
         }
 
         if (layout == LAYOUT_FULL) {
-            canvas.drawText("Wischen = Maus · 2 Finger: Klick / Scrollen / Zoom · 3 Finger: Rechtsklick / Ziehen · a o u halten = ä ö ü · ⇪ halten = Caps",
+            canvas.drawText("Swipe = mouse · 2 fingers: click / scroll / zoom · 3 fingers: right click / drag · hold a o u = ä ö ü · hold ⇪ = Caps",
                     getWidth() / 2f, keysBottom + 14 * density, hintPaint);
         }
 

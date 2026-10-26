@@ -40,9 +40,9 @@ public class DuoTrackpadView extends DuoTouchSurface {
         float cx = getWidth() / 2f;
         float cy = getHeight() / 2f;
         canvas.drawText("Trackpad", cx, cy - 30 * density, title);
-        canvas.drawText("Tippen: Linksklick · 2 Finger: Rechtsklick", cx, cy - 4 * density, hint);
-        canvas.drawText("2 Finger: Scrollen / Zoom", cx, cy + 14 * density, hint);
-        canvas.drawText("3 Finger wischen: Ziehen", cx, cy + 32 * density, hint);
+        canvas.drawText("Tap: left click · 2 fingers: right click", cx, cy - 4 * density, hint);
+        canvas.drawText("2 fingers: scroll / zoom", cx, cy + 14 * density, hint);
+        canvas.drawText("3-finger swipe: drag", cx, cy + 32 * density, hint);
     }
 
     @Override

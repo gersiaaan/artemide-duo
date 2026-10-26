@@ -163,11 +163,11 @@ final class DuoPreviousApp {
         PreferenceManager.getDefaultSharedPreferences(activity).edit().putBoolean(KEY_ASKED, true).apply();
         Context themed = new ContextThemeWrapper(activity, activity.getApplicationInfo().theme);
         new AlertDialog.Builder(themed)
-                .setTitle("App zurückholen")
-                .setMessage("Damit die App, die vorher auf dem anderen Bildschirm lief (z. B. YouTube), "
-                        + "nach dem Ausblenden von Tastatur und Trackpad wieder dort erscheint, braucht "
-                        + "Artemide Duo den Nutzungsdatenzugriff. Bitte in der Liste „Artemide Duo“ erlauben.")
-                .setPositiveButton("Einstellungen", (d, w) -> {
+                .setTitle("Bring the app back")
+                .setMessage("To bring back the app that was on the other screen (e.g. YouTube) when you "
+                        + "hide the keyboard and trackpad, Artemide Duo needs usage access. "
+                        + "Please allow it for \"Artemide Duo\" in the list.")
+                .setPositiveButton("Settings", (d, w) -> {
                     try {
                         Intent i = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
                         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -175,7 +175,7 @@ final class DuoPreviousApp {
                     } catch (Throwable ignored) {
                     }
                 })
-                .setNegativeButton("Nicht jetzt", null)
+                .setNegativeButton("Not now", null)
                 .show();
     }
 }

@@ -11,8 +11,8 @@
         app:iconSpaceReserved="false">
         <SeekBarPreference
             android:key="duo_trackpad_speed"
-            android:title="Trackpad-Tempo"
-            android:summary="Geschwindigkeit von Tastatur-Trackpad und Trackpad (1 bis 10)"
+            android:title="Trackpad speed"
+            android:summary="Speed of the keyboard trackpad and the trackpad (1 to 10)"
             android:defaultValue="5"
             android:max="10"
             app:min="1"
@@ -20,8 +20,8 @@
             app:iconSpaceReserved="false" />
         <ListPreference
             android:key="duo_stream_button"
-            android:title="Tastatur-Button im Stream"
-            android:dialogTitle="Tastatur-Button im Stream"
+            android:title="Keyboard button in the stream"
+            android:dialogTitle="Keyboard button in the stream"
             android:entries="@array/duo_stream_button_names"
             android:entryValues="@array/duo_stream_button_values"
             android:defaultValue="desktop"

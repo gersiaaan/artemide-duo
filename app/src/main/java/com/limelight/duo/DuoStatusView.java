@@ -129,8 +129,8 @@ public class DuoStatusView extends LinearLayout {
     }
 
     private void updateDescription() {
-        setContentDescription("Uhrzeit " + time.getText() + ", Akku " + percent.getText()
-                + (bolt.getVisibility() == VISIBLE ? ", lädt" : ""));
+        setContentDescription("Time " + time.getText() + ", battery " + percent.getText()
+                + (bolt.getVisibility() == VISIBLE ? ", charging" : ""));
     }
 
     /** Small filled lightning bolt (charging). */

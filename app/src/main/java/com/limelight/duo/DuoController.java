@@ -107,7 +107,7 @@ public class DuoController {
         layered.setLayerInset(0, off, off, 0, 0);
         layered.setLayerInset(1, 0, 0, off, off);
         toggleButton.setImageDrawable(layered);
-        toggleButton.setContentDescription("Tastatur und Trackpad");
+        toggleButton.setContentDescription("Keyboard and trackpad");
         toggleButton.setBackground(null);
         int p = Math.round(5 * density);
         toggleButton.setPadding(p, p, p, p);
@@ -216,7 +216,7 @@ public class DuoController {
         box.addView(value, new LinearLayout.LayoutParams(Math.round(32 * density), ViewGroup.LayoutParams.WRAP_CONTENT));
 
         AlertDialog dialog = new AlertDialog.Builder(themed)
-                .setTitle("Trackpad-Tempo")
+                .setTitle("Trackpad speed")
                 .setView(box)
                 .setPositiveButton(android.R.string.ok, null)
                 .show();

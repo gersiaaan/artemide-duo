@@ -89,7 +89,7 @@ public class DuoSuggestionBar extends LinearLayout implements DuoAutocorrect.Lis
             if (cells[i].getTypeface() != tf) {
                 cells[i].setTypeface(tf);
             }
-            cells[i].setTextColor(bold ? 0xFFFFFFFF : (s.startsWith("„") ? DuoColors.MUTED : DuoColors.TEXT));
+            cells[i].setTextColor(bold ? 0xFFFFFFFF : (s.startsWith("“") ? DuoColors.MUTED : DuoColors.TEXT));
         }
     }
 }
