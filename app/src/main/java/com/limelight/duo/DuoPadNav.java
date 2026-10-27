@@ -83,10 +83,16 @@ public final class DuoPadNav {
 
     private static void move(ViewGroup root, int dir, View fallback) {
         View f = root.findFocus();
+        // After touching, the list container itself can hold focus; start from a row instead.
+        if (f instanceof androidx.recyclerview.widget.RecyclerView || f instanceof android.widget.ScrollView
+                || f instanceof android.widget.HorizontalScrollView) {
+            f = null;
+        }
         if (f == null) {
             // Back from touch: continue on the button the controller was on last.
             View last = lastFocus == null ? null : lastFocus.get();
             View target = last != null && last.isAttachedToWindow() && last.isShown() && isInside(root, last)
+                    && last.getGlobalVisibleRect(new android.graphics.Rect())
                     ? last : fallback;
             if (target != null) {
                 target.requestFocusFromTouch();

@@ -252,9 +252,10 @@ public class StreamSettings extends AppCompatActivity {
     private android.view.View duoFirstRow() {
         if (prefsFragment != null && prefsFragment.getListView() != null) {
             androidx.recyclerview.widget.RecyclerView rv = prefsFragment.getListView();
+            // The first row that is fully on screen (where you are after scrolling by touch).
             for (int i = 0; i < rv.getChildCount(); i++) {
                 android.view.View v = rv.getChildAt(i);
-                if (v.isFocusable()) {
+                if (v.isFocusable() && v.getTop() >= 0) {
                     return v;
                 }
             }
@@ -462,6 +463,8 @@ public class StreamSettings extends AppCompatActivity {
             if (android.os.Build.VERSION.SDK_INT >= 26) {
                 getListView().setDefaultFocusHighlightEnabled(false);
             }
+            // The list itself never takes focus (controller always lands on a row, also after touch).
+            getListView().setFocusable(false);
             getListView().setPadding(0, 0, 0, Math.round(24 * getResources().getDisplayMetrics().density));
         }
 
