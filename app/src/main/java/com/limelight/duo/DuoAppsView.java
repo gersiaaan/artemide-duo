@@ -305,12 +305,6 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         // Quit everything running on this PC (Menu ≡), no questions asked.
         quitAllButton = button("Quit all sessions", "≡", false, v -> host.quitAll());
         bottom.addView(quitAllButton, new LinearLayout.LayoutParams(-2, -1));
-        // App version, bottom right (same as on the host page).
-        TextView ver = text(DuoHomeView.version(), 10.5f, 0xFF6B717A, false);
-        ver.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams vl = new LinearLayout.LayoutParams(-2, -1);
-        vl.leftMargin = dp(12);
-        bottom.addView(ver, vl);
         // Bottom row works with B / Y / Menu; the stick never lands on it.
         for (int i = 0; i < bottom.getChildCount(); i++) {
             bottom.getChildAt(i).setFocusable(false);

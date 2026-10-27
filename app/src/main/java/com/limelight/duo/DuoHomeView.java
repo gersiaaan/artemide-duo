@@ -232,7 +232,6 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         qp.leftMargin = dp(8);
         bottom.addView(quitAllBtn, qp);
         bottom.addView(new View(context), new LinearLayout.LayoutParams(0, 1, 1f));
-        bottom.addView(text(version(), 10.5f, 0xFF6B717A, false));
 
         updateGlyphs();
         updateClock();
