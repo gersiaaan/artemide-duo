@@ -58,6 +58,55 @@ public class DuoKeyboardView extends DuoTouchSurface {
         invalidate();
     }
 
+    private boolean split;
+
+    /**
+     * Keyboard 4: split keyboard for two thumbs (arrangement like the iPhone Duo): left half flush
+     * left, right half flush right, keys as big as on Slim, G and V on both halves.
+     */
+    public void setSplit(boolean on) {
+        if (split == on || layout != LAYOUT_COMPACT) {
+            return;
+        }
+        split = on;
+        letterRows.clear();
+        symbolRows.clear();
+        buildCompact();
+        if (on) {
+            buildSplitLetters();
+        }
+        if (!symbols) {
+            rows = letterRows;
+        }
+        layoutKeys(getWidth(), getHeight());
+        invalidate();
+    }
+
+    private void buildSplitLetters() {
+        letterRows.clear();
+        Key[][] l = letterKeys();
+        l[1][1].hold("ß");
+        Key[] top = l[0], home = l[1], bottom = l[2];
+        // Left half, positions in key pitches from the left edge.
+        letterRows.add(row(top[0].at(0f), top[1].at(1f), top[2].at(2f), top[3].at(3f), top[4].at(4f),
+                // Right half, positions from the right edge (negative = to the left of it).
+                top[5].atRight(-5f), top[6].atRight(-4f), top[7].atRight(-3f), top[8].atRight(-2f), top[9].atRight(-1f)));
+        letterRows.add(row(home[0].at(0.5f), home[1].at(1.5f), home[2].at(2.5f), home[3].at(3.5f), home[4].at(4.5f),
+                home[4].copy().atRight(-5.5f), home[5].atRight(-4.5f), home[6].atRight(-3.5f), home[7].atRight(-2.5f),
+                home[8].atRight(-1.5f)));
+        letterRows.add(row(k("⇧", VK_LSHIFT, 1.3f).mod().fn().at(0f),
+                bottom[0].at(1.5f), bottom[1].at(2.5f), bottom[2].at(3.5f), bottom[3].at(4.5f),
+                bottom[3].copy().atRight(-5.5f), bottom[4].atRight(-4.5f), bottom[5].atRight(-3.5f), bottom[6].atRight(-2.5f),
+                k("⌫", VK_BACK, 1.3f).rep().fn().atRight(-1.3f)));
+        letterRows.add(row(
+                k("?123", 0, 1.45f).quiet().action(ACTION_SYMBOLS).at(0f),
+                k(",", VK_OEM_COMMA, 0.95f).quiet().at(1.45f),
+                k("Space", VK_SPACE, 2.6f).rep().quiet().at(2.4f),
+                k("Space", VK_SPACE, 2.65f).rep().quiet().atRight(-5.05f),
+                k(".", VK_OEM_PERIOD, 0.95f).quiet().atRight(-2.4f),
+                k("↵", VK_RETURN, 1.45f).fn().atRight(-1.45f)));
+    }
+
     private boolean fullLike() {
         return layout == LAYOUT_FULL || phoneMode;
     }
@@ -97,6 +146,9 @@ public class DuoKeyboardView extends DuoTouchSurface {
         boolean spacer;
         /** Only reacts to a long press (Caps Lock, so it can't be hit by accident). */
         boolean holdOnly;
+        /** Split layout: start position in key pitches (from the left edge, or from the right edge if {@link #right}). */
+        float pos = Float.NaN;
+        boolean right;
         final RectF rect = new RectF();
 
         Key(String label, int vk, float units) {
@@ -117,6 +169,23 @@ public class DuoKeyboardView extends DuoTouchSurface {
         Key holdOnly() { holdOnly = true; return this; }
         Key text(String t) { text = t; return this; }
         Key action(int a) { action = a; return this; }
+        Key at(float p) { pos = p; right = false; return this; }
+        Key atRight(float p) { pos = p; right = true; return this; }
+
+        /** Same key once more (the split keyboard repeats G and V on both halves). */
+        Key copy() {
+            Key c = new Key(label, vk, units);
+            c.shiftLabel = shiftLabel;
+            c.altLabel = altLabel;
+            c.longLabel = longLabel;
+            c.text = text;
+            c.action = action;
+            c.modifier = modifier;
+            c.repeatable = repeatable;
+            c.subtle = subtle;
+            c.func = func;
+            return c;
+        }
 
         boolean isLetter() {
             return label.length() == 1 && Character.isLetter(label.charAt(0));
@@ -416,6 +485,19 @@ public class DuoKeyboardView extends DuoTouchSurface {
                 }
             }
             float unitW = (width - hgap * (visible - 1)) / units;
+            if (!row.isEmpty() && !Float.isNaN(row.get(0).pos)) {
+                // Split keyboard: same key pitch as Slim (78 % of the width for ten keys), halves flush
+                // with the left and right edge.
+                float pitch = (width * 0.78f - 9 * hgap) / 10f + hgap;
+                for (Key key : row) {
+                    float kx = key.right ? width + key.pos * pitch + hgap : key.pos * pitch;
+                    float kw = key.units * pitch - hgap;
+                    float inset = density / 2;
+                    key.rect.set(kx + inset, y + inset, kx + kw - inset, y + h - inset);
+                }
+                y += h + vgap;
+                continue;
+            }
             float x = 0;
             float prevX = 0, prevW = 0;
             float half = (h - 3 * density) / 2f;

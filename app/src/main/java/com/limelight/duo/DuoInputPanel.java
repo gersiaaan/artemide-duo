@@ -295,9 +295,10 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
 
     private void onTab(int m) {
         if (m == MODE_KEYBOARD && mode == MODE_KEYBOARD) {
-            // Tapping Keyboard again cycles: PC keyboard -> Slim -> Wide -> PC keyboard.
+            // Tapping Keyboard again cycles: Keyboard 1 Normal -> 2 Wide -> 3 Slim -> 4 Split -> 1.
+            int next = KB_ORDER[(kbNumber() % KB_ORDER.length)];
             androidx.preference.PreferenceManager.getDefaultSharedPreferences(getContext()).edit()
-                    .putInt("duo_kb_mode", (kbMode + 1) % 3).apply();
+                    .putInt("duo_kb_mode", next).apply();
             applyPhone();
             return;
         }
@@ -324,7 +325,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
             DuoMotion.slideIn(modes[m], old < m ? -1 : 1);
         }
         tabs[MODE_COMPACT].setText(m == MODE_COMPACT ? "Compact ⇄" : "Compact");
-        tabs[MODE_KEYBOARD].setText(m == MODE_KEYBOARD ? "Keyboard " + (kbMode + 1) : "Keyboard");
+        tabs[MODE_KEYBOARD].setText(m == MODE_KEYBOARD ? "Keyboard " + kbNumber() : "Keyboard");
         DuoBridge.setPanelMode(getContext(), m);
         autocorrect.onBoundary();
     }
@@ -400,9 +401,25 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
     private DuoKeyboardView phoneKeyboard;
     private int kbMode;
 
+    /** Stored modes (0 Normal, 1 Slim, 2 Wide, 3 Split) in the order they're numbered and cycled. */
+    private static final int[] KB_ORDER = {0, 2, 1, 3};
+
+    /** 1-based number shown on the tab: Keyboard 1 Normal, 2 Wide, 3 Slim, 4 Split. */
+    private int kbNumber() {
+        for (int i = 0; i < KB_ORDER.length; i++) {
+            if (KB_ORDER[i] == kbMode) {
+                return i + 1;
+            }
+        }
+        return 1;
+    }
+
     private void applyPhone() {
         android.content.SharedPreferences sp = androidx.preference.PreferenceManager.getDefaultSharedPreferences(getContext());
         kbMode = sp.getInt("duo_kb_mode", sp.getBoolean("duo_kb_phone", false) ? 1 : 0);
+        if (kbMode < 0 || kbMode > 3) {
+            kbMode = 0;
+        }
         boolean phone = kbMode != 0;
         fullKeyboardArea.setVisibility(phone ? GONE : VISIBLE);
         phoneKeyboardArea.setVisibility(phone ? VISIBLE : GONE);
@@ -422,8 +439,10 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         phoneKeyboardArea.setLayoutParams(pl);
         float row = kbMode == 2 ? 68 : 58;
         phoneKeyboard.setCompactRowsDp(row, row);
+        // Keyboard 4: split halves (Slim key size), full width.
+        phoneKeyboard.setSplit(kbMode == 3);
         if (tabs[MODE_KEYBOARD] != null && mode == MODE_KEYBOARD) {
-            tabs[MODE_KEYBOARD].setText("Keyboard " + (kbMode + 1));
+            tabs[MODE_KEYBOARD].setText("Keyboard " + kbNumber());
         }
     }
 

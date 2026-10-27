@@ -201,10 +201,10 @@ public final class DuoSettingsDecor {
         Context c = row.getContext();
         float d = c.getResources().getDisplayMetrics().density;
         int accent = DuoTheme.accent(c);
+        // Calm selection: a soft accent-tinted fill with rounded corners, no outline.
         GradientDrawable focused = new GradientDrawable();
-        focused.setColor(DuoTheme.withAlpha(accent, 0.07f));
-        focused.setCornerRadius(10 * d);
-        focused.setStroke(Math.round(1.5f * d), DuoTheme.focus(accent));
+        focused.setColor(DuoTheme.withAlpha(accent, 0.14f));
+        focused.setCornerRadius(12 * d);
         GradientDrawable pressed = new GradientDrawable();
         pressed.setColor(0x14FFFFFF);
         pressed.setCornerRadius(10 * d);
@@ -214,7 +214,8 @@ public final class DuoSettingsDecor {
         s.addState(new int[]{}, new android.graphics.drawable.ColorDrawable(0));
         s.setEnterFadeDuration(140);
         s.setExitFadeDuration(180);
-        int ix = Math.round(10 * d), iy = Math.round(3 * d);
+        // Small inset only, so the fill reaches a bit beyond the text on both sides.
+        int ix = Math.round(4 * d), iy = Math.round(2 * d);
         row.setBackground(new android.graphics.drawable.InsetDrawable(s, ix, iy, ix, iy));
         if (android.os.Build.VERSION.SDK_INT >= 26) {
             row.setDefaultFocusHighlightEnabled(false);
@@ -241,12 +242,12 @@ public final class DuoSettingsDecor {
             normal = ld;
         }
         GradientDrawable ringFill = new GradientDrawable();
-        ringFill.setColor(DuoTheme.withAlpha(accent, 0.07f));
+        ringFill.setColor(DuoTheme.withAlpha(DuoTheme.mix(accent, DuoTheme.CARD, 0.18f), 0.72f));
         ringFill.setCornerRadii(radii);
+        // No outline: the selected row is only tinted (calmer than a ring).
         GradientDrawable ring = new GradientDrawable();
         ring.setColor(0);
         ring.setCornerRadius(10 * d);
-        ring.setStroke(Math.round(1.5f * d), DuoTheme.focus(accent));
         LayerDrawable focused = new LayerDrawable(new android.graphics.drawable.Drawable[]{ringFill, ring});
         int ri = Math.round(4 * d);
         focused.setLayerInset(1, ri, Math.round(2 * d), ri, Math.round(2 * d));

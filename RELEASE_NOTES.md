@@ -1,3 +1,19 @@
+## Artemide Duo v0.32
+
+### Keyboard
+- **New: Keyboard 4 – Split.** Two halves for typing with both thumbs, arranged like the iPhone Duo split keyboard: left half flush left, right half flush right, G and V on both halves, keys as big as on Slim. The whole area still works as a trackpad.
+- Keyboards are numbered in a new order: Keyboard 1 Normal, Keyboard 2 Wide, Keyboard 3 Slim, Keyboard 4 Split (tap the Keyboard tab again to cycle).
+
+### Settings
+- Calmer selection: the selected row gets a soft accent tint with rounded corners instead of the blue frame.
+
+### Surface Duo landscape
+- App list: shorter labels in the bottom bar ("Favourite", "Quit all") so it never overflows.
+- Host page: the last-played cover shrinks on short screens, so Resume never runs into the bottom bar.
+
+### Connection
+- A short Wi-Fi drop or access-point switch no longer marks the PC as OFFLINE; it's re-checked right away.
+
 ## Artemide Duo v0.31
 
 ### Host page

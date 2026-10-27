@@ -315,6 +315,19 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         updateClock();
     }
 
+    private boolean narrowBar;
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        boolean narrow = w > 0 && w / d < 760;
+        if (narrow != narrowBar) {
+            narrowBar = narrow;
+            ((TextView) quitAllButton.getTag()).setText(narrow ? "Quit all" : "Quit all sessions");
+            post(this::renderDetail);
+        }
+    }
+
     // ================= data =================
 
     public void refresh() {
@@ -742,8 +755,11 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         favButton.setEnabled(has);
         favButton.setAlpha(has ? 1f : 0.45f);
         if (has && c != null) {
-            ((TextView) favButton.getTag()).setText(DuoPlayStats.isPinned(getContext(), c.uuid, a.id)
-                    ? "Remove favourite" : "Add favourite");
+            boolean pinnedNow = DuoPlayStats.isPinned(getContext(), c.uuid, a.id);
+            // Narrow screens (Surface Duo landscape): shorter labels so the bottom bar never overflows.
+            ((TextView) favButton.getTag()).setText(narrowBar
+                    ? (pinnedNow ? "Unfavourite" : "Favourite")
+                    : (pinnedNow ? "Remove favourite" : "Add favourite"));
         }
         pinButton.setVisibility(GONE);
         if (has && c != null) {

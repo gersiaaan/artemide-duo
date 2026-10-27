@@ -732,10 +732,12 @@ public class ComputerManagerService extends Service {
 
                 @Override
                 public void onLost(Network network) {
-                    LimeLog.info("Offlining PCs due to network loss");
+                    // Duo: Wi-Fi roaming / band switches briefly drop the default network. Don't show the
+                    // PCs as OFFLINE right away: mark them as "checking" and let the next polls decide.
+                    LimeLog.info("Network lost: re-checking PCs");
                     synchronized (pollingTuples) {
                         for (PollingTuple tuple : pollingTuples) {
-                            tuple.computer.state = ComputerDetails.State.OFFLINE;
+                            tuple.computer.state = ComputerDetails.State.UNKNOWN;
                             if (listener != null) {
                                 listener.notifyComputerUpdated(tuple.computer);
                             }

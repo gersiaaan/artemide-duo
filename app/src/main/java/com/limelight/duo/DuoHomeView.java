@@ -91,6 +91,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     private TextView primaryLabel;
     private View primary;
     private LinearLayout lastPanel;
+    private View bottomBar, lastCoverBox;
     private TextView lastInfo, lastName;
     private ImageView lastCover;
     private TextView lastPlaceholder;
@@ -206,6 +207,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
 
         // ---------- bottom buttons ----------
         LinearLayout bottom = row();
+        bottomBar = bottom;
         LinearLayout.LayoutParams bt = new LinearLayout.LayoutParams(-1, dp(36));
         bt.topMargin = dp(14);
         content.addView(bottom, bt);
@@ -673,6 +675,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams cb = new LinearLayout.LayoutParams(dp(cw), dp(cw * 1.41f));
         cb.topMargin = dp(14);
         lastPanel.addView(coverBox, cb);
+        lastCoverBox = coverBox;
         coverBox.setBackground(DuoCovers.placeholderBackground(accent, 12 * d));
         coverBox.setForeground(rounded(0, DuoTheme.LINE, 12));
         coverBox.setClipToOutline(true);
@@ -709,7 +712,31 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         ql.leftMargin = dp(8);
         actions.addView(quitRunning, ql);
         quitRunning.setVisibility(GONE);
+        // Short screens (Surface Duo landscape): the cover shrinks so Resume never runs into the bottom bar.
+        lastPanel.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> fitLastPanel());
         return lastPanel;
+    }
+
+    private boolean fitting;
+
+    private void fitLastPanel() {
+        if (fitting || bottomBar == null || lastCoverBox == null || lastPanel.getHeight() == 0 || bottomBar.getHeight() == 0) {
+            return;
+        }
+        int[] a = new int[2], b = new int[2];
+        lastPanel.getLocationInWindow(a);
+        bottomBar.getLocationInWindow(b);
+        int overlap = a[1] + lastPanel.getHeight() + dp(10) - b[1];
+        LinearLayout.LayoutParams cb = (LinearLayout.LayoutParams) lastCoverBox.getLayoutParams();
+        int full = dp(coverWidthDp * 1.41f);
+        int h = overlap > 0 ? Math.max(dp(90), cb.height - overlap) : Math.min(full, cb.height + Math.max(0, -overlap - dp(4)));
+        if (h != cb.height) {
+            fitting = true;
+            cb.height = h;
+            cb.width = Math.round(h / 1.41f);
+            lastCoverBox.setLayoutParams(cb);
+            lastPanel.post(() -> fitting = false);
+        }
     }
 
     private View buildSplash() {
