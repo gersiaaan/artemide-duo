@@ -219,6 +219,7 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
 
     public NvConnection conn;
     private SpinnerDialog spinner;
+    private com.limelight.duo.DuoConnectOverlay duoConnect;
     private boolean displayedFailureDialog = false;
     private boolean connecting = false;
     public boolean connected = false;
@@ -494,9 +495,10 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
 
         clipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
 
-        // Start the spinner
-        spinner = SpinnerDialog.displayDialog(this, getResources().getString(R.string.conn_establishing_title),
-                getResources().getString(R.string.conn_establishing_msg), true);
+        // Artemide Duo: animated start screen (cover, glow, stage) instead of the spinner dialog.
+        duoConnect = com.limelight.duo.DuoConnectOverlay.show(this,
+                getIntent().getStringExtra(EXTRA_APP_NAME), getIntent().getStringExtra(EXTRA_PC_NAME),
+                getIntent().getStringExtra(EXTRA_PC_UUID), getIntent().getIntExtra(EXTRA_APP_ID, 0));
 
 
         Display currentDisplay = null;
@@ -992,6 +994,10 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
             if (spinner != null) {
                 spinner.dismiss();
                 spinner = null;
+            }
+            if (duoConnect != null) {
+                duoConnect.dismiss(false);
+                duoConnect = null;
             }
 
             // If we can't find an AVC decoder, we can't proceed
@@ -3872,6 +3878,9 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                 if (spinner != null) {
                     spinner.setMessage(getResources().getString(R.string.conn_starting) + " " + stage);
                 }
+                if (duoConnect != null) {
+                    duoConnect.setStage(getResources().getString(R.string.conn_starting) + " " + stage);
+                }
             }
         });
     }
@@ -3919,7 +3928,15 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         final int portTestResult = MoonBridge.testClientConnectivity(ServerHelper.CONNECTION_TEST_SERVER, 443, portFlags);
 
         if (errorCode == 0 && portFlags != 0 && (portTestResult == MoonBridge.ML_TEST_RESULT_INCONCLUSIVE || portTestResult == 0)) {
-            spinner.setMessage(getResources().getString(R.string.unlocking_or_starting));
+            if (spinner != null) {
+                spinner.setMessage(getResources().getString(R.string.unlocking_or_starting));
+            }
+            final String unlocking = getResources().getString(R.string.unlocking_or_starting);
+            runOnUiThread(() -> {
+                if (duoConnect != null) {
+                    duoConnect.setStage(unlocking);
+                }
+            });
             return true;
         }
 
@@ -3929,6 +3946,10 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                 if (spinner != null) {
                     spinner.dismiss();
                     spinner = null;
+                }
+                if (duoConnect != null) {
+                    duoConnect.dismiss(false);
+                    duoConnect = null;
                 }
 
                 if (!displayedFailureDialog) {
@@ -4126,6 +4147,10 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                 if (spinner != null) {
                     spinner.dismiss();
                     spinner = null;
+                }
+                if (duoConnect != null) {
+                    duoConnect.dismiss(true);
+                    duoConnect = null;
                 }
 
                 connected = true;

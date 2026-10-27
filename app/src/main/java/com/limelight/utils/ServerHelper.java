@@ -152,6 +152,8 @@ public class ServerHelper {
 
         Intent intent = createStartIntent(parent, app, computer, managerBinder, withVDisplay);
         parent.startActivity(intent);
+        // Duo: the host page steps back while the start screen (cover + glow) fades in.
+        parent.overridePendingTransition(R.anim.duo_stream_enter, R.anim.duo_open_exit);
     }
 
     public static void doNetworkTest(final Activity parent) {
