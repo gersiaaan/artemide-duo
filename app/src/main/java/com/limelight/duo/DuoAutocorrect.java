@@ -67,6 +67,8 @@ public class DuoAutocorrect {
 
     /** Context for next-word prediction: the last two committed words (lowercase, START at a sentence start). */
     private String prev1, prev2;
+    /** The last word that went into the text as it stands there, and the context before it. */
+    private String lastWord, lastWordPrev1, lastWordPrev2;
 
 
     /** Bumped on every input event; a late correction only applies if nothing happened since. */
@@ -86,6 +88,9 @@ public class DuoAutocorrect {
         if (w == null || w.isEmpty()) {
             return;
         }
+        lastWord = w;
+        lastWordPrev1 = prev1;
+        lastWordPrev2 = prev2;
         String lw = w.toLowerCase();
         DuoNextWord.record(DuoDictionary.language(), prev2, prev1, lw);
         prev2 = prev1;
@@ -95,6 +100,9 @@ public class DuoAutocorrect {
 
     /** The last committed word was replaced (late autocorrect). */
     private void recommit(String typed, String corrected) {
+        if (typed.equals(lastWord)) {
+            lastWord = corrected;
+        }
         if (prev1 != null && prev1.equals(typed.toLowerCase())) {
             prev1 = corrected.toLowerCase();
             DuoNextWord.record(DuoDictionary.language(), null, prev2, prev1);
@@ -168,6 +176,7 @@ public class DuoAutocorrect {
             return;
         }
         finishWord(true);
+        lastWord = null; // punctuation after it: backspace removes that, not the word
         undoOriginal = null;
         autoShift = false;
         lastChar = c;
@@ -186,6 +195,7 @@ public class DuoAutocorrect {
     public void onEnter() {
         generation++;
         finishWord(true);
+        lastWord = null;
         prev2 = null;
         prev1 = DuoNextWord.START;
         undoOriginal = null;
@@ -229,10 +239,28 @@ public class DuoAutocorrect {
             }
             lastChar = word.length() > 0 ? word.charAt(word.length() - 1) : 0;
             request();
+        } else if (lastChar == ' ' && lastWord != null) {
+            // Back into the previous word (word, space, backspace): Gboard picks the whole word
+            // up again, so suggestions and corrections see all of it, not just new letters.
+            word.setLength(0);
+            word.append(lastWord);
+            tapX.clear();
+            tapY.clear();
+            for (int i = 0; i < lastWord.length(); i++) {
+                tapX.add(Float.NaN);
+                tapY.add(Float.NaN);
+            }
+            prev1 = lastWordPrev1;
+            prev2 = lastWordPrev2;
+            lastWord = null;
+            lastChar = word.charAt(word.length() - 1);
+            sentenceEnded = false;
+            request();
         } else {
             lastChar = 0;
             sentenceEnded = false;
             prev1 = prev2 = null;
+            lastWord = null;
             publish();
         }
         return false;
@@ -257,11 +285,15 @@ public class DuoAutocorrect {
             sentenceEnded = false;
             autoShift = true;
             undoOriginal = null;
+            lastWord = null;
             publish();
             return true;
         }
 
         boolean wasWord = word.length() > 0;
+        if (!wasWord) {
+            lastWord = null; // second space: backspace only removes a space
+        }
         boolean sent = false;
         String typed = word.toString();
         DuoDictionary.Result r = typed.equals(resultWord) ? result : null;
@@ -315,6 +347,7 @@ public class DuoAutocorrect {
         lastChar = 0;
         lastSpaceTime = 0;
         prev1 = prev2 = null;
+        lastWord = null;
         if (word.length() > 0 || !resultWord.isEmpty()) {
             resetWord();
         }
