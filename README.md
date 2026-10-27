@@ -1,15 +1,17 @@
 # Artemide Duo
 
+<p align="center">
+  <img src="docs/media/hero-surface-duo.png" alt="Artemide Duo on the Surface Duo" width="44%">
+  &nbsp;
+  <img src="docs/media/hero-tablet-controller.png" alt="Artemide Duo on a 16:10 tablet with a controller" width="54%">
+</p>
+
 **Who needs a brand-new foldable iPhone Duo when the Surface Duo is the perfect streaming client?**
 Two screens, one hinge: your PC on the upper screen, a real keyboard and trackpad on the lower one. Artemide Duo turns a Surface Duo into a pocket laptop for your gaming PC and your desktop.
 
 Artemide Duo is [Artemide](https://github.com/derflacco/moonlight-android) with a new interface, built from the ground up for **gamepad and touchscreen**. Every screen can be driven with a controller or by touch. The look is inspired by [StreamLight](https://github.com/FoggyBytes/StreamLight).
 
 Works great on the **Surface Duo** and on **all 16:10 devices** (e.g. Galaxy Tab S6).
-
-![Artemide Duo on the Surface Duo](docs/media/hero-surface-duo.png)
-
-![Artemide Duo on a 16:10 tablet with a controller](docs/media/hero-tablet-controller.png)
 
 > **Heads-up:** these builds are explicitly for testing. Expect rough edges, and please report what you find.
 
