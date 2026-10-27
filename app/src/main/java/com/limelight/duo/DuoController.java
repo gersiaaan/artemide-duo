@@ -51,7 +51,7 @@ public class DuoController {
             return false;
         }
         String n = appName.toLowerCase();
-        return n.contains("desktop") || n.contains("virtual display") || n.contains("remote");
+        return n.contains("desktop") || n.contains("virtual display") || n.contains("remote") || n.contains("monitor");
     }
 
     /** Desktop / remote app: name, or what the user set under "Game settings & type". */
@@ -73,6 +73,7 @@ public class DuoController {
     private final DuoInputPanel panel;
     private final ImageButton toggleButton;
     private final boolean desktopApp;
+    private final boolean buttonOff;
     /** The panel opens by itself once per stream for desktop apps (not spanned). */
     private boolean autoOpened;
     private final int streamGravity;
@@ -97,6 +98,7 @@ public class DuoController {
         // Settings: "desktop" (default) = only apps like Desktop, "all" = also games, "off" = never.
         String buttonMode = androidx.preference.PreferenceManager.getDefaultSharedPreferences(activity)
                 .getString(DuoBridge.KEY_STREAM_BUTTON, "desktop");
+        this.buttonOff = "off".equals(buttonMode);
         this.desktopApp = "all".equals(buttonMode)
                 || (!"off".equals(buttonMode) && isDesktopLaunch(activity));
         float density = activity.getResources().getDisplayMetrics().density;
@@ -186,7 +188,9 @@ public class DuoController {
 
     /** The stream button is hidden while split or while the panel is open on the other screen. */
     private void updateToggleButton() {
-        boolean show = desktopApp && applied && !split && !DuoBridge.isPanelOpen();
+        // Whenever the keyboard isn't visible (closed, covered, or the stream moved screens),
+        // the button bottom-left brings it back.
+        boolean show = !buttonOff && applied && !split && !DuoBridge.isPanelOpen();
         toggleButton.setVisibility(show ? View.VISIBLE : View.GONE);
     }
 

@@ -578,7 +578,8 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         }
 
         //光标是否显示
-        cursorVisible = prefConfig.enableMouseLocalCursor;
+        // Duo: local cursor on for Desktop / remote-monitor apps, off for games.
+        cursorVisible = com.limelight.duo.DuoController.isDesktopLaunch(this);
 
         // Listen for non-touch events on the game surface
         streamContainer = findViewById(R.id.streamContainer);
@@ -4701,7 +4702,7 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         fl.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
         performanceOverlayView.setLayoutParams(fl);
         android.widget.LinearLayout.LayoutParams lp = (android.widget.LinearLayout.LayoutParams) performanceOverlayBig.getLayoutParams();
-        lp.width = Math.round(232 * k * d);
+        lp.width = Math.round(258 * k * d); // fits "Total · net · dec" on one line
         lp.gravity = Gravity.CENTER_HORIZONTAL;
         lp.leftMargin = 0;
         lp.setMarginStart(0);
@@ -4736,9 +4737,11 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         if (prefConfig.enablePerfOverlay) {
             performanceOverlayView.setVisibility(View.VISIBLE);
             // Soft appear: fades in while dropping a few dp into place.
+            // Glides down from the top edge while fading in.
+            performanceOverlayView.animate().cancel();
             performanceOverlayView.setAlpha(0f);
-            performanceOverlayView.setTranslationY(-8 * getResources().getDisplayMetrics().density);
-            performanceOverlayView.animate().alpha(1f).translationY(0f).setDuration(260)
+            performanceOverlayView.setTranslationY(-28 * getResources().getDisplayMetrics().density);
+            performanceOverlayView.animate().alpha(1f).translationY(0f).setDuration(460)
                     .setInterpolator(com.limelight.duo.DuoMotion.EASE).start();
             if(prefConfig.enablePerfOverlayLite){
                 performanceOverlayLite.setVisibility(View.VISIBLE);
@@ -4748,10 +4751,18 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                 performanceOverlayBig.setVisibility(View.VISIBLE);
             }
         } else {
-            performanceOverlayView.animate().alpha(0f).setDuration(180)
+            // Fades out while drifting up to where it came from.
+            performanceOverlayView.animate().cancel();
+            performanceOverlayView.animate().alpha(0f)
+                    .translationY(-28 * getResources().getDisplayMetrics().density)
+                    .setDuration(380)
+                    .setInterpolator(new android.view.animation.PathInterpolator(0.4f, 0f, 0.6f, 1f))
                     .withEndAction(() -> {
-                        performanceOverlayView.setVisibility(View.GONE);
+                        if (!prefConfig.enablePerfOverlay) {
+                            performanceOverlayView.setVisibility(View.GONE);
+                        }
                         performanceOverlayView.setAlpha(1f);
+                        performanceOverlayView.setTranslationY(0f);
                     }).start();
         }
     }
@@ -4771,6 +4782,10 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
             return;
         }
         duoClosing = true;
+        // The keyboard panel goes first, so its screen doesn't take the focus afterwards.
+        if (com.limelight.duo.DuoController.isDuoDevice()) {
+            com.limelight.duo.DuoBridge.closePanel();
+        }
         // Apple-style close: the stream shrinks into the centre with rounded corners and fades,
         // then the host page settles in from slightly larger.
         final View content = findViewById(android.R.id.content);
@@ -4792,10 +4807,27 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                 .setDuration(520)
                 .setInterpolator(new android.view.animation.PathInterpolator(0.32f, 0.72f, 0f, 1f))
                 .withEndAction(() -> {
+                    duoBackToHost();
                     finish();
                     overridePendingTransition(R.anim.duo_host_in, 0);
                 })
                 .start();
+    }
+
+    /**
+     * Surface Duo: bring the host page back to the front on this screen, so focus (controller,
+     * keyboard) lands on Artemide Duo and not on the app on the other screen.
+     */
+    private void duoBackToHost() {
+        if (!com.limelight.duo.DuoController.isDuoDevice()) {
+            return;
+        }
+        try {
+            Intent i = new Intent(this, PcView.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(i);
+        } catch (Exception ignored) {
+        }
     }
 
     /** Quit the app on the PC and leave the stream, without asking (Duo build). */

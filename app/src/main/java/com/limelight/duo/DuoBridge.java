@@ -55,6 +55,7 @@ public final class DuoBridge {
 
     static void setPanelActivity(Activity a) {
         panelActivity = a == null ? null : new WeakReference<>(a);
+        panelVisible = a != null;
         notifyPanel();
     }
 
@@ -65,9 +66,23 @@ public final class DuoBridge {
         }
     }
 
+    private static boolean panelVisible;
+
+    static Activity panelActivityAny() {
+        return panelActivity == null ? null : panelActivity.get();
+    }
+
+    /** The panel's onStart / onStop: covered by another app or moved away counts as not open. */
+    static void setPanelVisible(Activity a, boolean visible) {
+        if (panelActivity != null && panelActivity.get() == a && panelVisible != visible) {
+            panelVisible = visible;
+            notifyPanel();
+        }
+    }
+
     public static boolean isPanelOpen() {
         Activity a = panelActivity == null ? null : panelActivity.get();
-        return a != null && !a.isFinishing();
+        return a != null && !a.isFinishing() && panelVisible;
     }
 
     public static void closePanel() {

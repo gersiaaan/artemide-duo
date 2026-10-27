@@ -25,9 +25,19 @@ public class DuoPanelActivity extends Activity {
 
     /** Opens the panel on the adjacent screen. */
     public static void open(Activity from) {
+        // A panel that is still around but hidden (covered by another app, or the stream moved
+        // to its screen) is dropped and a fresh one opens next to the stream.
+        Activity old = DuoBridge.panelActivityAny();
+        boolean replace = old instanceof DuoPanelActivity && !old.isFinishing();
+        if (replace) {
+            ((DuoPanelActivity) old).discard();
+        }
         DuoPreviousApp.remember(from);
         Intent intent = new Intent(from, DuoPanelActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (replace) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             intent.addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT);
         }
@@ -83,6 +93,14 @@ public class DuoPanelActivity extends Activity {
      * Hidden by the user (button, swipe, stream button, menu):
      * the app that was on this screen before comes back.
      */
+    /** Closes right away, without animation and without bringing anything back. */
+    void discard() {
+        finishing = true;
+        DuoBridge.clearPanelActivity(this);
+        super.finishAndRemoveTask();
+        overridePendingTransition(0, 0);
+    }
+
     void hideByUser() {
         restoreOnFinish = true;
         finish();
@@ -144,6 +162,18 @@ public class DuoPanelActivity extends Activity {
         if (hasFocus) {
             hideSystemUi();
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        DuoBridge.setPanelVisible(this, true);
+    }
+
+    @Override
+    protected void onStop() {
+        DuoBridge.setPanelVisible(this, false);
+        super.onStop();
     }
 
     @Override
