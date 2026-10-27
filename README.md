@@ -1,6 +1,36 @@
 # Artemide Duo
 
-A [Moonlight](https://moonlight-stream.org) streaming client for the **Microsoft Surface Duo** (and other Android devices), built on Artemide / [Artemis](https://github.com/ClassicOldSong/moonlight-android). Stream your PC from [Sunshine](https://github.com/LizardByte/Sunshine), [Apollo](https://github.com/ClassicOldSong/Apollo) or Vibeshine and use the Duo like a small laptop: **the stream on the upper screen, a full keyboard and trackpad on the lower one.**
+**Who needs a brand-new foldable iPhone when the Surface Duo is the perfect streaming client?**
+Two screens, one hinge: your PC on the upper screen, a real keyboard and trackpad on the lower one. Artemide Duo turns a Surface Duo into a pocket laptop for your gaming PC and your desktop.
+
+Artemide Duo is [Artemide](https://github.com/derflacco/moonlight-android) with a new interface, built from the ground up for **gamepad and touchscreen**. Every screen can be driven with a controller or by touch. The look is inspired by [StreamLight](https://github.com/FoggyBytes/StreamLight).
+
+Works great on the **Surface Duo** and on **all 16:10 devices** (e.g. Galaxy Tab S6).
+
+> **Heads-up:** these builds are explicitly for testing. Expect rough edges, and please report what you find.
+
+## The keyboard
+
+The keyboard is the heart of Artemide Duo. It lives on the second screen, slides in from the hinge and doubles as a trackpad: swipe to move the mouse, tap to type.
+
+| Normal | Slim | Wide (ten-finger) |
+|---|---|---|
+| ![Normal keyboard](docs/media/keyboard-normal.png) | ![Slim keyboard](docs/media/keyboard-slim.png) | ![Wide keyboard](docs/media/keyboard-wide.png) |
+
+| Compact (one hand, with trackpad) | Trackpad | Appear / hide animation |
+|---|---|---|
+| ![Compact keyboard](docs/media/keyboard-compact.png) | ![Trackpad](docs/media/trackpad.png) | ![Keyboard animation](docs/media/keyboard-animation.gif) |
+
+- Gboard-style autocorrect, suggestions and next-word prediction (German / English) that learn your phrases.
+- Backspace into a word picks the whole word up again.
+- Laptop gestures: tap = click, two fingers = scroll / right click, three fingers = drag, pinch = zoom.
+- Adjustable haptics.
+
+## App overview
+
+![App overview animation](docs/media/app-list-animation.gif)
+
+Games and apps tabs, favourites, last played, play time, a gliding selection ring and a soft cover backdrop. Everything works with a controller: LB / RB switch tabs, A opens, X adds a favourite.
 
 ## Download
 
@@ -11,29 +41,21 @@ Get the latest APK from **[Releases](../../releases/latest)** (arm64-v8a). Each 
 | **Normal** | `ArtemideDuo-v…-arm64-v8a.apk` | Everyone. Built-in word list with autocorrect and next-word prediction that learns your phrases. |
 | **Plus** | `ArtemideDuo-v…-Plus-arm64-v8a.apk` | If you type a lot. Adds the AOSP LatinIME suggestion engine (the engine behind the AOSP keyboard and HeliBoard) with full German and English dictionaries, a spatial touch model and a personal history dictionary. About 5 MB bigger. |
 
-Normal and Plus are the same app: installing one over the other keeps all settings. Artemide Duo installs next to Moonlight / Artemis (its own app ID).
+Normal and Plus are the same app: installing one over the other keeps all settings. Artemide Duo installs next to Moonlight / Artemis / Artemide (its own app ID).
 
-## Features
-
-**Surface Duo**
-- Stream on one screen, keyboard + trackpad on the other (or both on one screen when spanned).
-- Three keyboard layouts: Normal, Slim and Wide (full width, made for ten-finger typing), plus a compact mode with a trackpad half.
-- Trackpad with laptop gestures: tap = click, two fingers = scroll / right click, three fingers = drag, pinch = zoom.
-- Gboard-style autocorrect, suggestions and next-word prediction (German / English), backspace into a word picks it up again.
-- Haptics with adjustable strength.
+## More features
 
 **Controller**
 - Full controller navigation of every screen (host page, app list, settings).
 - LB + RB shortcuts in the stream: quit, pause, performance overlay, quick menu, keyboard panel, controller mode (rebindable).
 - Controller modes: Gamepad, Desktop (left stick = mouse, right stick = scroll, A / B = clicks, X = Windows, Y = Alt+Tab) and Off.
 
-**Screens**
-- Host page with host tabs, "Add a host", last played game, resume / play again, host profiles and Tailscale status (LAN is always preferred at home).
-- App list with games / apps tabs, favourites, last played, play time and a soft cover backdrop.
-- Settings with tabs, grouped cards and a "New in Artemide Duo" section.
-- Stream start with progress, calm transitions everywhere, a compact glass performance overlay.
+**Stream**
+- Stream start with real progress and a calm zoom into the stream.
+- Compact glass performance overlay.
+- Settings with tabs and grouped cards.
 
-Everything from Artemis (custom resolutions and bitrates, virtual display with Apollo, mouse modes, on-screen controls …) is still there.
+Everything from Artemide and Artemis (custom resolutions and bitrates, virtual display with Apollo, mouse modes, on-screen controls …) is still there.
 
 ## Building
 
@@ -46,10 +68,19 @@ Pushing to the `duo` branch builds both on GitHub Actions and publishes a releas
 
 ## Credits & licenses
 
+- [Artemide](https://github.com/derflacco/moonlight-android) by derflacco, the base of this fork.
+- [StreamLight](https://github.com/FoggyBytes/StreamLight) by FoggyBytes, the inspiration for the interface.
 - [Moonlight Android](https://github.com/moonlight-stream/moonlight-android) and [Artemis](https://github.com/ClassicOldSong/moonlight-android): GPL-3.0, as is this fork.
 - Keyboard engine of the Plus build: AOSP LatinIME native code and dictionaries via [HeliBoard](https://github.com/Helium314/HeliBoard), Apache-2.0.
 - Next-word seed: Europarl sample and Brown corpus (NLTK data); word frequencies: [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords).
 - Font: [Inter](https://rsms.me/inter/), SIL Open Font License.
+
+## Let's collaborate
+
+Happy to collaborate: issues, ideas and pull requests are very welcome.
+
+The best
+– gersiaaan
 
 ---
 
