@@ -332,10 +332,18 @@ public class StreamSettings extends AppCompatActivity {
     }
 
     void selectDuoTab(int t) {
+        int old = duoTab;
         duoTab = (t + duoTabViews.length) % duoTabViews.length;
         styleDuoTabs();
         if (prefsFragment != null) {
             prefsFragment.duoShowTab();
+            // The settings of the new tab slide in from its side.
+            if (old != duoTab && prefsFragment.getListView() != null) {
+                androidx.recyclerview.widget.RecyclerView rv = prefsFragment.getListView();
+                rv.scrollToPosition(0);
+                com.limelight.duo.DuoMotion.slideIn(rv, Integer.signum(duoTab - old));
+                rv.post(() -> com.limelight.duo.DuoMotion.stagger(rv, 10));
+            }
         }
     }
 

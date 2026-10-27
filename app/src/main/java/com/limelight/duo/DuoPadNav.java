@@ -104,7 +104,9 @@ public final class DuoPadNav {
         View next = f.focusSearch(dir);
         // Stay inside the Duo screen: never hand focus to the hidden grid behind it.
         if (next != null && isInside(root, next)) {
-            next.requestFocus(dir);
+            if (next.requestFocus(dir)) {
+                DuoMotion.navTick(next);
+            }
             lastFocus = new java.lang.ref.WeakReference<>(next);
         }
     }

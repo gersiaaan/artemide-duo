@@ -4716,6 +4716,11 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         prefConfig.enablePerfOverlay = !prefConfig.enablePerfOverlay;
         if (prefConfig.enablePerfOverlay) {
             performanceOverlayView.setVisibility(View.VISIBLE);
+            // Soft appear: fades in while dropping a few dp into place.
+            performanceOverlayView.setAlpha(0f);
+            performanceOverlayView.setTranslationY(-8 * getResources().getDisplayMetrics().density);
+            performanceOverlayView.animate().alpha(1f).translationY(0f).setDuration(260)
+                    .setInterpolator(com.limelight.duo.DuoMotion.EASE).start();
             if(prefConfig.enablePerfOverlayLite){
                 performanceOverlayLite.setVisibility(View.VISIBLE);
             }else if(prefConfig.enablePerfOverlayMini){
@@ -4724,7 +4729,11 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                 performanceOverlayBig.setVisibility(View.VISIBLE);
             }
         } else {
-            performanceOverlayView.setVisibility(View.GONE);
+            performanceOverlayView.animate().alpha(0f).setDuration(180)
+                    .withEndAction(() -> {
+                        performanceOverlayView.setVisibility(View.GONE);
+                        performanceOverlayView.setAlpha(1f);
+                    }).start();
         }
     }
 

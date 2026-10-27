@@ -30,6 +30,12 @@
         <item name="android:windowAnimationStyle">@style/DuoWindowAnim</item>
     </style>
 
+    <!-- Dialogs spring in from 92 % and fade out shrinking slightly -->
+    <style name="DuoDialogAnim">
+        <item name="android:windowEnterAnimation">@anim/duo_dialog_in</item>
+        <item name="android:windowExitAnimation">@anim/duo_dialog_out</item>
+    </style>
+
     <style name="DuoWindowAnim" parent="@android:style/Animation.Activity">
         <item name="android:activityOpenEnterAnimation">@anim/duo_open_enter</item>
         <item name="android:activityOpenExitAnimation">@anim/duo_open_exit</item>
@@ -87,6 +93,7 @@
 
     <!-- Surface Duo dialogs: black, slightly see-through, rounded, blue accent -->
     <style name="DuoAlertDialog" parent="@android:style/Theme.Material.Dialog.Alert">
+        <item name="android:windowAnimationStyle">@style/DuoDialogAnim</item>
         <item name="android:windowBackground">@drawable/duo_dialog_bg</item>
         <item name="android:colorAccent">#FF00B8D4</item>
         <item name="android:colorControlActivated">#FF00B8D4</item>
@@ -96,6 +103,7 @@
     </style>
 
     <style name="DuoAlertDialog.Compat" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
+        <item name="android:windowAnimationStyle">@style/DuoDialogAnim</item>
         <item name="android:windowBackground">@drawable/duo_dialog_bg</item>
         <item name="colorAccent">#FF00B8D4</item>
         <item name="android:colorAccent">#FF00B8D4</item>

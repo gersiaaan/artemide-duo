@@ -132,6 +132,7 @@ public final class DuoProfilesDialog {
                 int width = Math.min(a.getResources().getDisplayMetrics().widthPixels - dp(48), dp(560 * DuoTheme.uiScale(a)));
                 w.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
                 w.setDimAmount(0.62f);
+                w.setWindowAnimations(com.limelight.R.style.DuoDialogAnim);
             }
             dialog.setOnKeyListener((dlg, code, e) -> {
                 if (e.getAction() != KeyEvent.ACTION_DOWN) {

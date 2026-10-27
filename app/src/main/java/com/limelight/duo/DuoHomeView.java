@@ -85,6 +85,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     private final TextView clock, dateLine;
     private TextView badge, name, subline, address, addressLabel;
     private LinearLayout chips;
+    private View cardView;
     private boolean addMode;
     private View profilesBtn, optionsBtn, searchRow;
     private TextView primaryLabel;
@@ -189,6 +190,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         bp.topMargin = dp(14);
         content.addView(body, bp);
         View card = buildCard();
+        cardView = card;
         View right = buildLastPanel();
         if (landscape) {
             body.addView(card, new LinearLayout.LayoutParams(0, -1, 1.55f));
@@ -304,6 +306,9 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         } else {
             select(computers.get(j));
         }
+        // The host card slides in from the side you switched to.
+        DuoMotion.slideIn(cardView, dir);
+        DuoMotion.fadeIn(lastPanel, 360);
     }
 
     /** Re-reads the last played app (e.g. after returning from a stream). */
@@ -341,6 +346,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             // Host tabs switch with LB/RB (or touch); the stick never lands on them.
             chip.setFocusable(false);
             chip.setOnClickListener(v -> select(pc));
+            DuoMotion.press(chip);
             LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-2, -1);
             cp.rightMargin = dp(6);
             hostChips.addView(chip, cp);
@@ -731,6 +737,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         if (l != null) {
             b.setOnClickListener(l);
         }
+        DuoMotion.button(b);
         return b;
     }
 
@@ -812,6 +819,8 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         s.addState(new int[]{android.R.attr.state_focused}, ring);
         s.addState(new int[]{android.R.attr.state_pressed}, pressed);
         s.addState(new int[]{}, rounded(color, stroke, radiusDp));
+        s.setEnterFadeDuration(140);
+        s.setExitFadeDuration(180);
         return s;
     }
 
@@ -949,6 +958,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
                 return true;
             case KeyEvent.KEYCODE_BUTTON_X:
                 if (playAgain.getVisibility() == VISIBLE && playAgain.isEnabled()) {
+                    DuoMotion.tap(playAgain);
                     playAgain.performClick();
                 }
                 return true;
@@ -957,6 +967,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
                 return true;
             case KeyEvent.KEYCODE_BUTTON_START:
                 if (quitRunning != null && quitRunning.getVisibility() == VISIBLE) {
+                    DuoMotion.tap(quitRunning);
                     quitRunning.performClick();
                 }
                 return true;
@@ -968,6 +979,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             case KeyEvent.KEYCODE_BUTTON_A: {
                 View f = findFocus();
                 if (f != null) {
+                    DuoMotion.tap(f);
                     f.performClick();
                 } else if (c != null) {
                     primary.performClick();

@@ -89,6 +89,11 @@ public final class DuoSettingsDecor {
             last = idx == lastVis;
         }
         row.setBackground(groupedBackground(accent, d, first, last));
+        if (row.getTag(R.id.duo_row) == null) {
+            row.setTag(R.id.duo_row, Boolean.TRUE);
+            DuoMotion.lift(row, 1.015f);
+            DuoMotion.press(row);
+        }
         View title = row.findViewById(android.R.id.title);
         if (title instanceof TextView) {
             ((TextView) title).setTypeface(DuoFonts.medium());
@@ -151,6 +156,7 @@ public final class DuoSettingsDecor {
                     t.setFocusable(true);
                     t.setEnabled(pref.isEnabled());
                     t.setOnClickListener(x -> {
+                        DuoMotion.tap(x);
                         if (!v.equals(lp.getValue()) && lp.callChangeListener(v)) {
                             lp.setValue(v);
                         }
@@ -217,6 +223,9 @@ public final class DuoSettingsDecor {
         s.addState(new int[]{android.R.attr.state_focused}, focused);
         s.addState(new int[]{android.R.attr.state_pressed}, pressed);
         s.addState(new int[]{}, normal);
+        // The focus ring fades in/out as the controller moves.
+        s.setEnterFadeDuration(140);
+        s.setExitFadeDuration(180);
         return s;
     }
 
@@ -227,6 +236,8 @@ public final class DuoSettingsDecor {
         s.addState(new int[]{android.R.attr.state_focused}, focused);
         s.addState(new int[]{android.R.attr.state_pressed}, rounded(DuoTheme.CARD_HIGH, DuoTheme.LINE, 12, d));
         s.addState(new int[]{}, rounded(DuoTheme.withAlpha(DuoTheme.CARD, 0.88f), DuoTheme.LINE, 12, d));
+        s.setEnterFadeDuration(120);
+        s.setExitFadeDuration(160);
         return s;
     }
 
@@ -235,6 +246,9 @@ public final class DuoSettingsDecor {
         StateListDrawable s = new StateListDrawable();
         s.addState(new int[]{android.R.attr.state_checked}, toggleState(true, accent, d));
         s.addState(new int[]{}, toggleState(false, accent, d));
+        // Switches fade between on and off instead of snapping.
+        s.setEnterFadeDuration(160);
+        s.setExitFadeDuration(160);
         return s;
     }
 

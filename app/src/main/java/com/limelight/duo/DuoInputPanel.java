@@ -150,6 +150,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
             padIcon.setOnClickListener(v -> {
                 v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
                 DuoGamepadMouse.toggle(getContext());
+                DuoMotion.tap(v);
                 paint.run();
             });
             paint.run();
@@ -305,16 +306,22 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
             swapped = !swapped;
             DuoBridge.setCompactSwapped(getContext(), swapped);
             applySwap();
+            DuoMotion.fadeIn(compactRow, 260);
             return;
         }
         showMode(m);
     }
 
     private void showMode(int m) {
+        int old = mode;
         mode = m;
         for (int i = 0; i < 3; i++) {
             modes[i].setVisibility(i == m ? VISIBLE : GONE);
             styleTab(tabs[i], i == m);
+        }
+        if (old != m && modes[m].isLaidOut()) {
+            // Keyboard / Trackpad / Compact slide in from the side of their tab (tabs are mirrored).
+            DuoMotion.slideIn(modes[m], old < m ? -1 : 1);
         }
         tabs[MODE_COMPACT].setText(m == MODE_COMPACT ? "Compact ⇄" : "Compact");
         tabs[MODE_KEYBOARD].setText(m == MODE_KEYBOARD ? "Keyboard " + (kbMode + 1) : "Keyboard");
@@ -399,6 +406,14 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         boolean phone = kbMode != 0;
         fullKeyboardArea.setVisibility(phone ? GONE : VISIBLE);
         phoneKeyboardArea.setVisibility(phone ? VISIBLE : GONE);
+        View shown = phone ? phoneKeyboardArea : fullKeyboardArea;
+        if (shown.isLaidOut()) {
+            // Mask 1 / 2 / 3: the new keyboard rises in softly.
+            float dd = getResources().getDisplayMetrics().density;
+            shown.setAlpha(0f);
+            shown.setTranslationY(14 * dd);
+            shown.animate().alpha(1f).translationY(0f).setDuration(300).setInterpolator(DuoMotion.EASE).start();
+        }
         // Slim: 11 % side margins, normal keys. Wide: full width, taller keys.
         FrameLayout.LayoutParams pl = (FrameLayout.LayoutParams) phoneKeyboardArea.getLayoutParams();
         int side = kbMode == 1 ? Math.round(getResources().getDisplayMetrics().widthPixels * 0.11f) : 0;
@@ -508,6 +523,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         t.setMinWidth(dp(44));
         t.setClickable(true);
         t.setFocusable(false);
+        DuoMotion.press(t);
         return t;
     }
 
@@ -520,6 +536,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         b.setBackground(pressable(DuoColors.SURFACE, 10));
         b.setContentDescription(description);
         b.setFocusable(false);
+        DuoMotion.press(b);
         return b;
     }
 
@@ -550,6 +567,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
     private TextView actionButton(String text, OnClickListener l) {
         TextView t = baseButton(text, DuoColors.SURFACE);
         t.setOnClickListener(l);
+        DuoMotion.press(t);
         return t;
     }
 
@@ -561,6 +579,7 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
             switch (e.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
                     v.setPressed(true);
+                    v.animate().scaleX(0.97f).scaleY(0.97f).setDuration(80).start();
                     v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
                     autocorrect.onBoundary();
                     sink.sendMouseButton(button, true);
@@ -568,6 +587,8 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
                     v.setPressed(false);
+                    v.animate().scaleX(1f).scaleY(1f).setDuration(220)
+                            .setInterpolator(new android.view.animation.OvershootInterpolator(1.6f)).start();
                     sink.sendMouseButton(button, false);
                     return true;
             }

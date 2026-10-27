@@ -3,6 +3,7 @@
     <PreferenceCategory android:key="cat_duo_panel" android:title="Keyboard &amp; trackpad" app:iconSpaceReserved="false">
         <SeekBarPreference android:key="duo_kb_vibration" android:title="Keyboard vibration" android:summary="Strength of the vibration when typing (0 = off)" android:defaultValue="50" android:max="100" app:min="0" app:seekBarIncrement="5" app:showSeekBarValue="true" app:iconSpaceReserved="false" />
         <SeekBarPreference android:key="duo_trackpad_speed" android:title="Trackpad speed" android:summary="Speed of the keyboard trackpad and the trackpad (1 to 10)" android:defaultValue="5" android:max="10" app:min="1" app:showSeekBarValue="true" app:iconSpaceReserved="false" />
+        <CheckBoxPreference android:key="duo_nav_haptic" android:title="Controller navigation tick" android:summary="A fine vibration tick when you move through lists and settings with the controller" android:defaultValue="true" app:iconSpaceReserved="false" />
         <ListPreference android:key="duo_stream_button" android:title="Keyboard button in the stream" android:dialogTitle="Keyboard button in the stream" android:entries="@array/duo_stream_button_names" android:entryValues="@array/duo_stream_button_values" android:defaultValue="desktop" app:useSimpleSummaryProvider="true" app:iconSpaceReserved="false" />
     </PreferenceCategory>
     <PreferenceCategory android:key="cat_duo_new" android:title="New in Artemide Duo (also in their own tabs)" app:iconSpaceReserved="false">

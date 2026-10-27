@@ -82,6 +82,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     private int tab;
     private int selectedId = -1;
     private boolean opened;
+    private boolean staggered;
+    private int shownDetailId = Integer.MIN_VALUE;
 
     private final TextView hostName, badge, clock, dateLine;
     private final LinearLayout chips;
@@ -270,6 +272,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     }
 
     private void setTab(int t) {
+        int dir = Integer.signum(t - tab);
+        boolean changed = t != tab;
         tab = t;
         for (int i = 0; i < 3; i++) {
             TextView tv = tabViews[i];
@@ -282,6 +286,11 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             tv.setBackground(ld);
         }
         renderList();
+        if (changed) {
+            // The list slides in from the side of the new tab, rows rising one after the other.
+            DuoMotion.slideIn(listScroll, dir);
+            DuoMotion.stagger(list, 14);
+        }
     }
 
     private boolean inTab(App a) {
@@ -339,10 +348,17 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         }
         if (lastApp == null && rest.isEmpty() && pinned.isEmpty()) {
             TextView empty = text(apps.isEmpty() ? "Loading apps…" : "Nothing here", 13, DuoTheme.TEXT2, false);
+            if (apps.isEmpty()) {
+                DuoMotion.pulse(empty);
+            }
             empty.setPadding(0, dp(18), 0, 0);
             list.addView(empty);
         }
         renderDetail();
+        if (!staggered && !apps.isEmpty()) {
+            staggered = true;
+            DuoMotion.stagger(list, 14);
+        }
         // Start on (and keep focus on) the selected app, LAST PLAYED first.
         if (refocus) {
             View row = list.findViewWithTag(selectedApp());
@@ -481,6 +497,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(62));
         lp.topMargin = dp(5);
         r.setLayoutParams(lp);
+        DuoMotion.lift(r, 1.02f);
+        DuoMotion.press(r);
         return r;
     }
 
@@ -623,11 +641,26 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             return;
         }
         bigName.setText(a.name);
+        boolean newDetail = a.id != shownDetailId;
+        shownDetailId = a.id;
+        if (newDetail) {
+            // Cover, name and stats crossfade softly to the newly selected app.
+            View coverBox = (View) bigCover.getParent();
+            DuoMotion.fadeIn(coverBox, 280);
+            coverBox.setScaleX(0.97f);
+            coverBox.setScaleY(0.97f);
+            coverBox.animate().scaleX(1f).scaleY(1f).setDuration(320).setInterpolator(DuoMotion.EASE).start();
+            DuoMotion.fadeIn(bigName, 260);
+        }
         ((TextView) playButton.getTag()).setText(a.running ? "Resume" : "Open");
         long ms = c == null ? 0 : DuoPlayStats.time(getContext(), c.uuid, a.id);
         int sessions = c == null ? 0 : DuoPlayStats.sessions(getContext(), c.uuid, a.id);
         statTime.setText(ms > 0 ? DuoPlayStats.duration(ms) : "–");
-        statSessions.setText(String.valueOf(sessions));
+        if (newDetail) {
+            DuoMotion.countUp(statSessions, sessions);
+        } else {
+            statSessions.setText(String.valueOf(sessions));
+        }
         boolean desk = DuoPlayStats.isApp(getContext(), c == null ? null : c.uuid, a.id, a.name);
         bigPlaceholder.setText(desk ? a.name.toUpperCase() : placeholderText(a));
         bigPlaceholder.setTextSize(desk ? 13 : 28);
@@ -696,6 +729,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         s.addState(new int[]{android.R.attr.state_selected}, focused);
         s.addState(new int[]{android.R.attr.state_pressed}, rounded(0x14FFFFFF, 0, 10));
         s.addState(new int[]{}, rounded(0, 0, 10));
+        s.setEnterFadeDuration(140);
+        s.setExitFadeDuration(180);
         return s;
     }
 
@@ -721,6 +756,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         s.addState(new int[]{android.R.attr.state_focused}, ring);
         s.addState(new int[]{android.R.attr.state_pressed}, rounded(DuoTheme.mix(Color.WHITE, bg, 0.08f), 0, 10));
         s.addState(new int[]{}, rounded(bg, primaryStyle ? 0 : 0x29FFFFFF, 10));
+        s.setEnterFadeDuration(140);
+        s.setExitFadeDuration(180);
         b.setBackground(s);
         if (glyph != null) {
             View g = glyph(glyph);
@@ -736,6 +773,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         b.setFocusable(true);
         b.setClickable(true);
         b.setOnClickListener(l);
+        DuoMotion.button(b);
         return b;
     }
 
@@ -968,11 +1006,13 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
                 break;
             case KeyEvent.KEYCODE_BUTTON_X:
                 if (playButton.getVisibility() == VISIBLE) {
+                    DuoMotion.tap(playButton);
                     playButton.performClick();
                 }
                 break;
             case KeyEvent.KEYCODE_BUTTON_START:
                 if (quitButton.getVisibility() == VISIBLE) {
+                    DuoMotion.tap(quitButton);
                     quitButton.performClick();
                 }
                 break;
@@ -985,6 +1025,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             case KeyEvent.KEYCODE_BUTTON_A: {
                 View f = findFocus();
                 if (f != null) {
+                    DuoMotion.tap(f);
                     f.performClick();
                 } else {
                     playButton.performClick();
