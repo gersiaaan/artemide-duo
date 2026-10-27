@@ -614,7 +614,7 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                     com.limelight.duo.DuoController.isDesktopLaunch(this), createDuoInputSink());
         }
         // LB + RB shortcuts also for the built-in USB controller driver
-        com.limelight.duo.DuoPadShortcuts.attach(this, a -> runOnUiThread(() -> duoRunPadAction(a)));
+        com.limelight.duo.DuoPadShortcuts.attach(this, duoAct -> runOnUiThread(() -> duoRunPadAction(duoAct)));
 
 
         panZoomHandler = new PanZoomHandler(
