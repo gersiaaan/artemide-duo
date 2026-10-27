@@ -26,6 +26,13 @@ public class DuoWavesView extends View implements Choreographer.FrameCallback {
 
     private final int accent;
     private final Paint floor = new Paint(Paint.DITHER_FLAG);
+    private boolean overlay;
+
+    /** Overlay mode: no background, white translucent lines (drawn over a cover backdrop). */
+    public void setOverlay(boolean on) {
+        overlay = on;
+        invalidate();
+    }
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint crest = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path[] crestPath = new Path[LAYERS];
@@ -104,7 +111,9 @@ public class DuoWavesView extends View implements Choreographer.FrameCallback {
     @Override
     protected void onDraw(Canvas canvas) {
         int w = getWidth(), h = getHeight();
-        canvas.drawRect(0, 0, w, h, floor);
+        if (!overlay) {
+            canvas.drawRect(0, 0, w, h, floor);
+        }
         if (crestPath[0] == null) {
             return;
         }
@@ -115,8 +124,14 @@ public class DuoWavesView extends View implements Choreographer.FrameCallback {
             float y = level[i] - amp[i]
                     + swellAmp[i] * (float) Math.sin(t / swellPeriod[i] * 2 * Math.PI + phase[i])
                     + (h - level[i] + amp[i] + swellAmp[i]) * (1 - easeOut(riseK));
-            fill.setColor(DuoTheme.withAlpha(accent, fillAlpha[i]));
-            crest.setColor(DuoTheme.withAlpha(accent, crestAlpha[i]));
+            if (overlay) {
+                // Over a cover backdrop: soft white lines, barely-there fill.
+                fill.setColor(DuoTheme.withAlpha(0xFFFFFFFF, fillAlpha[i] * 0.22f));
+                crest.setColor(DuoTheme.withAlpha(0xFFFFFFFF, Math.min(0.32f, crestAlpha[i] * 0.75f)));
+            } else {
+                fill.setColor(DuoTheme.withAlpha(accent, fillAlpha[i]));
+                crest.setColor(DuoTheme.withAlpha(accent, crestAlpha[i]));
+            }
             canvas.save();
             canvas.translate(x, y);
             canvas.drawPath(bodyPath[i], fill);

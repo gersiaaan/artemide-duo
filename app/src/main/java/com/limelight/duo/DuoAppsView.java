@@ -84,6 +84,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     private boolean opened;
     private boolean staggered;
     private ImageView backA, backB, coverGhost;
+    private DuoWavesView frontWaves;
     private boolean backFlip;
     private int shownDetailId = Integer.MIN_VALUE;
 
@@ -142,6 +143,11 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
                         DuoTheme.withAlpha(DuoTheme.FLOOR, 0.35f)}));
         backdrop.addView(scrim, match());
         addView(backdrop, match());
+        // Waves in front of the cover backdrop too: white and faint, only while a game cover shows.
+        frontWaves = new DuoWavesView(context, false);
+        frontWaves.setOverlay(true);
+        frontWaves.setAlpha(0f);
+        addView(frontWaves, match());
 
         LinearLayout content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
@@ -693,6 +699,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
                 // Apps (Desktop, Remote …): no cover backdrop, just the waves.
                 backA.animate().alpha(0f).setDuration(600).start();
                 backB.animate().alpha(0f).setDuration(600).start();
+                frontWaves.animate().alpha(0f).setDuration(600).start();
             } else {
                 ImageView next = backFlip ? backA : backB;
                 ImageView prev = backFlip ? backB : backA;
@@ -702,6 +709,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
                 DuoCovers.into(getContext(), c.uuid, a.id, next, new View(getContext()), dp(240));
                 next.animate().alpha(0.32f).setDuration(700)
                         .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator()).start();
+                frontWaves.animate().alpha(1f).setDuration(700).start();
                 prev.animate().alpha(0f).setDuration(700)
                         .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator()).start();
             }
