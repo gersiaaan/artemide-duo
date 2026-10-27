@@ -607,7 +607,13 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         if (com.limelight.duo.DuoController.isDuoDevice()) {
             duoController = new com.limelight.duo.DuoController(this, (FrameLayout) rootView,
                     streamContainer, backgroundTouchView, createDuoInputSink());
+        } else {
+            // Other devices: G / D / Off modes still work (quick menu, LB + RB shortcut)
+            com.limelight.duo.DuoGamepadMouse.init(this,
+                    com.limelight.duo.DuoController.isDesktopLaunch(this), createDuoInputSink());
         }
+        // LB + RB shortcuts also for the built-in USB controller driver
+        com.limelight.duo.DuoPadShortcuts.attach(this, a -> runOnUiThread(() -> duoRunPadAction(a)));
 
 
         panZoomHandler = new PanZoomHandler(
@@ -1914,9 +1920,12 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
 
         com.limelight.duo.DuoPlayStats.ended(this);
 
+        com.limelight.duo.DuoPadShortcuts.attach(null, null);
         if (duoController != null) {
             duoController.destroy();
             duoController = null;
+        } else {
+            com.limelight.duo.DuoGamepadMouse.end();
         }
 
         instance = null;
@@ -3921,7 +3930,7 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                         try {
                             sleep(1000);
                             httpConn.quitApp();
-                            Game.this.runOnUiThread(() -> Toast.makeText(Game.this, Game.this.getResources().getString(R.string.applist_quit_success) + " " + appName, Toast.LENGTH_LONG).show());
+                            // Duo: quiet quit (no toast)
                         } catch (Exception e) {
                             Game.this.runOnUiThread(() -> Toast.makeText(Game.this, e.getMessage(), Toast.LENGTH_LONG).show());
                         }
@@ -4789,27 +4798,10 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                 .start();
     }
 
+    /** Quit the app on the PC and leave the stream, without asking (Duo build). */
     public void quit() {
-        Context context;
-        if (isOnExternalDisplay() && ExternalDisplayControlActivity.instance != null) {
-            context = ExternalDisplayControlActivity.instance;
-        } else {
-            context = this;
-        }
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(R.string.game_dialog_title_quit_confirm);
-        builder.setMessage(R.string.game_dialog_message_quit_confirm);
-
-        builder.setPositiveButton(getString(R.string.yes), (dialog, which) -> {
-            quitOnStop = true;
-            dialog.dismiss();
-            finish();
-        });
-
-        builder.setNegativeButton(getString(R.string.no), (dialog, which) -> dialog.dismiss());
-
-        AlertDialog dialog = builder.create();
-        dialog.show();
+        quitOnStop = true;
+        disconnect();
     }
 
     @Override

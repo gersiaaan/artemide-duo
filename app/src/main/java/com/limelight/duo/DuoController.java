@@ -55,7 +55,7 @@ public class DuoController {
     }
 
     /** Desktop / remote app: name, or what the user set under "Game settings & type". */
-    private static boolean isDesktopLaunch(Activity a) {
+    public static boolean isDesktopLaunch(Activity a) {
         android.content.Intent in = a.getIntent();
         String pc = in.getStringExtra(Game.EXTRA_PC_UUID);
         int id = in.getIntExtra(Game.EXTRA_APP_ID, 0);

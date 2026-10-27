@@ -1309,6 +1309,16 @@ if (this.prefConfig != null && this.prefConfig.snappyInput) {
             rightStickY |= maxByMagnitude(rightStickY, defaultContext.rightStickY);
         }
 
+        // Artemide Duo: LB + RB + button shortcuts for every controller path (Android input
+        // and the built-in USB driver). The shortcut button never reaches the game.
+        inputMap = com.limelight.duo.DuoPadShortcuts.onButtons(inputMap);
+        if (com.limelight.duo.DuoGamepadMouse.isOff()) {
+            // Controller "Off": nothing reaches the PC (shortcuts were handled above).
+            inputMap = 0;
+            leftTrigger = rightTrigger = 0;
+            leftStickX = leftStickY = rightStickX = rightStickY = 0;
+        }
+
         if (originalContext.mouseEmulationActive) {
             int changedMask = inputMap ^ originalContext.mouseEmulationLastInputMap;
 

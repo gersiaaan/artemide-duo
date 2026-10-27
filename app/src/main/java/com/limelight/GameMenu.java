@@ -130,9 +130,7 @@ public class GameMenu implements Game.GameMenuCallbacks {
             currentDialog.dismiss();
         }
         currentDialog = builder.show();
-        if (com.limelight.duo.DuoController.isDuoDevice()) {
-            com.limelight.duo.DuoDialogs.style(currentDialog);
-        }
+        com.limelight.duo.DuoDialogs.style(currentDialog);
 
         Window window = currentDialog.getWindow();
 
@@ -336,16 +334,17 @@ public class GameMenu implements Game.GameMenuCallbacks {
                     game::rotateScreen));
         }
 
+        // Controller: Gamepad → Desktop (desktop / remote streams) → Off, on every device.
+        if (com.limelight.duo.DuoGamepadMouse.available()) {
+            options.add(new MenuOption("Controller mode ("
+                    + com.limelight.duo.DuoGamepadMouse.modeName() + ")", false,
+                    () -> com.limelight.duo.DuoGamepadMouse.toggle(game)));
+        }
+
         if (duo) {
             // Panel on the other screen (not shown while spanned: the panel is built in then).
             if (!game.isDuoSplit()) {
                 options.add(new MenuOption("Keyboard & trackpad on/off", false, game::toggleDuoPanel));
-            }
-            // Controller: gamepad or desktop (mouse) mode, only for desktop / remote streams.
-            if (com.limelight.duo.DuoGamepadMouse.available()) {
-                options.add(new MenuOption("Controller mode ("
-                        + com.limelight.duo.DuoGamepadMouse.modeName() + ")", false,
-                        () -> com.limelight.duo.DuoGamepadMouse.toggle(game)));
             }
             options.add(new MenuOption("Speed (trackpad & gamepad cursor)", false,
                     () -> com.limelight.duo.DuoController.showSpeedDialog(game)));

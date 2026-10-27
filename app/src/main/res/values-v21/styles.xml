@@ -6,6 +6,14 @@
         res/values-v21/styles.xml on API 21+ devices.
     -->
     <style name="AppBaseTheme" parent="Theme.MaterialComponents.NoActionBar">
+        <!-- Duo accent everywhere (no Material purple in menus, dialogs, ripples) -->
+        <item name="colorPrimary">#FF00B8D4</item>
+        <item name="colorSecondary">#FF00B8D4</item>
+        <item name="colorAccent">#FF00B8D4</item>
+        <item name="colorControlActivated">#FF00B8D4</item>
+        <item name="android:colorAccent">#FF00B8D4</item>
+        <item name="android:colorControlActivated">#FF00B8D4</item>
+        <item name="android:colorPrimary">#FF00B8D4</item>
         <!-- Duo look for every dialog and loading spinner (see DuoAlertDialog) -->
         <item name="android:alertDialogTheme">@style/DuoAlertDialog</item>
         <item name="alertDialogTheme">@style/DuoAlertDialog.Compat</item>

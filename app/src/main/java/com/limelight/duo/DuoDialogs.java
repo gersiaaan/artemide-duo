@@ -30,6 +30,19 @@ public final class DuoDialogs {
         bg.setStroke(Math.max(1, Math.round(d)), DuoColors.BORDER);
         w.setBackgroundDrawable(bg);
         w.setDimAmount(0.35f);
+        // Highlight / ripple of list entries in the user's accent colour (never Material purple).
+        int accent = DuoTheme.accent(w.getContext());
+        if (dialog.getListView() != null) {
+            GradientDrawable sel = new GradientDrawable();
+            sel.setColor(DuoTheme.withAlpha(accent, 0.22f));
+            sel.setCornerRadius(12 * d);
+            android.graphics.drawable.StateListDrawable st = new android.graphics.drawable.StateListDrawable();
+            st.addState(new int[]{android.R.attr.state_pressed}, sel);
+            st.addState(new int[]{android.R.attr.state_focused}, sel);
+            st.addState(new int[]{android.R.attr.state_selected}, sel);
+            dialog.getListView().setSelector(new android.graphics.drawable.RippleDrawable(
+                    ColorStateList.valueOf(DuoTheme.withAlpha(accent, 0.3f)), st, null));
+        }
         for (int which : new int[]{AlertDialog.BUTTON_POSITIVE, AlertDialog.BUTTON_NEGATIVE, AlertDialog.BUTTON_NEUTRAL}) {
             Button b = dialog.getButton(which);
             if (b != null) {

@@ -23,6 +23,61 @@ public final class DuoPadShortcuts {
 
     private static boolean l1, r1;
     private static int consumedKey = -1;
+    private static Actions actions;
+    private static Context appContext;
+    private static long lastFired;
+    private static int lastMask;
+    private static int swallow;
+
+    /** Set by the stream when it starts (null when it ends). */
+    public static void attach(Context c, Actions a) {
+        appContext = c == null ? null : c.getApplicationContext();
+        actions = a;
+        lastMask = 0;
+        swallow = 0;
+        reset();
+    }
+
+    private static final int LB = 0x0100, RB = 0x0200;
+    private static final String[][] FLAGS = {
+            {"A", "4096"}, {"B", "8192"}, {"X", "16384"}, {"Y", "32768"},
+            {"START", "16"}, {"SELECT", "32"}, {"THUMBL", "64"}, {"THUMBR", "128"}};
+
+    /**
+     * Controller button state as sent to the PC (all controller paths). Fires a shortcut on the
+     * press of a mapped button while LB + RB are held, and removes that button from the state.
+     */
+    public static int onButtons(int mask) {
+        Actions act = actions;
+        Context c = appContext;
+        int pressed = mask & ~lastMask;
+        lastMask = mask;
+        if (act == null || c == null) {
+            return mask;
+        }
+        // Keep a button that fired a shortcut hidden from the game until it's released.
+        swallow &= mask;
+        if ((mask & LB) != 0 && (mask & RB) != 0 && pressed != 0) {
+            SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(c);
+            for (String[] f : FLAGS) {
+                int flag = Integer.parseInt(f[1]);
+                if ((pressed & flag) == 0) {
+                    continue;
+                }
+                for (String[] a : ACTIONS) {
+                    if (f[0].equals(p.getString("duo_pad_sc_" + a[0], a[1]))) {
+                        swallow |= flag;
+                        long now = android.os.SystemClock.uptimeMillis();
+                        if (now - lastFired > 250) {
+                            lastFired = now;
+                            new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> act.run(a[0]));
+                        }
+                    }
+                }
+            }
+        }
+        return mask & ~swallow;
+    }
 
     private static String nameOf(int keyCode) {
         switch (keyCode) {
@@ -78,7 +133,11 @@ public final class DuoPadShortcuts {
         for (String[] a : ACTIONS) {
             if (name.equals(p.getString("duo_pad_sc_" + a[0], a[1]))) {
                 consumedKey = k;
-                actions.run(a[0]);
+                long now = android.os.SystemClock.uptimeMillis();
+                if (now - lastFired > 250) {
+                    lastFired = now;
+                    actions.run(a[0]);
+                }
                 return true;
             }
         }
