@@ -94,7 +94,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     private TextView lastInfo, lastName;
     private ImageView lastCover;
     private TextView lastPlaceholder;
-    private View playAgain, quitRunning, settingsBtn;
+    private View playAgain, quitRunning, settingsBtn, quitAllBtn;
     private int coverWidthDp;
     private int batteryPct = -1;
     private boolean charging;
@@ -219,6 +219,18 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         // Bottom row works with Y / B; the stick never lands on it.
         settings.setFocusable(false);
         exit.setFocusable(false);
+        // Quit everything running on this PC (Menu ≡), no questions asked.
+        quitAllBtn = button("Quit all sessions", "≡", false, v -> {
+            ComputerDetails c = selected();
+            if (c != null) {
+                host.quit(c);
+            }
+        });
+        quitAllBtn.setFocusable(false);
+        quitAllBtn.setVisibility(GONE);
+        LinearLayout.LayoutParams qp = new LinearLayout.LayoutParams(-2, -1);
+        qp.leftMargin = dp(8);
+        bottom.addView(quitAllBtn, qp);
         bottom.addView(new View(context), new LinearLayout.LayoutParams(0, 1, 1f));
         bottom.addView(text(version(), 10.5f, 0xFF4A4F57, false));
 
@@ -381,6 +393,9 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             primaryLabel.setText("Add a host");
             primary.setOnClickListener(v -> host.addHost());
             lastPanel.setVisibility(INVISIBLE);
+            if (quitAllBtn != null) {
+                quitAllBtn.setVisibility(GONE);
+            }
             return;
         }
         String state;
@@ -420,6 +435,11 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         primaryLabel.setText(action);
         primary.setOnClickListener(v -> host.open(c));
 
+        if (quitAllBtn != null) {
+            boolean anyRunning = c.state == ComputerDetails.State.ONLINE && c.runningGameId != 0;
+            quitAllBtn.setVisibility(anyRunning ? VISIBLE : GONE);
+        }
+
         // last played
         DuoPlayStats.Last last = DuoPlayStats.last(getContext(), c.uuid);
         lastPanel.setVisibility(VISIBLE);
@@ -439,7 +459,9 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             playAgain.setEnabled(ready);
             playAgain.setAlpha(ready ? 1f : 0.45f);
             boolean running = ready && c.runningGameId != 0;
-            ((TextView) playAgain.getTag()).setText(running ? "Resume" : "Play again");
+            // Desktop / remote apps aren't "played": they're opened.
+            boolean isApp = DuoPlayStats.isApp(getContext(), c.uuid, last.appId, last.name);
+            ((TextView) playAgain.getTag()).setText(running ? "Resume" : isApp ? "Open" : "Play again");
             playAgain.setOnClickListener(v -> {
                 if (running) {
                     host.resume(c);
@@ -447,7 +469,8 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
                     host.playAgain(c, last);
                 }
             });
-            quitRunning.setVisibility(running ? VISIBLE : GONE);
+            // Quitting lives in the bottom bar ("Quit all sessions").
+            quitRunning.setVisibility(GONE);
             quitRunning.setOnClickListener(v -> host.quit(c));
         }
     }
@@ -751,8 +774,8 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             case "⧉": c = 0xFF3A434A; break;
             default: c = 0xFFE8C15A; break;
         }
-        TextView g = text(letter, 9.5f, ("≡".equals(letter) || "⧉".equals(letter)) ? Color.WHITE : Color.BLACK, true);
-        g.setGravity(Gravity.CENTER);
+        TextView g = text(letter, 9.5f, Color.BLACK, true);
+        DuoTheme.styleGlyph(g, letter, scale);
         g.setBackground(DuoTheme.padButton(c, d));
         glyphs.add(g);
         return g;
@@ -938,6 +961,22 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
                 primary.requestFocus();
                 return true;
             }
+            // Left / right inside the card's button row: step to the neighbour, nothing else.
+            int k = e.getKeyCode();
+            if ((k == KeyEvent.KEYCODE_DPAD_LEFT || k == KeyEvent.KEYCODE_DPAD_RIGHT) && f != null
+                    && f.getParent() == primary.getParent()) {
+                ViewGroup row = (ViewGroup) f.getParent();
+                int step = k == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1;
+                for (int i = row.indexOfChild(f) + step; i >= 0 && i < row.getChildCount(); i += step) {
+                    View n = row.getChildAt(i);
+                    if (n.isFocusable() && n.getVisibility() == VISIBLE) {
+                        n.requestFocus();
+                        DuoMotion.navTick(n);
+                        break;
+                    }
+                }
+                return true;
+            }
         }
         if (DuoPadNav.onKey(this, e, primary)) {
             return true;
@@ -966,9 +1005,9 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
                 host.exit();
                 return true;
             case KeyEvent.KEYCODE_BUTTON_START:
-                if (quitRunning != null && quitRunning.getVisibility() == VISIBLE) {
-                    DuoMotion.tap(quitRunning);
-                    quitRunning.performClick();
+                if (quitAllBtn != null && quitAllBtn.getVisibility() == VISIBLE) {
+                    DuoMotion.tap(quitAllBtn);
+                    quitAllBtn.performClick();
                 }
                 return true;
             case KeyEvent.KEYCODE_BUTTON_SELECT:
@@ -991,7 +1030,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     }
 
     public boolean handleMotion(android.view.MotionEvent e) {
-        return DuoPadNav.onMotion(this, e, primary);
+        return DuoPadNav.onMotion(this, e, this::handleKey);
     }
 
     private static boolean isShortcut(int k) {

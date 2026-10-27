@@ -63,6 +63,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         ComputerDetails computer();
         void start(App app);
         void quit(App app);
+        void quitAll();
         void options(App app);
         void loadCover(App app, ImageView into);
         void profiles();
@@ -94,7 +95,9 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     private final ScrollView listScroll;
     private ImageView bigCover;
     private TextView bigPlaceholder, bigName, statTime, statSessions;
-    private View playButton, quitButton, optionsButton, pinButton;
+    private View playButton, quitButton, optionsButton, pinButton, favButton, quitAllButton;
+    private FrameLayout listFrame;
+    private View ring;
     private int batteryPct = -1;
     private boolean charging;
 
@@ -241,7 +244,16 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         }
         list = new LinearLayout(context);
         list.setOrientation(LinearLayout.VERTICAL);
-        listScroll.addView(list);
+        // The selection ring is one view that glides from row to row (under the rows).
+        listFrame = new FrameLayout(context);
+        ring = new View(context);
+        GradientDrawable rg = rounded(DuoTheme.withAlpha(accent, 0.07f), 0, 10);
+        rg.setStroke(Math.round(1.5f * d), DuoTheme.focus(accent));
+        ring.setBackground(rg);
+        ring.setAlpha(0f);
+        listFrame.addView(ring, new FrameLayout.LayoutParams(-1, dp(62)));
+        listFrame.addView(list, new FrameLayout.LayoutParams(-1, -2));
+        listScroll.addView(listFrame);
         View detail = buildDetail();
         if (landscape) {
             body.addView(listScroll, new LinearLayout.LayoutParams(0, -1, 1.45f));
@@ -275,6 +287,20 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams b4 = new LinearLayout.LayoutParams(-2, -1);
         b4.leftMargin = dp(8);
         bottom.addView(optionsButton, b4);
+        // Favourite on / off for the selected app (X).
+        favButton = button("Favourite", "X", false, v -> {
+            App a = selectedApp();
+            if (a != null) {
+                togglePin(a);
+            }
+        });
+        LinearLayout.LayoutParams b5 = new LinearLayout.LayoutParams(-2, -1);
+        b5.leftMargin = dp(8);
+        bottom.addView(favButton, b5);
+        bottom.addView(new View(context), new LinearLayout.LayoutParams(0, 1, 1f));
+        // Quit everything running on this PC (Menu ≡), no questions asked.
+        quitAllButton = button("Quit all sessions", "≡", false, v -> host.quitAll());
+        bottom.addView(quitAllButton, new LinearLayout.LayoutParams(-2, -1));
         // Bottom row works with B / Y / Menu; the stick never lands on it.
         for (int i = 0; i < bottom.getChildCount(); i++) {
             bottom.getChildAt(i).setFocusable(false);
@@ -304,6 +330,9 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         int dir = Integer.signum(t - tab);
         boolean changed = t != tab;
         tab = t;
+        if (changed) {
+            selectedId = -1; // the new tab starts on its first app (LAST PLAYED first)
+        }
         for (int i = 0; i < 3; i++) {
             TextView tv = tabViews[i];
             tv.setTextColor(i == t ? DuoTheme.TEXT : DuoTheme.TEXT3);
@@ -316,6 +345,11 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         }
         renderList();
         if (changed) {
+            listScroll.scrollTo(0, 0);
+            View first = selectedRow();
+            if (first != null && !first.requestFocus() && DuoPadNav.hasGamepad()) {
+                first.requestFocusFromTouch();
+            }
             // The list slides in from the side of the new tab, rows rising one after the other.
             DuoMotion.slideIn(listScroll, dir);
             DuoMotion.stagger(list, 14);
@@ -355,7 +389,11 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             opened = true;
             selectedId = -1;
         }
-        if (selectedId == -1 || !contains(apps, selectedId)) {
+        boolean inThisTab = false;
+        for (App a : apps) {
+            inThisTab |= a.id == selectedId && inTab(a);
+        }
+        if (selectedId == -1 || !inThisTab) {
             selectedId = lastApp != null ? lastApp.id : !pinned.isEmpty() ? pinned.get(0).id
                     : rest.isEmpty() ? -1 : rest.get(0).id;
         }
@@ -384,6 +422,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             list.addView(empty);
         }
         renderDetail();
+        list.post(() -> moveRing(false));
         if (!staggered && !apps.isEmpty()) {
             staggered = true;
             DuoMotion.stagger(list, 14);
@@ -438,7 +477,34 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
                 v.setSelected(((App) v.getTag()).id == selectedId);
             }
         }
+        moveRing(true);
         renderDetail();
+    }
+
+    /** Glides the selection ring to the selected row. */
+    private void moveRing(boolean animate) {
+        View row = selectedRow();
+        if (row == null) {
+            ring.animate().alpha(0f).setDuration(180).start();
+            return;
+        }
+        if (row.getHeight() == 0) {
+            row.post(() -> moveRing(false));
+            return;
+        }
+        float y = row.getTop();
+        ViewGroup.LayoutParams lp = ring.getLayoutParams();
+        if (lp.height != row.getHeight()) {
+            lp.height = row.getHeight();
+            ring.setLayoutParams(lp);
+        }
+        ring.animate().cancel();
+        if (animate && ring.getAlpha() > 0.5f) {
+            ring.animate().translationY(y).alpha(1f).setDuration(300).setInterpolator(DuoMotion.EASE).start();
+        } else {
+            ring.setTranslationY(y);
+            ring.animate().alpha(1f).setDuration(240).setInterpolator(DuoMotion.EASE).start();
+        }
     }
 
     private View section(String title, int color) {
@@ -604,7 +670,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         bl.topMargin = dp(12);
         info.addView(buttons, bl);
         // Outline only (no accent fill), like the other buttons.
-        playButton = button("Open", "X", false, v -> {
+        playButton = button("Open", "A", false, v -> {
             App a = selectedApp();
             if (a != null) {
                 host.start(a);
@@ -654,7 +720,19 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         ComputerDetails c = host.computer();
         boolean has = a != null;
         playButton.setVisibility(has ? VISIBLE : INVISIBLE);
-        quitButton.setVisibility(has && a.running ? VISIBLE : GONE);
+        // Quitting lives in the bottom bar now ("Quit all sessions").
+        quitButton.setVisibility(GONE);
+        boolean anyRunning = false;
+        for (App x : host.apps()) {
+            anyRunning |= x.running;
+        }
+        quitAllButton.setVisibility(anyRunning ? VISIBLE : GONE);
+        favButton.setEnabled(has);
+        favButton.setAlpha(has ? 1f : 0.45f);
+        if (has && c != null) {
+            ((TextView) favButton.getTag()).setText(DuoPlayStats.isPinned(getContext(), c.uuid, a.id)
+                    ? "Remove favourite" : "Add favourite");
+        }
         pinButton.setVisibility(GONE);
         if (has && c != null) {
             boolean pinned = DuoPlayStats.isPinned(getContext(), c.uuid, a.id);
@@ -785,10 +863,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
 
     private StateListDrawable rowBackground() {
         StateListDrawable s = new StateListDrawable();
-        GradientDrawable focused = rounded(DuoTheme.withAlpha(accent, 0.07f), 0, 10);
-        focused.setStroke(Math.round(1.5f * d), DuoTheme.focus(accent));
-        s.addState(new int[]{android.R.attr.state_focused}, focused);
-        s.addState(new int[]{android.R.attr.state_selected}, focused);
+        // The focus ring itself is the gliding `ring` view under the rows.
         s.addState(new int[]{android.R.attr.state_pressed}, rounded(0x14FFFFFF, 0, 10));
         s.addState(new int[]{}, rounded(0, 0, 10));
         // The blue focus ring glides from row to row (fades in on the new, out on the old).
@@ -850,8 +925,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             case "⧉": c = 0xFF3A434A; break;
             default: c = 0xFFE8C15A; break;
         }
-        TextView g = text(letter, 9.5f, ("≡".equals(letter) || "⧉".equals(letter)) ? Color.WHITE : Color.BLACK, true);
-        g.setGravity(Gravity.CENTER);
+        TextView g = text(letter, 9.5f, Color.BLACK, true);
+        DuoTheme.styleGlyph(g, letter, scale);
         GradientDrawable circle = new GradientDrawable();
         circle.setShape(GradientDrawable.OVAL);
         circle.setColor(c);
@@ -981,7 +1056,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     }
 
     public boolean handleMotion(android.view.MotionEvent e) {
-        return DuoPadNav.onMotion(this, e, list.getChildCount() > 1 ? list.getChildAt(1) : playButton);
+        return DuoPadNav.onMotion(this, e, this::handleKey);
     }
 
     private View bottomFirst;
@@ -1002,9 +1077,16 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             int step = key == KeyEvent.KEYCODE_DPAD_DOWN ? 1 : -1;
             for (int j = i + step; j >= 0 && j < list.getChildCount(); j += step) {
                 View v = list.getChildAt(j);
-                if (v.isFocusable() && v.getVisibility() == VISIBLE) {
+                // Only app rows: section titles (LAST PLAYED, FAVOURITES, ALL …) are skipped.
+                if (v.getTag() instanceof App && v.getVisibility() == VISIBLE) {
                     v.requestFocus();
-                    v.requestRectangleOnScreen(new android.graphics.Rect(0, 0, v.getWidth(), v.getHeight()));
+                    View above = j > 0 ? list.getChildAt(j - 1) : null;
+                    int extra = above != null && !(above.getTag() instanceof App) ? above.getHeight() : 0;
+                    v.requestRectangleOnScreen(new android.graphics.Rect(0, -extra, v.getWidth(), v.getHeight()));
+                    if (j == firstRowIndex()) {
+                        listScroll.smoothScrollTo(0, 0);
+                    }
+                    DuoMotion.navTick(v);
                     return true;
                 }
             }
@@ -1019,6 +1101,15 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             return optionsButton.requestFocus();
         }
         return false;
+    }
+
+    private int firstRowIndex() {
+        for (int i = 0; i < list.getChildCount(); i++) {
+            if (list.getChildAt(i).getTag() instanceof App) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private View lastRow() {
@@ -1045,7 +1136,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         if (e.getAction() == KeyEvent.ACTION_DOWN && jump(e.getKeyCode())) {
             return true;
         }
-        if (DuoPadNav.onKey(this, e, list.getChildCount() > 1 ? list.getChildAt(1) : playButton)) {
+        View firstRow = firstRowIndex() >= 0 ? list.getChildAt(firstRowIndex()) : null;
+        if (DuoPadNav.onKey(this, e, selectedRow() != null ? selectedRow() : firstRow)) {
             return true;
         }
         int k = e.getKeyCode();
@@ -1068,15 +1160,15 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
                 host.settings();
                 break;
             case KeyEvent.KEYCODE_BUTTON_X:
-                if (playButton.getVisibility() == VISIBLE) {
-                    DuoMotion.tap(playButton);
-                    playButton.performClick();
+                if (favButton.isEnabled()) {
+                    DuoMotion.tap(favButton);
+                    favButton.performClick();
                 }
                 break;
             case KeyEvent.KEYCODE_BUTTON_START:
-                if (quitButton.getVisibility() == VISIBLE) {
-                    DuoMotion.tap(quitButton);
-                    quitButton.performClick();
+                if (quitAllButton.getVisibility() == VISIBLE) {
+                    DuoMotion.tap(quitAllButton);
+                    quitAllButton.performClick();
                 }
                 break;
             case KeyEvent.KEYCODE_BUTTON_SELECT:

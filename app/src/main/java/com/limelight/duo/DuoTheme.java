@@ -122,4 +122,15 @@ public final class DuoTheme {
         l.setLayerInset(1, in, in, in, in);
         return l;
     }
+
+    /** Letter inside a controller button: bold and crisp; Menu / View symbols smaller (same circle). */
+    public static void styleGlyph(android.widget.TextView g, String letter, float scale) {
+        boolean symbol = "≡".equals(letter) || "⧉".equals(letter);
+        g.setTypeface(DuoFonts.bold());
+        g.setTextSize((symbol ? 7.5f : 10.5f) * scale);
+        g.setTextColor(symbol ? 0xFFFFFFFF : 0xFF0B0C0E);
+        g.setGravity(android.view.Gravity.CENTER);
+        g.setIncludeFontPadding(false);
+        g.setPadding(0, 0, 0, 0);
+    }
 }

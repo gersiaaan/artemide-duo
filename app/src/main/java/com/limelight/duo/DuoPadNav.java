@@ -17,9 +17,6 @@ public final class DuoPadNav {
 
     private static int lastHatDir;
     private static java.lang.ref.WeakReference<View> lastFocus;
-    private static long lastStickMove;
-    private static long stickHeldSince;
-    private static final long STICK_REPEAT_MS = 220;
 
     /** D-pad key events. fallback gets focus first if nothing is focused yet. */
     public static boolean onKey(ViewGroup root, KeyEvent e, View fallback) {
@@ -30,6 +27,11 @@ public final class DuoPadNav {
             case KeyEvent.KEYCODE_DPAD_LEFT: dir = View.FOCUS_LEFT; break;
             case KeyEvent.KEYCODE_DPAD_RIGHT: dir = View.FOCUS_RIGHT; break;
             default: return false;
+        }
+        if (!synthetic) {
+            lastRealKey = SystemClock.uptimeMillis();
+            MAIN.removeCallbacks(REPEAT);
+            heldDir = 0;
         }
         if (e.getAction() == KeyEvent.ACTION_DOWN) {
             // Held down: speeds up (1 → 2 → 3 rows per repeat) so long lists scroll quickly.
@@ -42,8 +44,72 @@ public final class DuoPadNav {
         return true;
     }
 
-    /** Hat axes and left stick (joystick motion events). */
+    /** Receives the D-pad key events made from hat axes / the stick (the screen's own key handling). */
+    public interface KeyHandler {
+        boolean handle(KeyEvent e);
+    }
+
+    private static final android.os.Handler MAIN = new android.os.Handler(android.os.Looper.getMainLooper());
+    private static int heldDir;
+    private static int heldRepeats;
+    private static long heldSince;
+    private static long lastRealKey;
+    private static boolean synthetic;
+    private static java.lang.ref.WeakReference<ViewGroup> heldRoot;
+    private static KeyHandler heldHandler;
+
+    private static final Runnable REPEAT = new Runnable() {
+        @Override
+        public void run() {
+            ViewGroup root = heldRoot == null ? null : heldRoot.get();
+            if (heldDir == 0 || root == null || !root.isAttachedToWindow() || !root.hasWindowFocus()) {
+                heldDir = 0;
+                return;
+            }
+            heldRepeats++;
+            fire(root, heldDir, heldRepeats);
+            // Held: repeats get faster the longer it's held (130 ms → 55 ms).
+            long held = android.os.SystemClock.uptimeMillis() - heldSince;
+            MAIN.postDelayed(this, Math.max(55, 130 - held / 25));
+        }
+    };
+
+    private static int keyFor(int dir) {
+        switch (dir) {
+            case View.FOCUS_LEFT: return KeyEvent.KEYCODE_DPAD_LEFT;
+            case View.FOCUS_RIGHT: return KeyEvent.KEYCODE_DPAD_RIGHT;
+            case View.FOCUS_UP: return KeyEvent.KEYCODE_DPAD_UP;
+            default: return KeyEvent.KEYCODE_DPAD_DOWN;
+        }
+    }
+
+    private static void fire(ViewGroup root, int dir, int repeat) {
+        long now = SystemClock.uptimeMillis();
+        KeyEvent k = new KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyFor(dir), repeat);
+        synthetic = true;
+        try {
+            if (heldHandler != null) {
+                heldHandler.handle(k);
+            } else {
+                onKey(root, k, null);
+            }
+        } finally {
+            synthetic = false;
+        }
+    }
+
+    /** Hat axes and left stick, moving like the D-pad keys (old screens without own key handling). */
     public static boolean onMotion(ViewGroup root, MotionEvent e, View fallback) {
+        final View fb = fallback;
+        return onMotion(root, e, k -> onKey(root, k, fb));
+    }
+
+    /**
+     * Hat axes and left stick (joystick motion events). They become D-pad key events for the
+     * screen's own handler, so stick, hat and D-pad keys all move the same way; holding keeps
+     * moving (with a timer, since a held hat / stick sends no further events).
+     */
+    public static boolean onMotion(ViewGroup root, MotionEvent e, KeyHandler handler) {
         if ((e.getSource() & InputDevice.SOURCE_JOYSTICK) != InputDevice.SOURCE_JOYSTICK
                 || e.getAction() != MotionEvent.ACTION_MOVE) {
             return false;
@@ -51,31 +117,29 @@ public final class DuoPadNav {
         float hx = e.getAxisValue(MotionEvent.AXIS_HAT_X), hy = e.getAxisValue(MotionEvent.AXIS_HAT_Y);
         int hat = hx < -0.5f ? View.FOCUS_LEFT : hx > 0.5f ? View.FOCUS_RIGHT
                 : hy < -0.5f ? View.FOCUS_UP : hy > 0.5f ? View.FOCUS_DOWN : 0;
-        if (hat != lastHatDir) {
-            lastHatDir = hat;
-            if (hat != 0) {
-                move(root, hat, fallback);
-            }
-            return true;
-        }
-        float sx = e.getAxisValue(MotionEvent.AXIS_X), sy = e.getAxisValue(MotionEvent.AXIS_Y);
-        int stick = Math.abs(sx) > Math.abs(sy)
-                ? (sx < -0.6f ? View.FOCUS_LEFT : sx > 0.6f ? View.FOCUS_RIGHT : 0)
-                : (sy < -0.6f ? View.FOCUS_UP : sy > 0.6f ? View.FOCUS_DOWN : 0);
         long now = SystemClock.uptimeMillis();
-        if (stick == 0) {
-            lastStickMove = 0;
-            stickHeldSince = 0;
-        } else {
-            if (stickHeldSince == 0) {
-                stickHeldSince = now;
-            }
-            // The longer the stick is held, the faster it repeats (220 ms → 60 ms).
-            long held = now - stickHeldSince;
-            long interval = Math.max(60, STICK_REPEAT_MS - held / 6);
-            if (now - lastStickMove > interval) {
-                lastStickMove = now;
-                move(root, stick, fallback);
+        // Controllers that send the D-pad as keys AND as hat axes: the keys win (no double steps).
+        if (now - lastRealKey < 400) {
+            hat = 0;
+        }
+        lastHatDir = hat;
+        float sx = e.getAxisValue(MotionEvent.AXIS_X), sy = e.getAxisValue(MotionEvent.AXIS_Y);
+        // Hysteresis: 0.6 to start, back under 0.4 to stop.
+        float on = heldDir != 0 ? 0.4f : 0.6f;
+        int stick = Math.abs(sx) > Math.abs(sy)
+                ? (sx < -on ? View.FOCUS_LEFT : sx > on ? View.FOCUS_RIGHT : 0)
+                : (sy < -on ? View.FOCUS_UP : sy > on ? View.FOCUS_DOWN : 0);
+        int dir = hat != 0 ? hat : stick;
+        if (dir != heldDir) {
+            MAIN.removeCallbacks(REPEAT);
+            heldDir = dir;
+            heldRepeats = 0;
+            heldRoot = new java.lang.ref.WeakReference<>(root);
+            heldHandler = handler;
+            if (dir != 0) {
+                heldSince = now;
+                fire(root, dir, 0);
+                MAIN.postDelayed(REPEAT, 360);
             }
         }
         return true;

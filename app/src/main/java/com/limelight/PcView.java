@@ -344,8 +344,13 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
                 if (managerBinder == null) {
                     return;
                 }
-                UiHelper.displayQuitConfirmationDialog(PcView.this,
-                        () -> ServerHelper.doQuit(PcView.this, c, new NvApp("app", null, 0, false), managerBinder, null), null);
+                // No confirmation: quits the running session(s) on that PC right away.
+                ServerHelper.doQuit(PcView.this, c, new NvApp("app", null, 0, false), managerBinder,
+                        () -> runOnUiThread(() -> {
+                            if (duoHome != null) {
+                                duoHome.refresh();
+                            }
+                        }));
             }
 
             @Override

@@ -194,7 +194,7 @@ public class ServerHelper {
                               final Runnable onComplete,
                               final Runnable onFail
     ) {
-        parent.runOnUiThread(() -> Toast.makeText(parent, parent.getResources().getString(R.string.applist_quit_app) + " " + appName + "...", Toast.LENGTH_SHORT).show());
+        // Duo: quitting is quiet; only a failure shows a message.
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -239,7 +239,9 @@ public class ServerHelper {
                 }
 
                 final String toastMessage = message;
-                parent.runOnUiThread(() -> Toast.makeText(parent, toastMessage, Toast.LENGTH_LONG).show());
+                if (failed) {
+                    parent.runOnUiThread(() -> Toast.makeText(parent, toastMessage, Toast.LENGTH_LONG).show());
+                }
             }
         }).start();
 

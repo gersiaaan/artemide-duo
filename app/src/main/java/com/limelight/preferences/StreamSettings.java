@@ -220,10 +220,7 @@ public class StreamSettings extends AppCompatActivity {
         backBtn.setBackground(bbg);
         android.widget.TextView bGlyph = new android.widget.TextView(this);
         bGlyph.setText("B");
-        bGlyph.setTextSize(9.5f);
-        bGlyph.setTextColor(0xFF000000);
-        bGlyph.setTypeface(com.limelight.duo.DuoFonts.bold());
-        bGlyph.setGravity(android.view.Gravity.CENTER);
+        com.limelight.duo.DuoTheme.styleGlyph(bGlyph, "B", 1f);
         bGlyph.setBackground(com.limelight.duo.DuoTheme.padButton(0xFFE0645A, d));
         android.widget.LinearLayout.LayoutParams gp = new android.widget.LinearLayout.LayoutParams(Math.round(23 * d), Math.round(23 * d));
         gp.leftMargin = -Math.round(3 * d);

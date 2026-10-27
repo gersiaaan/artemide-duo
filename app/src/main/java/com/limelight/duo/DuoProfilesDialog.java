@@ -333,7 +333,7 @@ public final class DuoProfilesDialog {
             b.setBackground(g);
             if (glyph != null && DuoPadNav.hasGamepad()) {
                 TextView gl = text(glyph, 9.5f, Color.BLACK, DuoFonts.bold());
-                gl.setGravity(Gravity.CENTER);
+                DuoTheme.styleGlyph(gl, glyph, 1f);
                 gl.setBackground(DuoTheme.padButton(0xFFE0645A, d));
                 LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(dp(23), dp(23));
                 gp.leftMargin = -dp(3);
