@@ -62,6 +62,7 @@ public final class DuoSettingsDecor {
     public static void decorate(PreferenceViewHolder holder, Preference pref) {
         View row = holder.itemView;
         if (row.getId() != R.id.duo_row) {
+            plainRow(row, pref);
             return;
         }
         Context c = row.getContext();
@@ -187,6 +188,37 @@ public final class DuoSettingsDecor {
             total += n.length();
         }
         return total <= 40;
+    }
+
+    /**
+     * Rows with the stock layout: the same selection frame as the app list (accent tint + thin
+     * accent ring), never Android's grey focus/selected highlight.
+     */
+    private static void plainRow(View row, Preference pref) {
+        if (pref instanceof androidx.preference.PreferenceCategory) {
+            return;
+        }
+        Context c = row.getContext();
+        float d = c.getResources().getDisplayMetrics().density;
+        int accent = DuoTheme.accent(c);
+        GradientDrawable focused = new GradientDrawable();
+        focused.setColor(DuoTheme.withAlpha(accent, 0.07f));
+        focused.setCornerRadius(10 * d);
+        focused.setStroke(Math.round(1.5f * d), DuoTheme.focus(accent));
+        GradientDrawable pressed = new GradientDrawable();
+        pressed.setColor(0x14FFFFFF);
+        pressed.setCornerRadius(10 * d);
+        StateListDrawable s = new StateListDrawable();
+        s.addState(new int[]{android.R.attr.state_focused}, focused);
+        s.addState(new int[]{android.R.attr.state_pressed}, pressed);
+        s.addState(new int[]{}, new android.graphics.drawable.ColorDrawable(0));
+        s.setEnterFadeDuration(140);
+        s.setExitFadeDuration(180);
+        int ix = Math.round(10 * d), iy = Math.round(3 * d);
+        row.setBackground(new android.graphics.drawable.InsetDrawable(s, ix, iy, ix, iy));
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            row.setDefaultFocusHighlightEnabled(false);
+        }
     }
 
     private static StateListDrawable groupedBackground(int accent, float d, boolean first, boolean last) {

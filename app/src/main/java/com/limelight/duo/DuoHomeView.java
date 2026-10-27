@@ -232,7 +232,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         qp.leftMargin = dp(8);
         bottom.addView(quitAllBtn, qp);
         bottom.addView(new View(context), new LinearLayout.LayoutParams(0, 1, 1f));
-        bottom.addView(text(version(), 10.5f, 0xFF4A4F57, false));
+        bottom.addView(text(version(), 10.5f, 0xFF6B717A, false));
 
         updateGlyphs();
         updateClock();
@@ -882,7 +882,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         return Math.round(v * d);
     }
 
-    private static String version() {
+    static String version() {
         String v = BuildConfig.VERSION_NAME;
         int i = v.lastIndexOf("Duo ");
         return i >= 0 ? "v" + v.substring(i + 4) : v;
