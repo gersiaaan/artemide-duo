@@ -51,9 +51,9 @@ public class DuoPanelActivity extends Activity {
 
         Window w = getWindow();
         w.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        // Touch only: the stream keeps focus, so controller, mouse and shortcuts keep working
-        // while you tap the keyboard. Focus is taken only while Gboard (Aa) is open.
-        w.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+        // The Duo moves input focus to the screen you touch. So this panel stays focusable and hands
+        // every controller event straight to the stream (see dispatchKeyEvent / dispatchGenericMotionEvent):
+        // the controller always acts in the stream, whichever screen was touched last.
         hideSystemUi();
 
         panel = new DuoInputPanel(this, sink, this::hideByUser);
@@ -159,11 +159,19 @@ public class DuoPanelActivity extends Activity {
                 || (s & android.view.InputDevice.SOURCE_JOYSTICK) == android.view.InputDevice.SOURCE_JOYSTICK;
     }
 
+    /** Controller, hardware keyboard or mouse (anything physical) belongs to the stream. */
+    private static boolean external(android.view.InputDevice dev, int source) {
+        return fromPad(dev, source) || (dev != null && !dev.isVirtual()
+                && ((source & android.view.InputDevice.SOURCE_KEYBOARD) == android.view.InputDevice.SOURCE_KEYBOARD
+                || (source & android.view.InputDevice.SOURCE_MOUSE) == android.view.InputDevice.SOURCE_MOUSE
+                || (source & android.view.InputDevice.SOURCE_MOUSE_RELATIVE) == android.view.InputDevice.SOURCE_MOUSE_RELATIVE));
+    }
+
     /** If this screen ever has focus, the controller still goes to the stream (shortcuts included). */
     @Override
     public boolean dispatchKeyEvent(android.view.KeyEvent event) {
         Activity game = DuoBridge.getStreamActivity();
-        if (game != null && !game.isFinishing() && fromPad(event.getDevice(), event.getSource())) {
+        if (game != null && !game.isFinishing() && external(event.getDevice(), event.getSource())) {
             return game.dispatchKeyEvent(event);
         }
         return super.dispatchKeyEvent(event);
@@ -172,7 +180,7 @@ public class DuoPanelActivity extends Activity {
     @Override
     public boolean dispatchGenericMotionEvent(android.view.MotionEvent event) {
         Activity game = DuoBridge.getStreamActivity();
-        if (game != null && !game.isFinishing() && fromPad(event.getDevice(), event.getSource())) {
+        if (game != null && !game.isFinishing() && external(event.getDevice(), event.getSource())) {
             return game.dispatchGenericMotionEvent(event);
         }
         return super.dispatchGenericMotionEvent(event);
@@ -180,11 +188,6 @@ public class DuoPanelActivity extends Activity {
 
     /** Gboard needs a focused window; everything else works without focus. */
     void setTakesFocus(boolean focus) {
-        Window w = getWindow();
-        if (focus) {
-            w.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
-        } else {
-            w.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
-        }
+        // Always focusable now (controller input is forwarded to the stream).
     }
 }
