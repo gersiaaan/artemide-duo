@@ -23,17 +23,28 @@ public final class DuoHaptics {
         }
         Vibrator vib = (Vibrator) c.getSystemService(Context.VIBRATOR_SERVICE);
         if (vib == null || !vib.hasVibrator()) {
-            v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP,
+                    HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             return;
         }
-        if (Build.VERSION.SDK_INT >= 26 && vib.hasAmplitudeControl()) {
-            int amp = Math.max(1, Math.min(255, Math.round(pct * 2.55f)));
-            vib.vibrate(VibrationEffect.createOneShot(12, amp));
-        } else if (Build.VERSION.SDK_INT >= 26) {
-            // No amplitude control: shorter buzz = softer.
-            vib.vibrate(VibrationEffect.createOneShot(Math.max(4, Math.round(pct * 0.25f)), VibrationEffect.DEFAULT_AMPLITUDE));
-        } else {
-            vib.vibrate(Math.max(4, Math.round(pct * 0.25f)));
+        try {
+            if (Build.VERSION.SDK_INT >= 26 && vib.hasAmplitudeControl()) {
+                // Strength from the slider, long enough to be felt on every motor.
+                int amp = Math.max(30, Math.min(255, Math.round(pct * 2.55f)));
+                vib.vibrate(VibrationEffect.createOneShot(18 + pct / 5, amp));
+            } else if (Build.VERSION.SDK_INT >= 29) {
+                // No amplitude control (e.g. Surface Duo): pick a stronger or softer system click.
+                int effect = pct < 35 ? VibrationEffect.EFFECT_TICK
+                        : pct < 75 ? VibrationEffect.EFFECT_CLICK : VibrationEffect.EFFECT_HEAVY_CLICK;
+                vib.vibrate(VibrationEffect.createPredefined(effect));
+            } else if (Build.VERSION.SDK_INT >= 26) {
+                vib.vibrate(VibrationEffect.createOneShot(10 + pct / 3, VibrationEffect.DEFAULT_AMPLITUDE));
+            } else {
+                vib.vibrate(10 + pct / 3);
+            }
+        } catch (RuntimeException e) {
+            v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP,
+                    HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
         }
     }
 }
