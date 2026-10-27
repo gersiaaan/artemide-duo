@@ -1,3 +1,61 @@
+# Artemide Duo
+
+A [Moonlight](https://moonlight-stream.org) streaming client for the **Microsoft Surface Duo** (and other Android devices), built on Artemide / [Artemis](https://github.com/ClassicOldSong/moonlight-android). Stream your PC from [Sunshine](https://github.com/LizardByte/Sunshine), [Apollo](https://github.com/ClassicOldSong/Apollo) or Vibeshine and use the Duo like a small laptop: **the stream on the upper screen, a full keyboard and trackpad on the lower one.**
+
+## Download
+
+Get the latest APK from **[Releases](../../releases/latest)** (arm64-v8a). Each release has two versions:
+
+| Version | File | For whom |
+|---|---|---|
+| **Normal** | `ArtemideDuo-v…-arm64-v8a.apk` | Everyone. Built-in word list with autocorrect and next-word prediction that learns your phrases. |
+| **Plus** | `ArtemideDuo-v…-Plus-arm64-v8a.apk` | If you type a lot. Adds the AOSP LatinIME suggestion engine (the engine behind the AOSP keyboard and HeliBoard) with full German and English dictionaries, a spatial touch model and a personal history dictionary. About 5 MB bigger. |
+
+Normal and Plus are the same app: installing one over the other keeps all settings. Artemide Duo installs next to Moonlight / Artemis (its own app ID).
+
+## Features
+
+**Surface Duo**
+- Stream on one screen, keyboard + trackpad on the other (or both on one screen when spanned).
+- Three keyboard layouts: Normal, Slim and Wide (full width, made for ten-finger typing), plus a compact mode with a trackpad half.
+- Trackpad with laptop gestures: tap = click, two fingers = scroll / right click, three fingers = drag, pinch = zoom.
+- Gboard-style autocorrect, suggestions and next-word prediction (German / English), backspace into a word picks it up again.
+- Haptics with adjustable strength.
+
+**Controller**
+- Full controller navigation of every screen (host page, app list, settings).
+- LB + RB shortcuts in the stream: quit, pause, performance overlay, quick menu, keyboard panel, controller mode (rebindable).
+- Controller modes: Gamepad, Desktop (left stick = mouse, right stick = scroll, A / B = clicks, X = Windows, Y = Alt+Tab) and Off.
+
+**Screens**
+- Host page with host tabs, "Add a host", last played game, resume / play again, host profiles and Tailscale status (LAN is always preferred at home).
+- App list with games / apps tabs, favourites, last played, play time and a soft cover backdrop.
+- Settings with tabs, grouped cards and a "New in Artemide Duo" section.
+- Stream start with progress, calm transitions everywhere, a compact glass performance overlay.
+
+Everything from Artemis (custom resolutions and bitrates, virtual display with Apollo, mouse modes, on-screen controls …) is still there.
+
+## Building
+
+```
+./gradlew assembleNonRoot_gameDuo        # Normal
+./gradlew assembleNonRoot_gameDuoPlus    # Plus (also builds the LatinIME native library)
+```
+
+Pushing to the `duo` branch builds both on GitHub Actions and publishes a release (version in `DUO_VERSION`, notes in `RELEASE_NOTES.md`).
+
+## Credits & licenses
+
+- [Moonlight Android](https://github.com/moonlight-stream/moonlight-android) and [Artemis](https://github.com/ClassicOldSong/moonlight-android): GPL-3.0, as is this fork.
+- Keyboard engine of the Plus build: AOSP LatinIME native code and dictionaries via [HeliBoard](https://github.com/Helium314/HeliBoard), Apache-2.0.
+- Next-word seed: Europarl sample and Brown corpus (NLTK data); word frequencies: [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords).
+- Font: [Inter](https://rsms.me/inter/), SIL Open Font License.
+
+---
+
+<details>
+<summary>Original Artemis README</summary>
+
 # Artemis Android
 
 Previously named Moonlight Noir
@@ -82,3 +140,5 @@ The main repo had stayed silent for 5 months, with nobody actually responding to
 
 Moonlight is the work of students at [Case Western](http://case.edu) and was
 started as a project at [MHacks](http://mhacks.org).
+
+</details>
