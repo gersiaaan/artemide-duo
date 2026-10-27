@@ -90,13 +90,14 @@ public final class DuoPerfText {
             b.append(DIM).append("Net / Render: ").append(f1(fps.receivedFps)).append(" / ")
                     .append(f1(fps.renderedFps)).append(" FPS").append(END).append("<br>");
         }
-        // Narrow box: short rows, each one centred.
+        // Total · net · dec on one line …
         b.append(DIM).append("Total ").append(END).append("<b>≈ ").append(f1(total)).append(" ms</b>")
-                .append(DIM).append(" · dec ").append(END).append("<b>").append(f2(decodeMs)).append(" ms</b><br>");
-        b.append(DIM).append("net ").append(END).append("<b>").append(f0(netMs)).append(" ms</b>")
-                .append(DIM).append(" ±").append(f0(netVar)).append(" · render ").append(END)
-                .append("<b>").append(f2(renderMs)).append(" ms</b><br>");
-        b.append(DIM).append("dropped ").append(END).append("<b>").append(f2(lossPct)).append("%</b>")
+                .append(DIM).append(" · net ").append(END).append("<b>").append(f0(netMs)).append(" ms</b>")
+                .append(DIM).append(" ±").append(f0(netVar)).append(" · dec ").append(END).append("<b>")
+                .append(f2(decodeMs)).append(" ms</b><br>");
+        // … rendering and dropped frames (net · pacing) on the next.
+        b.append(DIM).append("Render ").append(END).append("<b>").append(f2(renderMs)).append(" ms</b>")
+                .append(DIM).append(" · dropped ").append(END).append("<b>").append(f2(lossPct)).append("%</b>")
                 .append(DIM).append(" net · ").append(END).append("<b>").append(f2(pacingPct)).append("%</b>")
                 .append(DIM).append(" pacing").append(END);
         if (detailed && s.framesWithHostProcessingLatency > 0) {
