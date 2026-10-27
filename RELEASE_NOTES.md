@@ -1,3 +1,23 @@
+## Artemide Duo v0.28
+
+### Keyboard
+- Space bar is hit more reliably: a touch that starts on a key no longer turns into a trackpad move after a small drift, and a touch just above or below the space bar still types a space.
+
+### Host page and app list
+- No grey box behind the selected app; the selection ring is the only highlight.
+- Favourite now sits left of Options in the bottom bar.
+- App names are trimmed, so "Remote Monitor" and "Remote Input" line up with the others.
+- Resume and Terminate are treated as normal apps (normal background, no game cover).
+- "Quit all sessions" shows on the host page and the app list whenever the PC is online.
+
+### Settings
+- Selected row uses the same frame as the app list (accent tint, thin ring), no grey fill.
+
+### Stream
+- Stream start progress runs a third slower and starts at 0 % (no jump to 33 %).
+- Performance overlay: the box grows with all rows, so the last line is no longer cut off.
+- Waves over game covers are much more transparent.
+
 ## Artemide Duo v0.27
 
 ### Two APKs from now on

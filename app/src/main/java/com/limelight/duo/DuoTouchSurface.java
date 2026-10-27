@@ -108,6 +108,8 @@ public abstract class DuoTouchSurface extends View {
     /** How far a finger may move and still count as a tap. */
     protected float tapSlopDp() { return 9f; }
     protected void onPress(float x, float y) {}
+    /** How far a touch that started at x, y may drift before it becomes a trackpad move. */
+    protected float trackpadSlopPx(float x, float y) { return slop; }
     protected void onCancelPress() {}
     protected abstract void onTap(float x, float y);
     protected boolean isRepeatable(float x, float y) { return false; }
@@ -293,7 +295,7 @@ public abstract class DuoTouchSurface extends View {
 
         switch (mode) {
             case PENDING:
-                if (trackpadEnabled() && Math.hypot(x - downX, y - downY) > slop) {
+                if (trackpadEnabled() && Math.hypot(x - downX, y - downY) > trackpadSlopPx(downX, downY)) {
                     cancelTimers();
                     onCancelPress();
                     mode = Mode.MOUSE;

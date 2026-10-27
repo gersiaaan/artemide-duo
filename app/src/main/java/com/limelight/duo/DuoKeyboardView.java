@@ -592,7 +592,9 @@ public class DuoKeyboardView extends DuoTouchSurface {
                 }
             }
         }
-        return bestDist < (8 * density) * (8 * density) ? best : null;
+        // The space bar is wide and flat: a touch a bit below or above it still counts.
+        float reach = best != null && best.vk == VK_SPACE ? 16 : 8;
+        return bestDist < (reach * density) * (reach * density) ? best : null;
     }
 
     /** Fingers land a little below where they aim; shift the hit point up like Gboard. */
@@ -620,6 +622,12 @@ public class DuoKeyboardView extends DuoTouchSurface {
     @Override
     protected boolean fireOnDown(float x, float y) {
         return SystemClock.uptimeMillis() - lastTypeTime < 1000 && keyAtTouch(x, y) != null;
+    }
+
+    /** A touch that starts on a key may drift much further before it becomes a trackpad move (space bar!). */
+    @Override
+    protected float trackpadSlopPx(float x, float y) {
+        return keyAtTouch(x, y) != null ? tapSlopDp() * density * 2.2f : tapSlopDp() * density;
     }
 
     /** Generous: slight finger slips while typing still count as a key, not a mouse move. */
