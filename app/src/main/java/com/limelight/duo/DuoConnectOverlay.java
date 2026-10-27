@@ -186,7 +186,7 @@ public final class DuoConnectOverlay extends FrameLayout {
     /** Called every frame: creep towards the ceiling, glide the bar towards the target. */
     private void tick() {
         // Creep: a little closer to the current step's ceiling, slower and slower.
-        target += (ceiling - target) * 0.004f;
+        target += (ceiling - target) * 0.0027f; // a third slower than before
         shown += (target - shown) * 0.08f;
         bar.setScaleX(Math.max(0f, Math.min(1f, shown)));
         percent.setText(Math.max(1, Math.min(100, Math.round(shown * 100))) + " %");
@@ -198,7 +198,6 @@ public final class DuoConnectOverlay extends FrameLayout {
             return;
         }
         stages = Math.min(STAGE_COUNT, stages + 1);
-        target = Math.max(target, 0.30f + 0.65f * (stages - 1) / STAGE_COUNT);
         ceiling = 0.30f + 0.65f * stages / STAGE_COUNT;
     }
 

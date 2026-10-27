@@ -330,6 +330,8 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                         } else {
                             performanceOverlayBig.setText(text);
                         }
+                        // Re-measure: the box grows with all rows, never cuts the last one.
+                        performanceOverlayBig.requestLayout();
                     }
                 }
             } catch (Throwable ignored) { }
@@ -4716,6 +4718,13 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         performanceOverlayBig.setTextColor(0xFFF8FBFC);
         performanceOverlayBig.setShadowLayer(2 * d, 0, 0.5f * d, 0x66000000);
         performanceOverlayBig.setSingleLine(false);
+        performanceOverlayBig.setMaxLines(Integer.MAX_VALUE);
+        performanceOverlayBig.setClipToOutline(false);
+        lp.height = android.widget.LinearLayout.LayoutParams.WRAP_CONTENT;
+        performanceOverlayBig.setLayoutParams(lp);
+        if (performanceOverlayView instanceof android.view.ViewGroup) {
+            ((android.view.ViewGroup) performanceOverlayView).setClipChildren(false);
+        }
         performanceOverlayBig.setHorizontallyScrolling(false);
         int p = Math.round(8 * d);
         performanceOverlayBig.setPadding(Math.round(9 * d), Math.round(6 * d), Math.round(9 * d), Math.round(6 * d));
