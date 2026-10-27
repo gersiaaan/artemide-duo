@@ -65,6 +65,10 @@ public class DuoAutocorrect {
 
     private final Runnable saveLearned = this::persistLearned;
 
+    /** Context for next-word prediction: the last two committed words (lowercase, START at a sentence start). */
+    private String prev1, prev2;
+
+
     /** Bumped on every input event; a late correction only applies if nothing happened since. */
     private int generation;
 
@@ -73,6 +77,28 @@ public class DuoAutocorrect {
         this.sink = sink;
         learnedAtStart = readLearned();
         DuoDictionary.setLanguage(context, DuoBridge.getLanguage(context), learnedAtStart);
+        DuoNextWord.load(context, DuoBridge.getLanguage(context));
+        prev1 = DuoNextWord.START;
+    }
+
+    /** A word went into the text: remember it as context (and learn the phrase). */
+    private void commit(String w) {
+        if (w == null || w.isEmpty()) {
+            return;
+        }
+        String lw = w.toLowerCase();
+        DuoNextWord.record(DuoDictionary.language(), prev2, prev1, lw);
+        prev2 = prev1;
+        prev1 = lw;
+        schedulePersist();
+    }
+
+    /** The last committed word was replaced (late autocorrect). */
+    private void recommit(String typed, String corrected) {
+        if (prev1 != null && prev1.equals(typed.toLowerCase())) {
+            prev1 = corrected.toLowerCase();
+            DuoNextWord.record(DuoDictionary.language(), null, prev2, prev1);
+        }
     }
 
     public void addListener(Listener l) {
@@ -84,12 +110,14 @@ public class DuoAutocorrect {
     public void setLanguage(String lang) {
         persistLearned();
         DuoDictionary.setLanguage(context, lang, readLearned());
+        DuoNextWord.load(context, lang);
         onBoundary();
     }
 
     public void close() {
         main.removeCallbacks(saveLearned);
         persistLearned();
+        DuoNextWord.persist(context);
         if (worker != null) {
             worker.quitSafely();
             worker = null;
@@ -144,11 +172,22 @@ public class DuoAutocorrect {
         autoShift = false;
         lastChar = c;
         sentenceEnded = c == '.' || c == '!' || c == '?';
+        if (sentenceEnded) {
+            prev2 = null;
+            prev1 = DuoNextWord.START;
+        } else if (c == ',' || c == ';' || c == ':') {
+            // keeps the context
+        } else {
+            prev1 = prev2 = null; // digits, symbols: no idea what comes next
+        }
+        publish();
     }
 
     public void onEnter() {
         generation++;
         finishWord(true);
+        prev2 = null;
+        prev1 = DuoNextWord.START;
         undoOriginal = null;
         lastChar = '\n';
         sentenceEnded = false;
@@ -193,6 +232,8 @@ public class DuoAutocorrect {
         } else {
             lastChar = 0;
             sentenceEnded = false;
+            prev1 = prev2 = null;
+            publish();
         }
         return false;
     }
@@ -231,6 +272,7 @@ public class DuoAutocorrect {
             correctLater(typed, floats(tapX), floats(tapY));
             undoOriginal = null;
             sent = true;
+            commit(typed);
         }
         if (!sent && r != null && r.autocorrect && !r.suggestions.isEmpty()) {
             String corrected = matchCase(typed, r.suggestions.get(0));
@@ -240,11 +282,15 @@ public class DuoAutocorrect {
                 undoOriginal = typed;
                 undoCorrected = corrected;
                 sent = true;
+                commit(corrected);
             }
         }
         if (!sent) {
             undoOriginal = null;
             finishWord(false);
+            if (wasWord) {
+                commit(typed);
+            }
         }
         resetWord();
 
@@ -268,6 +314,7 @@ public class DuoAutocorrect {
         sentenceEnded = false;
         lastChar = 0;
         lastSpaceTime = 0;
+        prev1 = prev2 = null;
         if (word.length() > 0 || !resultWord.isEmpty()) {
             resetWord();
         }
@@ -281,12 +328,16 @@ public class DuoAutocorrect {
             return;
         }
         String typed = word.toString();
+        String chosen = cellIsTyped[cell] ? typed : cellText[cell];
         if (!cellIsTyped[cell]) {
             replaceWord(typed, cellText[cell]);
         } else {
             // Tapping „typed“ means: keep it as it is.
             learn(typed, 2);
         }
+        commit(chosen);
+        autoShift = false;
+        sentenceEnded = false;
         DuoKeys.tap(sink, DuoKeys.VK_SPACE, 1);
         undoOriginal = null;
         resetWord();
@@ -320,6 +371,8 @@ public class DuoAutocorrect {
                         DuoKeys.tap(sink, DuoKeys.VK_SPACE, 1);
                         undoOriginal = typed;
                         undoCorrected = corrected;
+                        recommit(typed, corrected);
+                        publish();
                         return;
                     }
                 }
@@ -341,6 +394,9 @@ public class DuoAutocorrect {
             }
         }
         if (resetAfter) {
+            if (!typed.isEmpty()) {
+                commit(typed);
+            }
             resetWord();
         }
     }
@@ -353,6 +409,11 @@ public class DuoAutocorrect {
         d.learn(w, inc);
         main.removeCallbacks(saveLearned);
         main.postDelayed(saveLearned, 2000);
+    }
+
+    private void schedulePersist() {
+        main.removeCallbacks(saveLearned);
+        main.postDelayed(saveLearned, 4000);
     }
 
     private Map<String, Integer> readLearned() {
@@ -373,6 +434,7 @@ public class DuoAutocorrect {
     }
 
     private void persistLearned() {
+        DuoNextWord.persist(context);
         Map<String, Integer> all = DuoDictionary.learnedAll();
         if (all.isEmpty()) {
             return;
@@ -455,6 +517,23 @@ public class DuoAutocorrect {
                     sug.add(matchCase(typed, s));
                 }
                 auto = result.autocorrect;
+                // Context: completions that fit the previous words move up (keeps the first
+                // one when it's an autocorrect, so space does what the bold cell shows).
+                if (prev1 != null && sug.size() > 1) {
+                    final String lang = DuoDictionary.language();
+                    final List<String> base = new ArrayList<>(sug);
+                    List<String> tail = new ArrayList<>(auto ? base.subList(1, base.size()) : base);
+                    java.util.Collections.sort(tail, (a, b) -> {
+                        float sa = DuoNextWord.score(lang, prev2, prev1, a);
+                        float sb = DuoNextWord.score(lang, prev2, prev1, b);
+                        return sa == sb ? Integer.compare(base.indexOf(a), base.indexOf(b)) : Float.compare(sb, sa);
+                    });
+                    sug.clear();
+                    if (auto) {
+                        sug.add(base.get(0));
+                    }
+                    sug.addAll(tail);
+                }
             }
             if (auto && !sug.isEmpty() && !sug.get(0).equals(typed)) {
                 // „typed“ | best (bold, applied on space) | alternative
@@ -482,6 +561,18 @@ public class DuoAutocorrect {
                 }
             }
             highlight = 1;
+        } else if (prev1 != null && (lastChar == ' ' || lastChar == '\n' || lastChar == 0)) {
+            // Nothing typed yet: what probably comes next (best in the middle).
+            DuoDictionary d = DuoDictionary.get();
+            List<String> next = DuoNextWord.predict(DuoDictionary.language(), prev2, prev1, 3);
+            int[] slot = {1, 0, 2};
+            for (int i = 0; i < next.size() && i < 3; i++) {
+                String w = d != null ? d.displayOf(next.get(i)) : next.get(i);
+                if (autoShift || DuoNextWord.START.equals(prev1)) {
+                    w = Character.toUpperCase(w.charAt(0)) + w.substring(1);
+                }
+                cellText[slot[i]] = w;
+            }
         }
         if (!listeners.isEmpty()) {
             String[] cells = new String[3];

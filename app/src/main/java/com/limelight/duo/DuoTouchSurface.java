@@ -175,6 +175,14 @@ public abstract class DuoTouchSurface extends View {
                 return true;
 
             case MotionEvent.ACTION_POINTER_DOWN:
+                if (supportsRollover() && mode == Mode.MULTI && multiKeys) {
+                    // Ten-finger typing: a third finger while two keys wait — type those two,
+                    // the new finger is the next key.
+                    cancelTimers();
+                    typeBothKeys();
+                    beginPending(event, event.getActionIndex());
+                    return true;
+                }
                 if (supportsRollover()
                         && (mode == Mode.PENDING || mode == Mode.TYPED || mode == Mode.HELD || mode == Mode.NONE)
                         && (mode != Mode.PENDING || event.getEventTime() - downTime > ROLLOVER_MS)) {
@@ -371,6 +379,10 @@ public abstract class DuoTouchSurface extends View {
                     // Trackpad: two fingers start scrolling after a short way (6dp).
                     // Keyboard keeps its larger slop so two thumbs typing don't scroll.
                     float start = maxPointers >= 3 || supportsRollover() ? slop : Math.min(slop, 6f * density);
+                    if (multiKeys) {
+                        // Two keys pressed together: only a clear two-finger swipe scrolls.
+                        start = slop * 1.8f;
+                    }
                     // Fingers spreading/closing more than they move together: wait for the pinch.
                     boolean pinching = maxPointers == 2 && Math.abs(span - startSpan) >= Math.hypot(dx, dy);
                     if (Math.hypot(dx, dy) > start && !pinching) {

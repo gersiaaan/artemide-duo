@@ -170,6 +170,16 @@ public final class DuoDictionary {
         return b.toString();
     }
 
+    /** Display spelling of a lowercase word (German nouns capitalized). */
+    public String displayOf(String lowerWord) {
+        Integer i = exact == null ? null : exact.get(lowerWord);
+        if (i != null) {
+            return display[i];
+        }
+        String l = learnedDisplay.get(lowerWord);
+        return l != null ? l : lowerWord;
+    }
+
     // ---------------- learning ----------------
 
     /** The user typed this word and kept it. Returns the new count. */

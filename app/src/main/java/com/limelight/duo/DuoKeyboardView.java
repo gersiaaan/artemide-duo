@@ -207,7 +207,8 @@ public class DuoKeyboardView extends DuoTouchSurface {
 
     @Override
     protected boolean trackpadEnabled() {
-        return fullLike();
+        // Every keyboard doubles as a trackpad (compact mode too): swipe = mouse, 2 fingers = scroll.
+        return true;
     }
 
     // ---------------- layouts ----------------
@@ -826,7 +827,7 @@ public class DuoKeyboardView extends DuoTouchSurface {
     }
 
     private void click(byte button) {
-        if (sink == null || layout != LAYOUT_FULL) {
+        if (sink == null) {
             return;
         }
         onPointerAction();
