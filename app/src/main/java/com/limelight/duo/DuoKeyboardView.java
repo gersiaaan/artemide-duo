@@ -615,10 +615,10 @@ public class DuoKeyboardView extends DuoTouchSurface {
         }
 
         if (phoneMode) {
-            canvas.drawText("Swipe = mouse · 2 fingers: click / scroll / zoom · 3 fingers: right click / drag",
+            canvas.drawText("Tap free space = click · swipe = mouse · 2 fingers: click / scroll / zoom · 3 fingers: right click / drag",
                     getWidth() / 2f, keysBottom + 14 * density, hintPaint);
         } else if (layout == LAYOUT_FULL) {
-            canvas.drawText("Swipe = mouse · 2 fingers: click / scroll / zoom · 3 fingers: right click / drag · hold a o u = ä ö ü · hold ⇪ = Caps",
+            canvas.drawText("Tap free space = click · swipe = mouse · 2 fingers: click / scroll / zoom · 3 fingers: right click / drag · hold a o u = ä ö ü · hold ⇪ = Caps",
                     getWidth() / 2f, keysBottom + 14 * density, hintPaint);
         }
 
@@ -810,7 +810,15 @@ public class DuoKeyboardView extends DuoTouchSurface {
     @Override
     protected void onTap(float x, float y) {
         Key key = keyAtTouch(x, y);
-        if (key == null || key.holdOnly) {
+        if (key == null) {
+            // A tap on free space (no key nearby) is a left click, like on a trackpad. Not while typing:
+            // a slightly missed key must never click (that would move the text cursor on the PC).
+            if (trackpadEnabled() && fullLike() && SystemClock.uptimeMillis() - lastTypeTime > 900) {
+                click(MouseButtonPacket.BUTTON_LEFT);
+            }
+            return;
+        }
+        if (key.holdOnly) {
             return;
         }
         float tx = lastTapX, ty = lastTapY;

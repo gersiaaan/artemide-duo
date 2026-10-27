@@ -1,3 +1,11 @@
+## Artemide Duo v0.33
+
+### Keyboard
+- Tap on free space of the keyboard (no key nearby) = left click, like on a trackpad (not while you're typing, so a missed key never clicks). Two fingers: click / scroll / zoom, three fingers: right click / drag.
+- **Plus:** missing umlauts and accents are always corrected (uberragend → überragend), even if such a word was learned by mistake before.
+- **Plus:** new words are learned only after you typed them three times, and never if they're just a word without its umlaut. A single typo no longer becomes a "known" word.
+- Settings > General > Other shows which keyboard engine is running (LatinIME Plus active / loading, or the built-in word list).
+
 ## Artemide Duo v0.32
 
 ### Keyboard

@@ -53,12 +53,16 @@ public final class DuoLatinEngine implements DuoEngine {
     private long mainSize;
     private File historyFile;
     private int learnedSinceFlush;
+    /** New (not in the main dictionary) words seen so far: learned only from the 3rd time on. */
+    private android.content.SharedPreferences pending;
+    private static final int LEARN_AFTER = 3;
 
     public DuoLatinEngine() {}
 
     @Override
     public synchronized boolean load(Context context, String language) {
         lang = language;
+        pending = context.getApplicationContext().getSharedPreferences("duo_plus_pending_" + language, Context.MODE_PRIVATE);
         try {
             File dir = new File(context.getFilesDir(), "duo_dicts");
             if (!dir.isDirectory() && !dir.mkdirs()) {
@@ -317,6 +321,28 @@ public final class DuoLatinEngine implements DuoEngine {
         return all;
     }
 
+    /** The dictionary word that differs from `typed` only by accents / umlauts (uberragend -> überragend), else null. */
+    private String accentVariant(String typed) {
+        if (mainDict == 0 || typed == null || typed.isEmpty() || typed.length() >= MAX_WORD) {
+            return null;
+        }
+        String lower = typed.toLowerCase();
+        int[] code = cps(lower);
+        int[] input = new int[MAX_WORD];
+        int[] xs = new int[MAX_WORD], ys = new int[MAX_WORD];
+        Arrays.fill(input, -1);
+        Arrays.fill(xs, NOT_A_COORDINATE);
+        Arrays.fill(ys, NOT_A_COORDINATE);
+        System.arraycopy(code, 0, input, 0, code.length);
+        for (Hit h : suggest(mainDict, mainSession, false, input, code.length, xs, ys, null, null, null)) {
+            if ((h.type & FLAG_EXACT_MATCH) != 0 && !h.word.equalsIgnoreCase(typed)
+                    && h.word.length() == typed.length()) {
+                return h.word;
+            }
+        }
+        return null;
+    }
+
     @Override
     public synchronized DuoDictionary.Result lookup(String typed, float[] tapX, float[] tapY,
                                                     String prev2, String prev1) {
@@ -342,8 +368,10 @@ public final class DuoLatinEngine implements DuoEngine {
                 suggest(mainDict, mainSession, false, input, code.length, xs, ys, prev2, prev1, null),
                 suggest(historyDict, historySession, true, input, code.length, xs, ys, prev2, prev1, null));
 
-        r.known = prob(mainDict, typed) != NOT_A_PROBABILITY || prob(mainDict, lower) != NOT_A_PROBABILITY
-                || prob(historyDict, typed) != NOT_A_PROBABILITY || prob(historyDict, lower) != NOT_A_PROBABILITY;
+        boolean knownMain = prob(mainDict, typed) != NOT_A_PROBABILITY || prob(mainDict, lower) != NOT_A_PROBABILITY;
+        boolean knownHistory = prob(historyDict, typed) != NOT_A_PROBABILITY || prob(historyDict, lower) != NOT_A_PROBABILITY;
+        r.known = knownMain || knownHistory;
+        String variant = knownMain ? null : accentVariant(typed);
         for (Hit h : hits) {
             if (r.suggestions.size() >= 6) {
                 break;
@@ -357,6 +385,14 @@ public final class DuoLatinEngine implements DuoEngine {
             r.autocorrect = !top.word.equalsIgnoreCase(typed)
                     && (onlyAccents || ((top.type & FLAG_APPROPRIATE_FOR_AUTOCORRECT) != 0
                     && norm >= AUTOCORRECT_THRESHOLD));
+        }
+        if (variant != null) {
+            // Only a missing umlaut / accent of a dictionary word (uberragend -> überragend): always
+            // correct it, even if it was learned by mistake before.
+            r.known = false;
+            r.suggestions.remove(variant);
+            r.suggestions.add(0, variant);
+            r.autocorrect = true;
         }
         return r;
     }
@@ -394,6 +430,22 @@ public final class DuoLatinEngine implements DuoEngine {
         context(prev2, prev1, prev, bos);
         boolean valid = prob(mainDict, word) != NOT_A_PROBABILITY
                 || prob(mainDict, word.toLowerCase()) != NOT_A_PROBABILITY;
+        if (!valid) {
+            // A word the dictionary doesn't know: never learn it if it's only a missing umlaut / accent
+            // of a real word (uber -> über), and otherwise only once it was typed a few times
+            // (one typo must not become a "known" word that is never corrected again).
+            if (accentVariant(word) != null) {
+                return;
+            }
+            String key = word.toLowerCase();
+            int seen = pending == null ? LEARN_AFTER : pending.getInt(key, 0) + 1;
+            if (pending != null) {
+                pending.edit().putInt(key, seen).apply();
+            }
+            if (seen < LEARN_AFTER) {
+                return;
+            }
+        }
         BinaryDictionary.updateEntriesForWordWithNgramContextNative(historyDict, prev, bos, cps(word),
                 valid, 1, (int) (System.currentTimeMillis() / 1000));
         if (++learnedSinceFlush >= 20) {

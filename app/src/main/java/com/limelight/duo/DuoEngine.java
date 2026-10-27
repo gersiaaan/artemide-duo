@@ -74,6 +74,21 @@ public interface DuoEngine {
             return null;
         }
 
+        /** Which keyboard engine is in use, for Settings (also starts loading it). */
+        public static String status(Context context, String lang) {
+            if (!available()) {
+                return "Standard (built-in word list)";
+            }
+            if (ready.containsKey(lang)) {
+                return "LatinIME (Plus) · active";
+            }
+            if (failed.contains(lang)) {
+                return "LatinIME (Plus) · failed to load, using the built-in word list";
+            }
+            get(context, lang);
+            return "LatinIME (Plus) · loading";
+        }
+
         public static void flushAll() {
             for (DuoEngine e : ready.values()) {
                 try {

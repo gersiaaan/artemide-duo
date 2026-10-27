@@ -668,7 +668,9 @@ public class StreamSettings extends AppCompatActivity {
                 String v = com.limelight.BuildConfig.VERSION_NAME;
                 int vi = v.lastIndexOf("Duo ");
                 about.setTitle("Artemide Duo " + (vi >= 0 ? "v" + v.substring(vi + 4) : v));
-                about.setSummary("Developed by Chang Cao, 2026");
+                String lang = com.limelight.duo.DuoBridge.getLanguage(getActivity());
+                about.setSummary("Developed by Chang Cao, 2026\nKeyboard engine (" + lang.toUpperCase() + "): "
+                        + com.limelight.duo.DuoEngine.Registry.status(getActivity(), lang));
             }
             final Preference vsyncPref = findPreference("checkbox_Vsync");
             final Preference fastVsyncPref = findPreference("checkbox_fastVsync");
