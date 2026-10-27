@@ -201,6 +201,19 @@ perf {
                 }
             }
         }
+        // Same app as "duo" (installs over it, keeps all settings) plus the AOSP LatinIME
+        // suggestion engine and its dictionaries for the keyboard (~5 MB more).
+        duoPlus {
+            initWith duo
+            versionNameSuffix " Duo " + (project.findProperty("duoVersion") ?: "dev") + " Plus"
+            matchingFallbacks = ["duo", "release"]
+            signingConfig signingConfigs.duo
+            externalNativeBuild {
+                ndkBuild {
+                    arguments "APP_PERF:=1", "APP_OPTIM:=release", "NDK_DEBUG=0", "DUO_KEYBOARD=plus"
+                }
+            }
+        }
     }
 
     externalNativeBuild {

@@ -34,6 +34,8 @@ public class DuoAutocorrect {
     private static final String PREFS = "duo_learned_words";
     private static final String KEY = "words";
     private static final long DOUBLE_SPACE_MS = 1500;
+    /** Token for dictionary lookups on the worker (a newer one replaces an older one). */
+    private static final Object LOOKUP = new Object();
 
     private final Context context;
     private final DuoInputSink sink;
@@ -83,10 +85,20 @@ public class DuoAutocorrect {
         prev1 = DuoNextWord.START;
     }
 
+    /** The LatinIME engine (Plus build) once loaded, else null. */
+    private DuoEngine engine() {
+        return DuoEngine.Registry.get(context, DuoDictionary.language());
+    }
+
     /** A word went into the text: remember it as context (and learn the phrase). */
     private void commit(String w) {
         if (w == null || w.isEmpty()) {
             return;
+        }
+        final DuoEngine eng = engine();
+        if (eng != null) {
+            final String p1 = prev1, p2 = prev2, word = w;
+            worker().post(() -> eng.learn(p2, p1, word));
         }
         lastWord = w;
         lastWordPrev1 = prev1;
@@ -126,6 +138,12 @@ public class DuoAutocorrect {
         main.removeCallbacks(saveLearned);
         persistLearned();
         DuoNextWord.persist(context);
+        final Handler wh = workerHandler;
+        if (wh != null) {
+            wh.post(DuoEngine.Registry::flushAll);
+        } else {
+            DuoEngine.Registry.flushAll();
+        }
         if (worker != null) {
             worker.quitSafely();
             worker = null;
@@ -297,7 +315,7 @@ public class DuoAutocorrect {
         boolean sent = false;
         String typed = word.toString();
         DuoDictionary.Result r = typed.equals(resultWord) ? result : null;
-        if (r == null && wasWord && DuoDictionary.get() != null) {
+        if (r == null && wasWord && (DuoDictionary.get() != null || engine() != null)) {
             // Result not back yet: send the space right away (no waiting on the
             // dictionary in the UI thread) and correct the word as soon as it's known.
             DuoKeys.tap(sink, DuoKeys.VK_SPACE, 1);
@@ -384,14 +402,17 @@ public class DuoAutocorrect {
     /** Space already sent; looks the word up off the UI thread and fixes it if nothing was typed since. */
     private void correctLater(final String typed, final float[] tx, final float[] ty) {
         final DuoDictionary dict = DuoDictionary.get();
-        if (dict == null) {
+        final DuoEngine eng = engine();
+        if (dict == null && eng == null) {
             return;
         }
+        final String p1 = prev1, p2 = prev2;
         final int gen = generation;
         Handler h = worker();
-        h.removeCallbacksAndMessages(null);
-        h.post(() -> {
-            final DuoDictionary.Result r = dict.lookup(typed, tx, ty);
+        h.removeCallbacksAndMessages(LOOKUP);
+        h.postAtTime(() -> {
+            final DuoDictionary.Result r = eng != null ? eng.lookup(typed, tx, ty, p2, p1)
+                    : dict.lookup(typed, tx, ty);
             main.post(() -> {
                 if (generation != gen) {
                     return; // more was typed meanwhile: leave the word as it is
@@ -413,7 +434,7 @@ public class DuoAutocorrect {
                     learn(typed, 1);
                 }
             });
-        });
+        }, LOOKUP, android.os.SystemClock.uptimeMillis());
     }
 
     /** The word ends without a correction: learn it if it's new. */
@@ -515,15 +536,18 @@ public class DuoAutocorrect {
         }
         publish();
         final DuoDictionary dict = DuoDictionary.get();
-        if (dict == null) {
+        final DuoEngine eng = engine();
+        if (dict == null && eng == null) {
             return;
         }
+        final String p1 = prev1, p2 = prev2;
         final float[] tx = floats(tapX);
         final float[] ty = floats(tapY);
         Handler h = worker();
-        h.removeCallbacksAndMessages(null);
-        h.post(() -> {
-            final DuoDictionary.Result r = dict.lookup(typed, tx, ty);
+        h.removeCallbacksAndMessages(LOOKUP);
+        h.postAtTime(() -> {
+            final DuoDictionary.Result r = eng != null ? eng.lookup(typed, tx, ty, p2, p1)
+                    : dict.lookup(typed, tx, ty);
             main.post(() -> {
                 // Only use it if the word hasn't changed meanwhile.
                 if (typed.equals(word.toString())) {
@@ -532,7 +556,7 @@ public class DuoAutocorrect {
                     publish();
                 }
             });
-        });
+        }, LOOKUP, android.os.SystemClock.uptimeMillis());
     }
 
     private void publish() {
@@ -597,10 +621,15 @@ public class DuoAutocorrect {
         } else if (prev1 != null && (lastChar == ' ' || lastChar == '\n' || lastChar == 0)) {
             // Nothing typed yet: what probably comes next (best in the middle).
             DuoDictionary d = DuoDictionary.get();
-            List<String> next = DuoNextWord.predict(DuoDictionary.language(), prev2, prev1, 3);
+            DuoEngine eng = engine();
+            List<String> next = eng != null ? eng.predict(prev2, prev1, 3)
+                    : DuoNextWord.predict(DuoDictionary.language(), prev2, prev1, 3);
             int[] slot = {1, 0, 2};
             for (int i = 0; i < next.size() && i < 3; i++) {
-                String w = d != null ? d.displayOf(next.get(i)) : next.get(i);
+                String w = eng != null ? next.get(i) : d != null ? d.displayOf(next.get(i)) : next.get(i);
+                if (w.isEmpty()) {
+                    continue;
+                }
                 if (autoShift || DuoNextWord.START.equals(prev1)) {
                     w = Character.toUpperCase(w.charAt(0)) + w.substring(1);
                 }

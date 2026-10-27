@@ -32,7 +32,7 @@ jobs:
         run: |
           chmod +x gradlew
           set -o pipefail
-          ./gradlew assembleNonRoot_gameDuo -PduoVersion=${{ steps.ver.outputs.v }} --stacktrace 2>&1 | tee build.log
+          ./gradlew assembleNonRoot_gameDuo assembleNonRoot_gameDuoPlus -PduoVersion=${{ steps.ver.outputs.v }} --stacktrace 2>&1 | tee build.log
 
       # Surface compiler errors as annotations (readable without log access).
       - name: Report build errors
@@ -49,6 +49,15 @@ jobs:
         run: |
           mkdir -p out
           find app/build/outputs/apk -name '*.apk' -exec cp {} out/ \;
+          # Clear names: "Plus" = with the LatinIME keyboard engine.
+          v=${{ steps.ver.outputs.v }}
+          for f in out/*.apk; do
+            abi=$(echo "$f" | grep -oE 'arm64-v8a|armeabi-v7a|x86_64|x86' | head -1)
+            case "$f" in
+              *[Dd]uoPlus*) mv "$f" "out/ArtemideDuo-v${v}-Plus-${abi}.apk" ;;
+              *[Dd]uo*) mv "$f" "out/ArtemideDuo-v${v}-${abi}.apk" ;;
+            esac
+          done
           ls -la out
 
       - uses: actions/upload-artifact@v4

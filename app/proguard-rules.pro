@@ -71,3 +71,8 @@
 -keep class com.limelight.utils.SurfaceViewSizer { *; }
 -keep class com.limelight.utils.FSRSizerInstaller { *; }
 -keep class com.limelight.utils.FSRSizerInstaller$AutoCloser { *; }
+
+# Artemide Duo Plus: LatinIME JNI classes are looked up by name from native code,
+# the engine is loaded by reflection.
+-keep class com.android.inputmethod.** { *; }
+-keep class com.limelight.duo.plus.** { *; }
