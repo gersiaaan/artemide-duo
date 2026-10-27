@@ -126,8 +126,11 @@ public class DuoWavesView extends View implements Choreographer.FrameCallback {
                     + (h - level[i] + amp[i] + swellAmp[i]) * (1 - easeOut(riseK));
             if (overlay) {
                 // Over a cover backdrop: soft white lines, barely-there fill.
-                fill.setColor(DuoTheme.withAlpha(0xFFFFFFFF, fillAlpha[i] * 0.22f));
-                crest.setColor(DuoTheme.withAlpha(0xFFFFFFFF, Math.min(0.32f, crestAlpha[i] * 0.75f)));
+                // Over a cover backdrop: clear light lines in a pale accent, almost no fill
+                // (a white fill would wash the cover out).
+                int light = DuoTheme.mix(0xFFFFFFFF, accent, 0.55f);
+                fill.setColor(DuoTheme.withAlpha(light, fillAlpha[i] * 0.10f));
+                crest.setColor(DuoTheme.withAlpha(light, Math.min(0.6f, crestAlpha[i] * 1.5f + 0.12f)));
             } else {
                 fill.setColor(DuoTheme.withAlpha(accent, fillAlpha[i]));
                 crest.setColor(DuoTheme.withAlpha(accent, crestAlpha[i]));

@@ -86,6 +86,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     private boolean staggered;
     private ImageView backA, backB, coverGhost;
     private DuoWavesView frontWaves;
+    private View backScrim;
+    private android.animation.ObjectAnimator backZoom;
     private boolean backFlip;
     private int shownDetailId = Integer.MIN_VALUE;
 
@@ -141,6 +143,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
                     android.graphics.Shader.TileMode.CLAMP));
         }
         View scrim = new View(context);
+        backScrim = scrim;
+        scrim.setAlpha(0f);
         scrim.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
                 new int[]{DuoTheme.withAlpha(DuoTheme.FLOOR, 0.92f), DuoTheme.withAlpha(DuoTheme.FLOOR, 0.55f),
                         DuoTheme.withAlpha(DuoTheme.FLOOR, 0.35f)}));
@@ -774,10 +778,11 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             // Backdrop: dissolve to the new cover.
             boolean isGame = c != null && !DuoPlayStats.isApp(getContext(), c.uuid, a.id, a.name);
             if (!isGame) {
-                // Apps (Desktop, Remote …): no cover backdrop, just the waves.
-                backA.animate().alpha(0f).setDuration(600).start();
-                backB.animate().alpha(0f).setDuration(600).start();
-                frontWaves.animate().alpha(0f).setDuration(600).start();
+                // Apps (Desktop, Remote …): the normal background, no cover, no veil.
+                backA.animate().alpha(0f).setDuration(700).setInterpolator(DuoMotion.EASE).start();
+                backB.animate().alpha(0f).setDuration(700).setInterpolator(DuoMotion.EASE).start();
+                backScrim.animate().alpha(0f).setDuration(700).setInterpolator(DuoMotion.EASE).start();
+                frontWaves.animate().alpha(0f).setDuration(700).start();
             } else {
                 ImageView next = backFlip ? backA : backB;
                 ImageView prev = backFlip ? backB : backA;
@@ -785,11 +790,24 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
                 next.animate().cancel();
                 next.setAlpha(0f);
                 DuoCovers.into(getContext(), c.uuid, a.id, next, new View(getContext()), dp(240));
-                next.animate().alpha(0.32f).setDuration(700)
-                        .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator()).start();
-                frontWaves.animate().alpha(1f).setDuration(700).start();
-                prev.animate().alpha(0f).setDuration(700)
-                        .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator()).start();
+                // Soft blend (no flash): the new cover rises while the old one sinks, both slowly.
+                android.view.animation.Interpolator blend = new android.view.animation.PathInterpolator(0.45f, 0f, 0.25f, 1f);
+                next.animate().alpha(0.34f).setDuration(1100).setInterpolator(blend).start();
+                prev.animate().alpha(0f).setDuration(1100).setInterpolator(blend).start();
+                backScrim.animate().alpha(1f).setDuration(900).setInterpolator(DuoMotion.EASE).start();
+                frontWaves.animate().alpha(1f).setDuration(900).start();
+                // Slow, subtle zoom (Ken Burns) on the cover in the back.
+                if (backZoom != null) {
+                    backZoom.cancel();
+                }
+                next.setScaleX(1f);
+                next.setScaleY(1f);
+                backZoom = android.animation.ObjectAnimator.ofPropertyValuesHolder(next,
+                        android.animation.PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.09f),
+                        android.animation.PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.09f));
+                backZoom.setDuration(18000);
+                backZoom.setInterpolator(new android.view.animation.DecelerateInterpolator(1.2f));
+                backZoom.start();
             }
         }
         ((TextView) playButton.getTag()).setText(a.running ? "Resume" : "Open");

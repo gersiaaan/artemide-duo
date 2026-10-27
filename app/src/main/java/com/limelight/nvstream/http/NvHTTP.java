@@ -424,6 +424,10 @@ public class NvHTTP {
 
         // FIXME: Do we want to use the current port?
         details.localAddress = makeTuple(getXmlString(serverInfo, "LocalIP", false), baseUrlHttp.port());
+        // Reached over Tailscale the PC reports its Tailscale IP as "local": keep the real LAN address.
+        if (details.localAddress != null && com.limelight.duo.DuoTailscale.isTailscale(details.localAddress.address)) {
+            details.localAddress = null;
+        }
 
         // This is missing on on recent GFE versions, but it's present on Sunshine
         details.externalPort = getExternalPort(serverInfo);

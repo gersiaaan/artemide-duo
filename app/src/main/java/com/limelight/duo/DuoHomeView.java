@@ -83,7 +83,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
     private final LinearLayout content;
     private final LinearLayout hostChips;
     private final TextView clock, dateLine;
-    private TextView badge, name, subline, address, addressLabel;
+    private TextView badge, name, subline, address, addressLabel, tailscale;
     private LinearLayout chips;
     private View cardView;
     private boolean addMode;
@@ -390,6 +390,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             chips.setVisibility(GONE);
             address.setVisibility(GONE);
             addressLabel.setVisibility(GONE);
+            tailscale.setVisibility(GONE);
             primaryLabel.setText("Add a host");
             primary.setOnClickListener(v -> host.addHost());
             lastPanel.setVisibility(INVISIBLE);
@@ -432,6 +433,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         address.setText(addr == null ? "–" : addr);
         address.setVisibility(VISIBLE);
         addressLabel.setVisibility(VISIBLE);
+        updateTailscale(c, addr);
         primaryLabel.setText(action);
         primary.setOnClickListener(v -> host.open(c));
 
@@ -480,6 +482,26 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
             return DuoTheme.ONLINE;
         }
         return c.state == ComputerDetails.State.OFFLINE ? DuoTheme.OFFLINE : DuoTheme.WARN;
+    }
+
+    private void updateTailscale(ComputerDetails c, String addr) {
+        String own = DuoTailscale.ownAddress();
+        boolean viaTs = c.state == ComputerDetails.State.ONLINE && DuoTailscale.isTailscale(addr);
+        String text;
+        if (viaTs) {
+            text = "Tailscale  ·  connected via " + addr + (own != null ? "  (this device " + own + ")" : "");
+        } else if (own != null) {
+            text = "Tailscale  ·  connected (" + own + ")  ·  "
+                    + (c.state == ComputerDetails.State.ONLINE ? "PC reached over the local network" : "PC not reached");
+        } else {
+            text = "Tailscale  ·  not connected";
+        }
+        tailscale.setText(text);
+        tailscale.setTextColor(viaTs || own != null ? DuoTheme.TEXT : DuoTheme.TEXT2);
+        GradientDrawable dotD = dotDrawable(viaTs || own != null ? DuoTheme.ONLINE : DuoTheme.TEXT3);
+        tailscale.setCompoundDrawablesRelativeWithIntrinsicBounds(dotD, null, null, null);
+        tailscale.setCompoundDrawablePadding(dp(7));
+        tailscale.setVisibility(VISIBLE);
     }
 
     private static String addressOf(ComputerDetails c) {
@@ -600,6 +622,11 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         card.addView(addressLabel, al);
         address = text("", 16, DuoTheme.TEXT, true);
         card.addView(address);
+        // How the PC is reached: over the LAN or through Tailscale (and whether Tailscale is on).
+        tailscale = text("", 11.5f, DuoTheme.TEXT2, false);
+        LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(-2, -2);
+        tl.topMargin = dp(6);
+        card.addView(tailscale, tl);
 
         card.addView(new View(getContext()), new LinearLayout.LayoutParams(1, 0, 1f));
 

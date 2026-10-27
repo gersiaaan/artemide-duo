@@ -639,51 +639,27 @@ public class ComputerManagerService extends Service {
         startParallelPollThread(ipv6Info, uniqueAddresses);
 
         try {
-            // Check local first
-            synchronized (localInfo) {
-                while (!localInfo.complete) {
-                    localInfo.wait();
-                }
-
-                if (localInfo.returnedDetails != null) {
-                    localInfo.returnedDetails.activeAddress = localInfo.address;
-                    return localInfo.returnedDetails;
-                }
-            }
-
-            // Now manual
-            synchronized (manualInfo) {
-                while (!manualInfo.complete) {
-                    manualInfo.wait();
-                }
-
-                if (manualInfo.returnedDetails != null) {
-                    manualInfo.returnedDetails.activeAddress = manualInfo.address;
-                    return manualInfo.returnedDetails;
+            // Order of precedence: local, manual, remote, IPv6 — but Tailscale addresses last,
+            // so at home the PC is reached directly over the LAN, not through Tailscale.
+            java.util.List<ParallelPollTuple> order = new java.util.ArrayList<>();
+            java.util.List<ParallelPollTuple> tailscale = new java.util.ArrayList<>();
+            for (ParallelPollTuple t : new ParallelPollTuple[]{localInfo, manualInfo, remoteInfo, ipv6Info}) {
+                if (t.address != null && com.limelight.duo.DuoTailscale.isTailscale(t.address.address)) {
+                    tailscale.add(t);
+                } else {
+                    order.add(t);
                 }
             }
-
-            // Now remote IPv4
-            synchronized (remoteInfo) {
-                while (!remoteInfo.complete) {
-                    remoteInfo.wait();
-                }
-
-                if (remoteInfo.returnedDetails != null) {
-                    remoteInfo.returnedDetails.activeAddress = remoteInfo.address;
-                    return remoteInfo.returnedDetails;
-                }
-            }
-
-            // Now global IPv6
-            synchronized (ipv6Info) {
-                while (!ipv6Info.complete) {
-                    ipv6Info.wait();
-                }
-
-                if (ipv6Info.returnedDetails != null) {
-                    ipv6Info.returnedDetails.activeAddress = ipv6Info.address;
-                    return ipv6Info.returnedDetails;
+            order.addAll(tailscale);
+            for (ParallelPollTuple t : order) {
+                synchronized (t) {
+                    while (!t.complete) {
+                        t.wait();
+                    }
+                    if (t.returnedDetails != null) {
+                        t.returnedDetails.activeAddress = t.address;
+                        return t.returnedDetails;
+                    }
                 }
             }
         } finally {
