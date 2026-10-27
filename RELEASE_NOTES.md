@@ -1,3 +1,17 @@
+## Artemide Duo v0.30
+
+### Stream
+- The "virtual display driver not ready" question is gone: the app simply proceeds.
+- Hosts no longer flash OFFLINE on short Wi-Fi hiccups or access-point switches.
+
+### Settings
+- Every row uses the same selection frame as the app list (accent tint, thin ring), no grey highlight.
+- The tab strip fades out softly at the left and right edge.
+- General > Other: Artemide Duo version, developed by Chang Cao, 2026.
+
+### Host page and app list
+- No version number on the host page any more (it lives in Settings now).
+
 ## Artemide Duo v0.29
 
 ### Stream
