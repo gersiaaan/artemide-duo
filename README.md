@@ -7,6 +7,10 @@ Artemide Duo is [Artemide](https://github.com/derflacco/moonlight-android) with 
 
 Works great on the **Surface Duo** and on **all 16:10 devices** (e.g. Galaxy Tab S6).
 
+![Artemide Duo on the Surface Duo](docs/media/hero-surface-duo.png)
+
+![Artemide Duo on a 16:10 tablet with a controller](docs/media/hero-tablet-controller.png)
+
 > **Heads-up:** these builds are explicitly for testing. Expect rough edges, and please report what you find.
 
 ## The keyboard
