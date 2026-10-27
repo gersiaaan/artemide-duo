@@ -1,21 +1,19 @@
-## Artemide Duo v0.24
+## Artemide Duo v0.25 – motion update
 
-**Controller**
-- Controller button in the keyboard panel now has three states: **G** gamepad, **D** desktop/mouse (desktop & remote only), **crossed out** = controller ignored in the stream except the LB + RB shortcuts. Also in the quick menu and on LB + RB + View.
-- Gamepad cursor: slower and much more precise for small stick movements (10 = the old 5).
-- Shortcuts can be rebound by pressing the controller button (A, B, X, Y, Menu, View, L3, R3), with Reset / Turn off.
-- Panel on the other screen no longer steals focus: controller, mouse and shortcuts keep working while you tap the keyboard (Gboard is the only exception).
+**Animations (Apple-style)**
+- Zoom/fade transitions between all screens (host page, app list, settings, profiles …), also on 16:10.
+- New stream start: the cover pops in over the waves with a pulsing accent glow, the connection stage and a light bar; when the stream is up the cover zooms through the screen into the game.
+- Focus lift like tvOS (selected button/row grows slightly with a soft shadow, focus ring fades), press squish on every button, row, pill and panel button.
+- Tabs slide in from their side (All/Games/Apps, settings tabs, host switch with LB/RB), lists build up row by row, cover/name crossfade when the selection changes, sessions count up.
+- Dialogs spring in, the performance overlay fades in/out, switches fade between on/off.
+- Keyboard panel: Keyboard / Trackpad / Compact slide in, masks 1/2/3 rise in, Compact swap crossfades.
+- Optional fine haptic tick when moving with the controller (Settings → Duo).
 
-**Host page & app list**
-- X = Play / Resume, Menu ≡ = Quit, View ⧉ = Options, Y = Settings, B = Back/Exit. These buttons and the host tabs / bottom bars can't be selected with the stick any more.
-- App list steps row by row (Last played → Favourites → All), opens on the last played app; Resume connects directly.
-- Back on the host page lands on Open.
-
-**Stream**
-- Apple-style disconnect: the stream shrinks into the centre and the host page settles in.
-- Keyboard panel appears from the stream screen with a soft spring and slides back up when hidden.
-- Performance overlay: glass look, Inter font, 40 % opacity by default.
-
-**Settings**
-- Regrouped into clear sections per tab, codec under Video, nothing hidden behind "advanced" any more, GitHub / update links removed.
-- Duo tab: "New in Artemide Duo" with the new settings (overlay, gamepad cursor speed, shortcuts) plus a keyboard vibration slider (default 50 %).
+**Fixes & tweaks**
+- Host tabs, bottom bars and the detail buttons can't be selected with the stick; scrolling speeds up when holding the D-pad/stick and keeps working after touch input.
+- App detail: long names no longer push the buttons off screen.
+- Keyboard vibration now really vibrates (system clicks on devices without strength control).
+- Smoother pinch zoom on the keyboard/trackpad.
+- Darker background (less grey), accent sliders/checkboxes instead of purple.
+- Performance overlay: smaller, 25 % opacity, neutral glass without blue tint.
+- New launcher icon (Duo logo in Ion cyan).
