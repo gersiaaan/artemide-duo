@@ -1,6 +1,6 @@
 # Artemide Duo
 
-**Who needs a brand-new foldable iPhone when the Surface Duo is the perfect streaming client?**
+**Who needs a brand-new foldable iPhone Duo when the Surface Duo is the perfect streaming client?**
 Two screens, one hinge: your PC on the upper screen, a real keyboard and trackpad on the lower one. Artemide Duo turns a Surface Duo into a pocket laptop for your gaming PC and your desktop.
 
 Artemide Duo is [Artemide](https://github.com/derflacco/moonlight-android) with a new interface, built from the ground up for **gamepad and touchscreen**. Every screen can be driven with a controller or by touch. The look is inspired by [StreamLight](https://github.com/FoggyBytes/StreamLight).
