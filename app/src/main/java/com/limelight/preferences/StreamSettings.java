@@ -662,6 +662,14 @@ public class StreamSettings extends AppCompatActivity {
             final boolean allowFastVsyncToggle = !balancedSelected;
 
 
+            // About: version, developer, year.
+            Preference about = findPreference("pref_duo_about");
+            if (about != null) {
+                String v = com.limelight.BuildConfig.VERSION_NAME;
+                int vi = v.lastIndexOf("Duo ");
+                about.setTitle("Artemide Duo " + (vi >= 0 ? "v" + v.substring(vi + 4) : v));
+                about.setSummary("Developed by Chang Cao, 2026");
+            }
             final Preference vsyncPref = findPreference("checkbox_Vsync");
             final Preference fastVsyncPref = findPreference("checkbox_fastVsync");
 

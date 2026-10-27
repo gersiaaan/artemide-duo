@@ -218,5 +218,6 @@
     </PreferenceCategory>
     <PreferenceCategory android:key="category_settings_misc" android:title="Other" app:iconSpaceReserved="false">
         <Preference android:key="pref_debug_info" android:summary="@string/summary_debug_info" android:title="@string/title_debug_info" app:iconSpaceReserved="false" />
+        <Preference android:key="pref_duo_about" android:title="Artemide Duo" android:summary="Chang Cao, 2026" android:selectable="false" app:iconSpaceReserved="false" />
     </PreferenceCategory>
 </PreferenceScreen>
