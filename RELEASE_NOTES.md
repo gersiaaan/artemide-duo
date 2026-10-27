@@ -1,3 +1,8 @@
+## Artemide Duo v0.29
+
+### Stream
+- Performance overlay: all text is centred in the box.
+
 ## Artemide Duo v0.28
 
 ### Keyboard
