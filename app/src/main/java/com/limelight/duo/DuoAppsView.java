@@ -497,7 +497,6 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(62));
         lp.topMargin = dp(5);
         r.setLayoutParams(lp);
-        DuoMotion.lift(r, 1.02f);
         DuoMotion.press(r);
         return r;
     }

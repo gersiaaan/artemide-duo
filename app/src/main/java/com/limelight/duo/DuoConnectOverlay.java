@@ -60,10 +60,9 @@ public final class DuoConnectOverlay extends FrameLayout {
         int cw = dp(118), ch = Math.round(cw * 1.41f);
         glow = new View(a);
         GradientDrawable g = new GradientDrawable();
-        g.setShape(GradientDrawable.RECTANGLE);
-        g.setCornerRadius(22 * d);
+        g.setShape(GradientDrawable.OVAL);
         g.setGradientType(GradientDrawable.RADIAL_GRADIENT);
-        g.setGradientRadius(cw * 0.95f);
+        g.setGradientRadius((cw + dp(70)) / 2f);
         g.setColors(new int[]{DuoTheme.withAlpha(accent, 0.55f), DuoTheme.withAlpha(accent, 0f)});
         glow.setBackground(g);
         stack.addView(glow, new FrameLayout.LayoutParams(cw + dp(70), ch + dp(70), Gravity.CENTER));
@@ -171,11 +170,11 @@ public final class DuoConnectOverlay extends FrameLayout {
         }
         PathInterpolator ease = new PathInterpolator(0.32f, 0.72f, 0f, 1f);
         if (connected) {
-            coverBox.animate().scaleX(7f).scaleY(7f).alpha(0f).setDuration(520)
+            coverBox.animate().scaleX(5f).scaleY(5f).alpha(0f).setDuration(720)
                     .setInterpolator(new PathInterpolator(0.55f, 0f, 0.8f, 0.4f)).start();
             glow.animate().scaleX(4f).scaleY(4f).alpha(0f).setDuration(420).start();
         }
-        animate().alpha(0f).setStartDelay(connected ? 160 : 0).setDuration(connected ? 420 : 220)
+        animate().alpha(0f).setStartDelay(connected ? 220 : 0).setDuration(connected ? 620 : 320)
                 .setInterpolator(ease)
                 .withEndAction(() -> {
                     if (getParent() instanceof ViewGroup) {

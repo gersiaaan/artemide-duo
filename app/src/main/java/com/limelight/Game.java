@@ -4778,9 +4778,9 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         });
         content.setClipToOutline(true);
         content.animate()
-                .scaleX(0.82f).scaleY(0.82f)
+                .scaleX(0.9f).scaleY(0.9f)
                 .alpha(0f)
-                .setDuration(340)
+                .setDuration(520)
                 .setInterpolator(new android.view.animation.PathInterpolator(0.32f, 0.72f, 0f, 1f))
                 .withEndAction(() -> {
                     finish();

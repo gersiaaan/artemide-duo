@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Launcher icon: the Duo logo (play on a display) in Ion cyan, inside the adaptive-icon safe zone. -->
-<inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/ic_duo_logo_launcher"
-    android:inset="28%" />
+<!-- The original Artemide logo, coloured in Ion cyan for the Duo build. -->
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+    android:src="@mipmap/ic_launcher_foreground"
+    android:tint="#FF00D3F2"
+    android:gravity="fill" />

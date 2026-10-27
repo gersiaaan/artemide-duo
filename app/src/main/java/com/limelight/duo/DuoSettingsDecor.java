@@ -91,7 +91,6 @@ public final class DuoSettingsDecor {
         row.setBackground(groupedBackground(accent, d, first, last));
         if (row.getTag(R.id.duo_row) == null) {
             row.setTag(R.id.duo_row, Boolean.TRUE);
-            DuoMotion.lift(row, 1.015f);
             DuoMotion.press(row);
         }
         View title = row.findViewById(android.R.id.title);

@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Screen behind steps back a little and dims away. -->
 <set xmlns:android="http://schemas.android.com/apk/res/android"
-    android:interpolator="@android:interpolator/decelerate_cubic" android:duration="340">
-    <scale android:fromXScale="1" android:toXScale="1.04" android:fromYScale="1" android:toYScale="1.04"
+    android:interpolator="@android:interpolator/fast_out_slow_in" android:duration="480">
+    <scale android:fromXScale="1" android:toXScale="1.02" android:fromYScale="1" android:toYScale="1.02"
         android:pivotX="50%" android:pivotY="50%" />
-    <alpha android:fromAlpha="1" android:toAlpha="0" />
+    <alpha android:startOffset="80" android:duration="400" android:fromAlpha="1" android:toAlpha="0" />
 </set>

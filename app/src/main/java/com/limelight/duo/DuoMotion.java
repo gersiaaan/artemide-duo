@@ -24,6 +24,23 @@ public final class DuoMotion {
 
     /** Focused: lifts a little (scale + shadow) like tvOS; unfocused: settles back. Keeps an existing listener. */
     public static void lift(View v, float scale) {
+        // Let the lifted view grow past its parents instead of being cut off.
+        v.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            @Override
+            public void onViewAttachedToWindow(View view) {
+                android.view.ViewParent p = view.getParent();
+                for (int i = 0; i < 3 && p instanceof ViewGroup; i++, p = p.getParent()) {
+                    if (p instanceof android.widget.ScrollView || p instanceof androidx.recyclerview.widget.RecyclerView) {
+                        break;
+                    }
+                    ((ViewGroup) p).setClipChildren(false);
+                    ((ViewGroup) p).setClipToPadding(false);
+                }
+            }
+
+            @Override
+            public void onViewDetachedFromWindow(View view) {}
+        });
         final View.OnFocusChangeListener old = v.getOnFocusChangeListener();
         v.setOnFocusChangeListener((view, has) -> {
             float d = view.getResources().getDisplayMetrics().density;
