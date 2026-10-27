@@ -688,7 +688,12 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
             coverBox.animate().scaleX(1f).scaleY(1f).setDuration(460).setInterpolator(DuoMotion.EASE).start();
             DuoMotion.fadeIn(bigName, 380);
             // Backdrop: dissolve to the new cover.
-            if (c != null) {
+            boolean isGame = c != null && !DuoPlayStats.isApp(getContext(), c.uuid, a.id, a.name);
+            if (!isGame) {
+                // Apps (Desktop, Remote …): no cover backdrop, just the waves.
+                backA.animate().alpha(0f).setDuration(600).start();
+                backB.animate().alpha(0f).setDuration(600).start();
+            } else {
                 ImageView next = backFlip ? backA : backB;
                 ImageView prev = backFlip ? backB : backA;
                 backFlip = !backFlip;
@@ -778,8 +783,9 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         s.addState(new int[]{android.R.attr.state_selected}, focused);
         s.addState(new int[]{android.R.attr.state_pressed}, rounded(0x14FFFFFF, 0, 10));
         s.addState(new int[]{}, rounded(0, 0, 10));
-        s.setEnterFadeDuration(140);
-        s.setExitFadeDuration(180);
+        // The blue focus ring glides from row to row (fades in on the new, out on the old).
+        s.setEnterFadeDuration(220);
+        s.setExitFadeDuration(320);
         return s;
     }
 

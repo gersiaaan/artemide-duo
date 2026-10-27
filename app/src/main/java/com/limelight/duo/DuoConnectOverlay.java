@@ -86,6 +86,12 @@ public final class DuoConnectOverlay extends FrameLayout {
             DuoCovers.into(a, pcUuid, appId, iv, ph, cw);
         }
         stack.addView(coverBox, new FrameLayout.LayoutParams(cw, ch, Gravity.CENTER));
+        // The cover zooms far beyond its box when the stream starts: never clip it.
+        stack.setClipChildren(false);
+        stack.setClipToPadding(false);
+        col.setClipChildren(false);
+        col.setClipToPadding(false);
+        setClipChildren(false);
         col.addView(stack, new LinearLayout.LayoutParams(cw + dp(70), ch + dp(70)));
 
         TextView name = new TextView(a);
