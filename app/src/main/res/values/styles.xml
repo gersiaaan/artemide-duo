@@ -26,6 +26,15 @@
         <item name="android:navigationBarColor">#000000</item>
         <item name="android:colorBackground">#000000</item>
         <item name="android:windowBackground">#000000</item>
+        <!-- Duo: zoom/fade between all screens (host, apps, settings, profiles …) -->
+        <item name="android:windowAnimationStyle">@style/DuoWindowAnim</item>
+    </style>
+
+    <style name="DuoWindowAnim" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/duo_open_enter</item>
+        <item name="android:activityOpenExitAnimation">@anim/duo_open_exit</item>
+        <item name="android:activityCloseEnterAnimation">@anim/duo_close_enter</item>
+        <item name="android:activityCloseExitAnimation">@anim/duo_close_exit</item>
     </style>
 
     <style name="StreamBaseTheme" parent="AppBaseTheme">
@@ -54,6 +63,7 @@
 
     <style name="SettingsTheme" parent="Theme.AppCompat.NoActionBar">
         <item name="preferenceTheme">@style/DuoPreferenceTheme</item>
+        <item name="android:windowAnimationStyle">@style/DuoWindowAnim</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:colorBackground">@android:color/transparent</item>
