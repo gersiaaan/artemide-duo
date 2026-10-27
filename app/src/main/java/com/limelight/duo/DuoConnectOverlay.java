@@ -46,6 +46,8 @@ public final class DuoConnectOverlay extends FrameLayout {
         accent = DuoTheme.accent(a);
         setBackgroundColor(DuoTheme.FLOOR);
         setClickable(true);
+        // Never takes key focus: controller shortcuts keep working while connecting.
+        setFocusable(false);
         setElevation(100 * d);
         addView(new DuoWavesView(a, true), new LayoutParams(-1, -1));
 

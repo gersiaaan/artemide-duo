@@ -103,6 +103,7 @@ public class DuoController {
 
         DuoBridge.setSink(sink);
         DuoGamepadMouse.init(activity, desktopApp, sink);
+        DuoBridge.setStreamActivity(activity);
         DuoBridge.setPanelListener(() -> root.post(this::updateToggleButton));
 
         panel = new DuoInputPanel(activity, sink, null);
@@ -180,6 +181,7 @@ public class DuoController {
         DuoBridge.closePanel();
         DuoBridge.setSink(null);
         DuoGamepadMouse.end();
+        DuoBridge.setStreamActivity(null);
     }
 
     /** The stream button is hidden while split or while the panel is open on the other screen. */

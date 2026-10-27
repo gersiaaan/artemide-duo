@@ -153,6 +153,31 @@ public class DuoPanelActivity extends Activity {
         super.onDestroy();
     }
 
+    private static boolean fromPad(android.view.InputDevice dev, int source) {
+        int s = dev != null ? dev.getSources() : source;
+        return (s & android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD
+                || (s & android.view.InputDevice.SOURCE_JOYSTICK) == android.view.InputDevice.SOURCE_JOYSTICK;
+    }
+
+    /** If this screen ever has focus, the controller still goes to the stream (shortcuts included). */
+    @Override
+    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
+        Activity game = DuoBridge.getStreamActivity();
+        if (game != null && !game.isFinishing() && fromPad(event.getDevice(), event.getSource())) {
+            return game.dispatchKeyEvent(event);
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
+    @Override
+    public boolean dispatchGenericMotionEvent(android.view.MotionEvent event) {
+        Activity game = DuoBridge.getStreamActivity();
+        if (game != null && !game.isFinishing() && fromPad(event.getDevice(), event.getSource())) {
+            return game.dispatchGenericMotionEvent(event);
+        }
+        return super.dispatchGenericMotionEvent(event);
+    }
+
     /** Gboard needs a focused window; everything else works without focus. */
     void setTakesFocus(boolean focus) {
         Window w = getWindow();

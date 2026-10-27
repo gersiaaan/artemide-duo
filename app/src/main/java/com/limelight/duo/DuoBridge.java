@@ -31,6 +31,17 @@ public final class DuoBridge {
         sink = s;
     }
 
+    private static java.lang.ref.WeakReference<Activity> streamActivity;
+
+    /** The running stream, so the panel can hand controller input over to it. */
+    public static void setStreamActivity(Activity a) {
+        streamActivity = a == null ? null : new java.lang.ref.WeakReference<>(a);
+    }
+
+    static Activity getStreamActivity() {
+        return streamActivity == null ? null : streamActivity.get();
+    }
+
     public static DuoInputSink getSink() {
         return sink;
     }
