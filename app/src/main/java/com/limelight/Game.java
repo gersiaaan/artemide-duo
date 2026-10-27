@@ -3899,6 +3899,7 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                     spinner.setMessage(getResources().getString(R.string.conn_starting) + " " + stage);
                 }
                 if (duoConnect != null) {
+                    duoConnect.stageStarted();
                     duoConnect.setStage(getResources().getString(R.string.conn_starting) + " " + stage);
                 }
             }

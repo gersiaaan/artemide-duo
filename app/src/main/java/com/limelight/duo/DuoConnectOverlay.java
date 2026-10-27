@@ -28,9 +28,16 @@ public final class DuoConnectOverlay extends FrameLayout {
     private final View glow;
     private final TextView stage;
     private final View bar;
+    private final TextView percent;
+    private final int trackW;
     private ObjectAnimator pulse;
     private ValueAnimator barAnim;
     private boolean gone;
+    // Progress 0..1: shown value glides towards the target; a slow creep keeps it alive
+    // while a step takes long (app launch on the PC).
+    private float shown, target, ceiling;
+    private int stages;
+    private static final int STAGE_COUNT = 11; // moonlight-common-c connection stages
 
     public static DuoConnectOverlay show(Activity a, String appName, String pcName, String pcUuid, int appId) {
         ViewGroup root = a.findViewById(android.R.id.content);
@@ -124,12 +131,26 @@ public final class DuoConnectOverlay extends FrameLayout {
         track.setClipToOutline(true);
         bar = new View(a);
         GradientDrawable bb = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[]{DuoTheme.withAlpha(accent, 0f), accent, DuoTheme.withAlpha(accent, 0f)});
+                new int[]{DuoTheme.withAlpha(accent, 0.55f), accent});
+        bb.setCornerRadius(2 * d);
         bar.setBackground(bb);
-        track.addView(bar, new FrameLayout.LayoutParams(dp(60), -1));
-        LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(dp(160), dp(3));
-        tp.topMargin = dp(16);
+        trackW = dp(200);
+        bar.setPivotX(0f);
+        bar.setScaleX(0f);
+        track.addView(bar, new FrameLayout.LayoutParams(trackW, -1));
+        LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(trackW, dp(3));
+        tp.topMargin = dp(18);
         col.addView(track, tp);
+
+        percent = new TextView(a);
+        percent.setText("0 %");
+        percent.setTextColor(DuoTheme.TEXT2);
+        percent.setTextSize(10.5f);
+        percent.setTypeface(DuoFonts.medium());
+        percent.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(-2, -2);
+        pp.topMargin = dp(8);
+        col.addView(percent, pp);
     }
 
     private int dp(float v) {
@@ -137,57 +158,111 @@ public final class DuoConnectOverlay extends FrameLayout {
     }
 
     private void enter() {
-        coverBox.setScaleX(0.6f);
-        coverBox.setScaleY(0.6f);
+        // Calm entrance: the cover rises softly, the glow breathes slowly.
+        coverBox.setScaleX(0.86f);
+        coverBox.setScaleY(0.86f);
         coverBox.setAlpha(0f);
-        coverBox.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(620)
-                .setInterpolator(new OvershootInterpolator(1.4f)).start();
+        coverBox.setTranslationY(dp(10));
+        coverBox.animate().scaleX(1f).scaleY(1f).alpha(1f).translationY(0f).setDuration(900)
+                .setInterpolator(new PathInterpolator(0.22f, 1f, 0.36f, 1f)).start();
         glow.setAlpha(0f);
-        pulse = ObjectAnimator.ofFloat(glow, View.ALPHA, 0.35f, 1f);
-        pulse.setDuration(1100);
+        pulse = ObjectAnimator.ofFloat(glow, View.ALPHA, 0.45f, 0.85f);
+        pulse.setDuration(2200);
+        pulse.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
         pulse.setRepeatMode(ValueAnimator.REVERSE);
         pulse.setRepeatCount(ValueAnimator.INFINITE);
-        pulse.setStartDelay(300);
+        pulse.setStartDelay(500);
         pulse.start();
-        barAnim = ValueAnimator.ofFloat(-1f, 2.7f);
-        barAnim.setDuration(1300);
+        // Starting the app on the PC: up to 30 %.
+        target = 0.03f;
+        ceiling = 0.30f;
+        barAnim = ValueAnimator.ofFloat(0f, 1f);
+        barAnim.setDuration(1000);
         barAnim.setRepeatCount(ValueAnimator.INFINITE);
-        barAnim.addUpdateListener(v -> bar.setTranslationX((float) v.getAnimatedValue() * dp(60)));
+        barAnim.addUpdateListener(v -> tick());
         barAnim.start();
     }
 
+    /** Called every frame: creep towards the ceiling, glide the bar towards the target. */
+    private void tick() {
+        // Creep: a little closer to the current step's ceiling, slower and slower.
+        target += (ceiling - target) * 0.004f;
+        shown += (target - shown) * 0.08f;
+        bar.setScaleX(Math.max(0f, Math.min(1f, shown)));
+        percent.setText(Math.max(1, Math.min(100, Math.round(shown * 100))) + " %");
+    }
+
+    /** One connection stage started (11 in total, after the app launch). */
+    public void stageStarted() {
+        if (gone) {
+            return;
+        }
+        stages = Math.min(STAGE_COUNT, stages + 1);
+        target = Math.max(target, 0.30f + 0.65f * (stages - 1) / STAGE_COUNT);
+        ceiling = 0.30f + 0.65f * stages / STAGE_COUNT;
+    }
+
     public void setStage(String s) {
-        if (!gone && s != null) {
-            stage.setText(s);
+        if (!gone && s != null && !s.contentEquals(stage.getText())) {
+            stage.animate().cancel();
+            stage.animate().alpha(0.35f).setDuration(140).withEndAction(() -> {
+                stage.setText(s);
+                stage.animate().alpha(1f).setDuration(220).start();
+            }).start();
         }
     }
 
-    /** connected = zoom through into the stream; otherwise just fade (an error dialog follows). */
+    /** connected = fill to 100 %, then the cover glides towards you and dissolves into the stream. */
     public void dismiss(boolean connected) {
         if (gone) {
             return;
         }
         gone = true;
+        setClickable(false);
+        if (!connected) {
+            stopAnims();
+            animate().alpha(0f).setDuration(320).setInterpolator(DuoMotion.EASE)
+                    .withEndAction(this::remove).start();
+            return;
+        }
+        target = 1f;
+        ceiling = 1f;
+        ValueAnimator fill = ValueAnimator.ofFloat(shown, 1f);
+        fill.setDuration(320);
+        fill.setInterpolator(DuoMotion.EASE);
+        fill.addUpdateListener(v -> {
+            shown = (float) v.getAnimatedValue();
+            bar.setScaleX(shown);
+            percent.setText(Math.round(shown * 100) + " %");
+        });
+        if (barAnim != null) {
+            barAnim.cancel();
+        }
+        fill.start();
+        postDelayed(() -> {
+            stopAnims();
+            // Relaxed zoom: grows to 1.6× (never past the screen edges) while fading.
+            PathInterpolator ease = new PathInterpolator(0.32f, 0.72f, 0f, 1f);
+            coverBox.animate().scaleX(1.6f).scaleY(1.6f).alpha(0f).setDuration(900)
+                    .setInterpolator(ease).start();
+            glow.animate().scaleX(1.8f).scaleY(1.8f).alpha(0f).setDuration(700).setInterpolator(ease).start();
+            animate().alpha(0f).setStartDelay(260).setDuration(760).setInterpolator(ease)
+                    .withEndAction(this::remove).start();
+        }, 360);
+    }
+
+    private void stopAnims() {
         if (pulse != null) {
             pulse.cancel();
         }
         if (barAnim != null) {
             barAnim.cancel();
         }
-        PathInterpolator ease = new PathInterpolator(0.32f, 0.72f, 0f, 1f);
-        if (connected) {
-            coverBox.animate().scaleX(5f).scaleY(5f).alpha(0f).setDuration(720)
-                    .setInterpolator(new PathInterpolator(0.55f, 0f, 0.8f, 0.4f)).start();
-            glow.animate().scaleX(4f).scaleY(4f).alpha(0f).setDuration(420).start();
+    }
+
+    private void remove() {
+        if (getParent() instanceof ViewGroup) {
+            ((ViewGroup) getParent()).removeView(this);
         }
-        animate().alpha(0f).setStartDelay(connected ? 220 : 0).setDuration(connected ? 620 : 320)
-                .setInterpolator(ease)
-                .withEndAction(() -> {
-                    if (getParent() instanceof ViewGroup) {
-                        ((ViewGroup) getParent()).removeView(this);
-                    }
-                })
-                .start();
-        setClickable(false);
     }
 }
