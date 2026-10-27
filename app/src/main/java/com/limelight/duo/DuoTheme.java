@@ -18,7 +18,7 @@ public final class DuoTheme {
     /** StreamLight's default "Ion". */
     public static final int DEFAULT_ACCENT = 0xFF00D3F2;
 
-    public static final int FLOOR = 0xFF151515;
+    public static final int FLOOR = 0xFF0E0F10; // darker top, less grey
     public static final int CARD = 0xFF0F1519;
     public static final int CARD_HIGH = 0xFF161F25;
     public static final int LINE = 0x14FFFFFF;
