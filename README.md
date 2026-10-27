@@ -26,7 +26,11 @@ The keyboard is the heart of Artemide Duo. It lives on the second screen, slides
 - Laptop gestures: tap = click, two fingers = scroll / right click, three fingers = drag, pinch = zoom.
 - Adjustable haptics.
 
+<sub>Screens are renders from the design files; the app on your device may differ in details.</sub>
+
 ## App overview
+
+![App overview](docs/media/app-list.png)
 
 ![App overview animation](docs/media/app-list-animation.gif)
 
