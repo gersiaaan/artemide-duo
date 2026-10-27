@@ -228,10 +228,9 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         });
         quitAllBtn.setFocusable(false);
         quitAllBtn.setVisibility(GONE);
-        LinearLayout.LayoutParams qp = new LinearLayout.LayoutParams(-2, -1);
-        qp.leftMargin = dp(8);
-        bottom.addView(quitAllBtn, qp);
+        // Right end of the bottom bar, like on the app list.
         bottom.addView(new View(context), new LinearLayout.LayoutParams(0, 1, 1f));
+        bottom.addView(quitAllBtn, new LinearLayout.LayoutParams(-2, -1));
 
         updateGlyphs();
         updateClock();
@@ -437,7 +436,8 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         primary.setOnClickListener(v -> host.open(c));
 
         if (quitAllBtn != null) {
-            boolean anyRunning = c.state == ComputerDetails.State.ONLINE;
+            // Only while a session is actually running on this PC.
+            boolean anyRunning = c.state == ComputerDetails.State.ONLINE && c.runningGameId != 0;
             quitAllBtn.setVisibility(anyRunning ? VISIBLE : GONE);
         }
 
