@@ -1,3 +1,8 @@
+## Artemide Duo v0.31
+
+### Host page
+- "Quit all sessions" sits at the right end of the bottom bar (like on the app list) and only shows while a session is running.
+
 ## Artemide Duo v0.30
 
 ### Stream
