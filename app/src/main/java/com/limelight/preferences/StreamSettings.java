@@ -175,6 +175,9 @@ public class StreamSettings extends AppCompatActivity {
 
         duoTabScroll = new android.widget.HorizontalScrollView(this);
         duoTabScroll.setHorizontalScrollBarEnabled(false);
+        // Tabs fade out softly at the left / right edge (seamless, no hard cut).
+        duoTabScroll.setHorizontalFadingEdgeEnabled(true);
+        duoTabScroll.setFadingEdgeLength(Math.round(48 * getResources().getDisplayMetrics().density));
         duoTabScroll.setFocusable(false);
         if (android.os.Build.VERSION.SDK_INT >= 26) {
             duoTabScroll.setDefaultFocusHighlightEnabled(false);
