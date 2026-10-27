@@ -344,8 +344,10 @@ public abstract class DuoTouchSurface extends View {
                 float dx = cx - lastCx;
                 float dy = cy - lastCy;
                 if (mode == Mode.PINCH) {
-                    zoom(span - lastSpan);
-                    lastSpan = span;
+                    // Smooth the finger distance so tiny jitters don't trigger zoom steps.
+                    float smooth = lastSpan + (span - lastSpan) * 0.5f;
+                    zoom(lastSpan, smooth, event.getEventTime());
+                    lastSpan = smooth;
                     lastCx = cx;
                     lastCy = cy;
                     break;
@@ -459,22 +461,31 @@ public abstract class DuoTouchSurface extends View {
         onCancelPress();
     }
 
-    private void zoom(float dSpan) {
-        if (sink == null) {
+    private long lastZoomStep;
+
+    private void zoom(float fromSpan, float toSpan, long now) {
+        if (sink == null || fromSpan <= 0 || toSpan <= 0) {
             return;
         }
-        // One full wheel notch per 70dp of finger spread; apart = zoom in.
-        // Only whole notches: browsers zoom one step per wheel event, however small,
-        // so fine-grained deltas made pinching far too jumpy.
-        zoomRem += dSpan / (70f * density);
-        while (zoomRem >= 1f) {
+        // Relative pinch (like a laptop trackpad): each ~11 % change of the finger distance is one
+        // zoom step, the same feel whether the fingers are close together or far apart.
+        zoomRem += (float) (Math.log(toSpan / fromSpan) / Math.log(1.11));
+        // Whole steps only (browsers zoom one level per wheel event), at most one per 45 ms so a
+        // quick pinch glides through the levels instead of jumping several at once.
+        if (now - lastZoomStep < 45) {
+            return;
+        }
+        if (zoomRem >= 1f) {
             sink.sendScroll((short) 120, (short) 0);
             zoomRem -= 1f;
-        }
-        while (zoomRem <= -1f) {
+            lastZoomStep = now;
+        } else if (zoomRem <= -1f) {
             sink.sendScroll((short) -120, (short) 0);
             zoomRem += 1f;
+            lastZoomStep = now;
         }
+        // Don't build up a backlog of steps that would fire after the fingers stop.
+        zoomRem = Math.max(-2f, Math.min(2f, zoomRem));
     }
 
     private void endPinch() {
