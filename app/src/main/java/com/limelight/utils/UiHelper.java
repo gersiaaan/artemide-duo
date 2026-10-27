@@ -251,6 +251,11 @@ public class UiHelper {
     }
 
     public static void displayVdisplayConfirmationDialog(Activity parent, ComputerDetails computer, final Runnable onYes, final Runnable onNo) {
+        // Duo: no "driver not ready" question, just proceed (same as pressing Proceed).
+        if (onYes != null) {
+            onYes.run();
+            return;
+        }
         String message = computer.vDisplaySupported ?
                 parent.getResources().getString(R.string.vdisplay_not_ready) :
                 parent.getResources().getString(R.string.vdisplay_not_supported);

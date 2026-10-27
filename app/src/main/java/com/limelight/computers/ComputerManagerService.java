@@ -47,7 +47,7 @@ public class ComputerManagerService extends Service {
     private static final int APPLIST_POLLING_PERIOD_MS = 30000;
     private static final int APPLIST_FAILED_POLLING_RETRY_MS = 2000;
     private static final int MDNS_QUERY_PERIOD_MS = 1000;
-    private static final int OFFLINE_POLL_TRIES = 3;
+    private static final int OFFLINE_POLL_TRIES = 6; // Duo: ride out short Wi-Fi hiccups / AP roaming instead of flashing OFFLINE
     private static final int INITIAL_POLL_TRIES = 2;
     private static final int EMPTY_LIST_THRESHOLD = 3;
     private static final int POLL_DATA_TTL_MS = 30000;
