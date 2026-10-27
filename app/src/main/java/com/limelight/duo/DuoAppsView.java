@@ -290,7 +290,6 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         });
         LinearLayout.LayoutParams b4 = new LinearLayout.LayoutParams(-2, -1);
         b4.leftMargin = dp(8);
-        bottom.addView(optionsButton, b4);
         // Favourite on / off for the selected app (X).
         favButton = button("Favourite", "X", false, v -> {
             App a = selectedApp();
@@ -300,7 +299,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         });
         LinearLayout.LayoutParams b5 = new LinearLayout.LayoutParams(-2, -1);
         b5.leftMargin = dp(8);
-        bottom.addView(favButton, b5);
+        bottom.addView(favButton, b4);
+        bottom.addView(optionsButton, b5);
         bottom.addView(new View(context), new LinearLayout.LayoutParams(0, 1, 1f));
         // Quit everything running on this PC (Menu ≡), no questions asked.
         quitAllButton = button("Quit all sessions", "≡", false, v -> host.quitAll());
@@ -526,6 +526,9 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         r.setSelected(a.id == selectedId);
         r.setFocusable(true);
         r.setClickable(true);
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            r.setDefaultFocusHighlightEnabled(false);
+        }
 
         FrameLayout thumb = new FrameLayout(getContext());
         thumb.setBackground(DuoCovers.placeholderBackground(accent, 5 * d));
@@ -556,7 +559,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(0, -2, 1f);
         tp.leftMargin = dp(12);
         r.addView(texts, tp);
-        TextView n = text(a.name, 14, DuoTheme.TEXT, false);
+        TextView n = text(a.name.trim(), 14, DuoTheme.TEXT, false);
         n.setSingleLine(true);
         n.setEllipsize(TextUtils.TruncateAt.END);
         texts.addView(n);
@@ -730,7 +733,12 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         for (App x : host.apps()) {
             anyRunning |= x.running;
         }
-        quitAllButton.setVisibility(anyRunning ? VISIBLE : GONE);
+        boolean terminate = false;
+        for (App x : host.apps()) {
+            terminate |= x.name.trim().equalsIgnoreCase("terminate");
+        }
+        boolean online = c != null && c.state == ComputerDetails.State.ONLINE;
+        quitAllButton.setVisibility(online && (anyRunning || terminate) ? VISIBLE : GONE);
         favButton.setEnabled(has);
         favButton.setAlpha(has ? 1f : 0.45f);
         if (has && c != null) {

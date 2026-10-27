@@ -130,7 +130,8 @@ public final class DuoPlayStats {
     private static final String[] APP_WORDS = {"desktop", "virtual display", "remote", "reboot", "restart",
             "shutdown", "shut down", "power off", "hibernate", "log off", "logoff", "sign out", "lock screen",
             "big picture", "playnite", "launcher", "explorer", "browser", "chrome", "firefox", "spotify",
-            "youtube", "netflix", "plex", "kodi", "vlc", "terminal", "powershell", "task manager", "discord"};
+            "youtube", "netflix", "plex", "kodi", "vlc", "terminal", "powershell", "task manager", "discord",
+            "terminate", "resume"};
 
     /** Game or app, honouring the choice made in "Game settings & type". */
     public static boolean isApp(Context c, String pcUuid, int appId, String name) {

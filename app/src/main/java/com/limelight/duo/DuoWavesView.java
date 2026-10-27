@@ -130,7 +130,7 @@ public class DuoWavesView extends View implements Choreographer.FrameCallback {
                 // (a white fill would wash the cover out).
                 int light = DuoTheme.mix(0xFFFFFFFF, accent, 0.55f);
                 fill.setColor(DuoTheme.withAlpha(light, fillAlpha[i] * 0.10f));
-                crest.setColor(DuoTheme.withAlpha(light, Math.min(0.6f, crestAlpha[i] * 1.5f + 0.12f)));
+                crest.setColor(DuoTheme.withAlpha(light, Math.min(0.22f, crestAlpha[i] * 0.8f + 0.03f)));
             } else {
                 fill.setColor(DuoTheme.withAlpha(accent, fillAlpha[i]));
                 crest.setColor(DuoTheme.withAlpha(accent, crestAlpha[i]));

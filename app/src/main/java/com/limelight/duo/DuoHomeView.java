@@ -438,7 +438,7 @@ public class DuoHomeView extends FrameLayout implements InputManager.InputDevice
         primary.setOnClickListener(v -> host.open(c));
 
         if (quitAllBtn != null) {
-            boolean anyRunning = c.state == ComputerDetails.State.ONLINE && c.runningGameId != 0;
+            boolean anyRunning = c.state == ComputerDetails.State.ONLINE;
             quitAllBtn.setVisibility(anyRunning ? VISIBLE : GONE);
         }
 

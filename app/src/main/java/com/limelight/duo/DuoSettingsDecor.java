@@ -89,6 +89,9 @@ public final class DuoSettingsDecor {
             last = idx == lastVis;
         }
         row.setBackground(groupedBackground(accent, d, first, last));
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            row.setDefaultFocusHighlightEnabled(false);
+        }
         if (row.getTag(R.id.duo_row) == null) {
             row.setTag(R.id.duo_row, Boolean.TRUE);
             DuoMotion.press(row);
@@ -206,12 +209,12 @@ public final class DuoSettingsDecor {
             normal = ld;
         }
         GradientDrawable ringFill = new GradientDrawable();
-        ringFill.setColor(card);
+        ringFill.setColor(DuoTheme.withAlpha(accent, 0.07f));
         ringFill.setCornerRadii(radii);
         GradientDrawable ring = new GradientDrawable();
         ring.setColor(0);
         ring.setCornerRadius(10 * d);
-        ring.setStroke(Math.round(2 * d), DuoTheme.focus(accent));
+        ring.setStroke(Math.round(1.5f * d), DuoTheme.focus(accent));
         LayerDrawable focused = new LayerDrawable(new android.graphics.drawable.Drawable[]{ringFill, ring});
         int ri = Math.round(4 * d);
         focused.setLayerInset(1, ri, Math.round(2 * d), ri, Math.round(2 * d));
