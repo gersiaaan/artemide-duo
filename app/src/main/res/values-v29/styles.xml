@@ -11,5 +11,12 @@
 
     <style name="SettingsTheme" parent="AppTheme">
         <item name="preferenceTheme">@style/DuoPreferenceTheme</item>
+        <!-- Duo cyan instead of Material's purple for checkboxes, sliders, radio buttons -->
+        <item name="colorPrimary">#FF00B8D4</item>
+        <item name="colorSecondary">#FF00B8D4</item>
+        <item name="colorAccent">#FF00B8D4</item>
+        <item name="colorControlActivated">#FF00B8D4</item>
+        <item name="android:colorAccent">#FF00B8D4</item>
+        <item name="android:colorControlActivated">#FF00B8D4</item>
     </style>
 </resources>

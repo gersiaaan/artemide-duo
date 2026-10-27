@@ -504,7 +504,7 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         cover.setForeground(rounded(0, DuoTheme.LINE, 12));
         cover.setClipToOutline(true);
         cover.setElevation(dp(10));
-        int cw = Math.round((landscape ? 124 : 92) * (scale > 1.15f ? 1.25f : 1.2f));
+        int cw = Math.round((landscape ? 124 : 92) * (scale > 1.15f ? 1.1f : 1.2f));
         LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(dp(cw), dp(cw * 1.41f));
         if (landscape) {
             cl.topMargin = dp(10);
@@ -532,7 +532,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
 
         bigName = text("", 19, DuoTheme.TEXT, true);
         bigName.setGravity(landscape ? Gravity.CENTER : Gravity.START);
-        bigName.setMaxLines(2);
+        // One line, so the buttons below never get pushed out of the screen.
+        bigName.setMaxLines(1);
         bigName.setEllipsize(TextUtils.TruncateAt.END);
         info.addView(bigName, new LinearLayout.LayoutParams(-1, -2));
 

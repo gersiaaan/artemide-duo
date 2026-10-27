@@ -103,6 +103,18 @@ public final class DuoSettingsDecor {
         pills.removeAllViews();
         pills.setVisibility(View.GONE);
 
+        // Sliders in the accent colour (no Material purple).
+        View sb = row.findViewById(androidx.preference.R.id.seekbar);
+        if (sb instanceof android.widget.SeekBar) {
+            android.content.res.ColorStateList cs = android.content.res.ColorStateList.valueOf(DuoTheme.focus(accent));
+            ((android.widget.SeekBar) sb).setProgressTintList(cs);
+            ((android.widget.SeekBar) sb).setThumbTintList(android.content.res.ColorStateList.valueOf(accent));
+            ((android.widget.SeekBar) sb).setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(0x40FFFFFF));
+        }
+        View sv = row.findViewById(androidx.preference.R.id.seekbar_value);
+        if (sv instanceof TextView) {
+            ((TextView) sv).setTextColor(accent);
+        }
         if (pref instanceof TwoStatePreference) {
             View cb = row.findViewById(android.R.id.checkbox);
             if (cb instanceof CheckBox) {

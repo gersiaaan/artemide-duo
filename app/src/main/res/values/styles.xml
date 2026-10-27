@@ -64,6 +64,14 @@
     <style name="SettingsTheme" parent="Theme.AppCompat.NoActionBar">
         <item name="preferenceTheme">@style/DuoPreferenceTheme</item>
         <item name="android:windowAnimationStyle">@style/DuoWindowAnim</item>
+        <!-- Duo cyan instead of Material's purple for checkboxes, sliders, radio buttons -->
+        <item name="colorPrimary">#FF00B8D4</item>
+        <item name="colorSecondary">#FF00B8D4</item>
+        <item name="colorAccent">#FF00B8D4</item>
+        <item name="colorControlActivated">#FF00B8D4</item>
+        <item name="android:colorAccent">#FF00B8D4</item>
+        <item name="android:colorControlActivated">#FF00B8D4</item>
+
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:colorBackground">@android:color/transparent</item>
@@ -80,8 +88,8 @@
     <!-- Surface Duo dialogs: black, slightly see-through, rounded, blue accent -->
     <style name="DuoAlertDialog" parent="@android:style/Theme.Material.Dialog.Alert">
         <item name="android:windowBackground">@drawable/duo_dialog_bg</item>
-        <item name="android:colorAccent">#FFA9C1F0</item>
-        <item name="android:colorControlActivated">#FFA9C1F0</item>
+        <item name="android:colorAccent">#FF00B8D4</item>
+        <item name="android:colorControlActivated">#FF00B8D4</item>
         <item name="android:textColorPrimary">#FFE6E8EB</item>
         <item name="android:textColorSecondary">#FFC4C8CE</item>
         <item name="android:backgroundDimAmount">0.35</item>
@@ -89,9 +97,9 @@
 
     <style name="DuoAlertDialog.Compat" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
         <item name="android:windowBackground">@drawable/duo_dialog_bg</item>
-        <item name="colorAccent">#FFA9C1F0</item>
-        <item name="android:colorAccent">#FFA9C1F0</item>
-        <item name="colorControlActivated">#FFA9C1F0</item>
+        <item name="colorAccent">#FF00B8D4</item>
+        <item name="android:colorAccent">#FF00B8D4</item>
+        <item name="colorControlActivated">#FF00B8D4</item>
         <item name="android:textColorPrimary">#FFE6E8EB</item>
         <item name="android:textColorSecondary">#FFC4C8CE</item>
         <item name="android:backgroundDimAmount">0.35</item>

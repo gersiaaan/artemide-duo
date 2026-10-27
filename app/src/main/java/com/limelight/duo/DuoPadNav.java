@@ -18,6 +18,7 @@ public final class DuoPadNav {
     private static int lastHatDir;
     private static java.lang.ref.WeakReference<View> lastFocus;
     private static long lastStickMove;
+    private static long stickHeldSince;
     private static final long STICK_REPEAT_MS = 220;
 
     /** D-pad key events. fallback gets focus first if nothing is focused yet. */
@@ -31,7 +32,12 @@ public final class DuoPadNav {
             default: return false;
         }
         if (e.getAction() == KeyEvent.ACTION_DOWN) {
-            move(root, dir, fallback);
+            // Held down: speeds up (1 → 2 → 3 rows per repeat) so long lists scroll quickly.
+            int r = e.getRepeatCount();
+            int steps = r > 14 ? 3 : r > 5 ? 2 : 1;
+            for (int i = 0; i < steps; i++) {
+                move(root, dir, fallback);
+            }
         }
         return true;
     }
@@ -59,9 +65,18 @@ public final class DuoPadNav {
         long now = SystemClock.uptimeMillis();
         if (stick == 0) {
             lastStickMove = 0;
-        } else if (now - lastStickMove > STICK_REPEAT_MS) {
-            lastStickMove = now;
-            move(root, stick, fallback);
+            stickHeldSince = 0;
+        } else {
+            if (stickHeldSince == 0) {
+                stickHeldSince = now;
+            }
+            // The longer the stick is held, the faster it repeats (220 ms → 60 ms).
+            long held = now - stickHeldSince;
+            long interval = Math.max(60, STICK_REPEAT_MS - held / 6);
+            if (now - lastStickMove > interval) {
+                lastStickMove = now;
+                move(root, stick, fallback);
+            }
         }
         return true;
     }
