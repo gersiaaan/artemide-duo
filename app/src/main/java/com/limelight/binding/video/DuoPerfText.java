@@ -39,13 +39,13 @@ public final class DuoPerfText {
 
     public static float opacity(Context c) {
         try {
-            return Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(c).getString(KEY_OPACITY, "40")) / 100f;
+            return Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(c).getString(KEY_OPACITY, "25")) / 100f;
         } catch (NumberFormatException e) {
-            return 0.40f;
+            return 0.25f;
         }
     }
 
-    private static final String DIM = "<font color='#B4BEC6'>";
+    private static final String DIM = "<font color='#C8C8C8'>";
     private static final String END = "</font>";
 
     static String build(Context c, VideoStats s, VideoStatsFps fps, float decodeMs, long rttInfo,

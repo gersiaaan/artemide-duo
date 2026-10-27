@@ -4657,7 +4657,7 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         fl.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
         performanceOverlayView.setLayoutParams(fl);
         android.widget.LinearLayout.LayoutParams lp = (android.widget.LinearLayout.LayoutParams) performanceOverlayBig.getLayoutParams();
-        lp.width = Math.round(255 * k * d);
+        lp.width = Math.round(232 * k * d);
         lp.gravity = Gravity.CENTER_HORIZONTAL;
         lp.leftMargin = 0;
         lp.setMarginStart(0);
@@ -4665,22 +4665,22 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         performanceOverlayBig.setLayoutParams(lp);
         performanceOverlayBig.setGravity(Gravity.START);
         performanceOverlayBig.setTypeface(com.limelight.duo.DuoFonts.regular());
-        performanceOverlayBig.setTextSize(10f * k);
+        performanceOverlayBig.setTextSize(9f * k);
         performanceOverlayBig.setLineSpacing(0, 1.12f);
         performanceOverlayBig.setTextColor(0xFFF8FBFC);
         performanceOverlayBig.setShadowLayer(2 * d, 0, 0.5f * d, 0x66000000);
         performanceOverlayBig.setSingleLine(false);
         performanceOverlayBig.setHorizontallyScrolling(false);
         int p = Math.round(8 * d);
-        performanceOverlayBig.setPadding(Math.round(11 * d), p, Math.round(11 * d), p);
+        performanceOverlayBig.setPadding(Math.round(9 * d), Math.round(6 * d), Math.round(9 * d), Math.round(6 * d));
         // Glass look: tinted see-through fill, light sheen from the top, bright hairline edge.
         int a = Math.round(com.limelight.binding.video.DuoPerfText.opacity(this) * 255);
         android.graphics.drawable.GradientDrawable tint = new android.graphics.drawable.GradientDrawable();
         tint.setCornerRadius(14 * d);
-        tint.setColor((a << 24) | 0x3A4C5A);
+        tint.setColor((a << 24) | 0x1C1C1E); // neutral glass, no blue
         android.graphics.drawable.GradientDrawable sheen = new android.graphics.drawable.GradientDrawable(
                 android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0x2EFFFFFF, 0x0DFFFFFF, 0x05FFFFFF});
+                new int[]{0x26FFFFFF, 0x0AFFFFFF, 0x03FFFFFF});
         sheen.setCornerRadius(14 * d);
         sheen.setStroke(Math.max(1, Math.round(d)), 0x40FFFFFF);
         performanceOverlayBig.setBackground(new android.graphics.drawable.LayerDrawable(
