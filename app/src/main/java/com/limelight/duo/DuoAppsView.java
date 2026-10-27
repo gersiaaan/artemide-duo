@@ -83,6 +83,8 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
     private int selectedId = -1;
     private boolean opened;
     private boolean staggered;
+    private ImageView backA, backB, coverGhost;
+    private boolean backFlip;
     private int shownDetailId = Integer.MIN_VALUE;
 
     private final TextView hostName, badge, clock, dateLine;
@@ -119,6 +121,27 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         setClickable(true);
 
         addView(new DuoWavesView(context, false), match());
+
+        // PlayStation-style backdrop: the selected cover, large, blurred and faint behind everything,
+        // cross-dissolving between two layers when the selection changes.
+        FrameLayout backdrop = new FrameLayout(context);
+        backA = new ImageView(context);
+        backB = new ImageView(context);
+        for (ImageView b : new ImageView[]{backA, backB}) {
+            b.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            b.setAlpha(0f);
+            backdrop.addView(b, match());
+        }
+        if (android.os.Build.VERSION.SDK_INT >= 31) {
+            backdrop.setRenderEffect(android.graphics.RenderEffect.createBlurEffect(40, 40,
+                    android.graphics.Shader.TileMode.CLAMP));
+        }
+        View scrim = new View(context);
+        scrim.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[]{DuoTheme.withAlpha(DuoTheme.FLOOR, 0.92f), DuoTheme.withAlpha(DuoTheme.FLOOR, 0.55f),
+                        DuoTheme.withAlpha(DuoTheme.FLOOR, 0.35f)}));
+        backdrop.addView(scrim, match());
+        addView(backdrop, match());
 
         LinearLayout content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
@@ -535,6 +558,11 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         bigCover = new ImageView(getContext());
         bigCover.setScaleType(ImageView.ScaleType.CENTER_CROP);
         cover.addView(bigCover, match());
+        // The previous cover, dissolving away on top of the new one (cross dissolve).
+        coverGhost = new ImageView(getContext());
+        coverGhost.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        coverGhost.setAlpha(0f);
+        cover.addView(coverGhost, match());
 
         LinearLayout info = new LinearLayout(getContext());
         info.setOrientation(LinearLayout.VERTICAL);
@@ -645,11 +673,33 @@ public class DuoAppsView extends FrameLayout implements InputManager.InputDevice
         if (newDetail) {
             // Cover, name and stats crossfade softly to the newly selected app.
             View coverBox = (View) bigCover.getParent();
-            DuoMotion.fadeIn(coverBox, 280);
-            coverBox.setScaleX(0.97f);
-            coverBox.setScaleY(0.97f);
-            coverBox.animate().scaleX(1f).scaleY(1f).setDuration(320).setInterpolator(DuoMotion.EASE).start();
-            DuoMotion.fadeIn(bigName, 260);
+            if (bigCover.getVisibility() == VISIBLE && bigCover.getDrawable() != null) {
+                // Cross dissolve: old cover on top fades out while the new one is already underneath.
+                coverGhost.animate().cancel();
+                coverGhost.setImageDrawable(bigCover.getDrawable());
+                coverGhost.setAlpha(1f);
+                coverGhost.animate().alpha(0f).setDuration(460)
+                        .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator()).start();
+            } else {
+                DuoMotion.fadeIn(coverBox, 380);
+            }
+            coverBox.setScaleX(0.985f);
+            coverBox.setScaleY(0.985f);
+            coverBox.animate().scaleX(1f).scaleY(1f).setDuration(460).setInterpolator(DuoMotion.EASE).start();
+            DuoMotion.fadeIn(bigName, 380);
+            // Backdrop: dissolve to the new cover.
+            if (c != null) {
+                ImageView next = backFlip ? backA : backB;
+                ImageView prev = backFlip ? backB : backA;
+                backFlip = !backFlip;
+                next.animate().cancel();
+                next.setAlpha(0f);
+                DuoCovers.into(getContext(), c.uuid, a.id, next, new View(getContext()), dp(240));
+                next.animate().alpha(0.32f).setDuration(700)
+                        .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator()).start();
+                prev.animate().alpha(0f).setDuration(700)
+                        .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator()).start();
+            }
         }
         ((TextView) playButton.getTag()).setText(a.running ? "Resume" : "Open");
         long ms = c == null ? 0 : DuoPlayStats.time(getContext(), c.uuid, a.id);

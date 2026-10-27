@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- New screen: very gentle grow (97 % → 100 %) with a long soft fade – seamless, not snappy. -->
-<set xmlns:android="http://schemas.android.com/apk/res/android"
-    android:interpolator="@android:interpolator/fast_out_slow_in" android:duration="480" android:zAdjustment="top">
-    <scale android:fromXScale="0.97" android:toXScale="1" android:fromYScale="0.97" android:toYScale="1"
+<!-- Cross dissolve (Premiere / PlayStation style): the new screen fades in over the old one,
+     with only a breath of zoom. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android" android:duration="560" android:zAdjustment="top">
+    <alpha android:interpolator="@android:interpolator/accelerate_decelerate" android:fromAlpha="0" android:toAlpha="1" />
+    <scale android:interpolator="@android:interpolator/fast_out_slow_in"
+        android:fromXScale="0.985" android:toXScale="1" android:fromYScale="0.985" android:toYScale="1"
         android:pivotX="50%" android:pivotY="50%" />
-    <alpha android:interpolator="@android:interpolator/decelerate_quad" android:fromAlpha="0" android:toAlpha="1" />
 </set>

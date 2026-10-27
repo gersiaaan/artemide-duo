@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<set xmlns:android="http://schemas.android.com/apk/res/android"
-    android:interpolator="@android:interpolator/fast_out_slow_in" android:duration="480">
-    <scale android:fromXScale="1.02" android:toXScale="1" android:fromYScale="1.02" android:toYScale="1"
+<set xmlns:android="http://schemas.android.com/apk/res/android" android:duration="560">
+    <alpha android:interpolator="@android:interpolator/accelerate_decelerate" android:fromAlpha="0" android:toAlpha="1" />
+    <scale android:interpolator="@android:interpolator/fast_out_slow_in"
+        android:fromXScale="1.008" android:toXScale="1" android:fromYScale="1.008" android:toYScale="1"
         android:pivotX="50%" android:pivotY="50%" />
-    <alpha android:interpolator="@android:interpolator/decelerate_quad" android:fromAlpha="0" android:toAlpha="1" />
 </set>
