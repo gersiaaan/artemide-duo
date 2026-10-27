@@ -4705,13 +4705,13 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         fl.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
         performanceOverlayView.setLayoutParams(fl);
         android.widget.LinearLayout.LayoutParams lp = (android.widget.LinearLayout.LayoutParams) performanceOverlayBig.getLayoutParams();
-        lp.width = Math.round(258 * k * d); // fits "Total · net · dec" on one line
+        lp.width = Math.round(222 * k * d); // narrow box, rows centred
         lp.gravity = Gravity.CENTER_HORIZONTAL;
         lp.leftMargin = 0;
         lp.setMarginStart(0);
         lp.topMargin = Math.round(10 * d);
         performanceOverlayBig.setLayoutParams(lp);
-        performanceOverlayBig.setGravity(Gravity.START);
+        performanceOverlayBig.setGravity(Gravity.CENTER);
         performanceOverlayBig.setTypeface(com.limelight.duo.DuoFonts.regular());
         performanceOverlayBig.setTextSize(9f * k);
         performanceOverlayBig.setLineSpacing(0, 1.12f);
