@@ -116,14 +116,20 @@ public class StreamSettings extends AppCompatActivity {
         UiHelper.setLocale(this);
 
         setContentView(R.layout.activity_stream_settings);
+        // Opens on the Duo tab the first time, afterwards on the tab (and row) used last.
+        duoTab = Math.max(0, Math.min(com.limelight.duo.DuoSettingsDecor.TABS.length - 1,
+                PreferenceManager.getDefaultSharedPreferences(this).getInt(KEY_LAST_TAB, 0)));
         buildDuoHeader();
+        duoRestoreRow();
 
 //        UiHelper.notifyNewRootView(this);
     }
 
     // ---------------- Artemide Duo: waves, header and tabs ----------------
 
-    static int duoTab = 1; // Video
+    static int duoTab = 0; // Duo (first time), then the last tab used
+    private static final String KEY_LAST_TAB = "duo_settings_tab";
+    private static final String KEY_LAST_POS = "duo_settings_pos";
     private final android.widget.TextView[] duoTabViews = new android.widget.TextView[com.limelight.duo.DuoSettingsDecor.TABS.length];
     private android.widget.HorizontalScrollView duoTabScroll;
 
@@ -298,6 +304,46 @@ public class StreamSettings extends AppCompatActivity {
         }
     }
 
+    /** Back on the row that was focused last time (same tab). */
+    private void duoRestoreRow() {
+        final int pos = PreferenceManager.getDefaultSharedPreferences(this).getInt(KEY_LAST_POS, -1);
+        if (pos < 0) {
+            return;
+        }
+        final android.view.View content = findViewById(android.R.id.content);
+        content.postDelayed(() -> {
+            if (prefsFragment == null || prefsFragment.getListView() == null) {
+                return;
+            }
+            androidx.recyclerview.widget.RecyclerView rv = prefsFragment.getListView();
+            if (rv.getAdapter() == null || pos >= rv.getAdapter().getItemCount()) {
+                return;
+            }
+            rv.scrollToPosition(pos);
+            rv.post(() -> {
+                androidx.recyclerview.widget.RecyclerView.ViewHolder h = rv.findViewHolderForAdapterPosition(pos);
+                if (h != null && h.itemView.isFocusable() && com.limelight.duo.DuoPadNav.hasGamepad()) {
+                    h.itemView.requestFocusFromTouch();
+                }
+            });
+        }, 250);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        int pos = -1;
+        if (prefsFragment != null && prefsFragment.getListView() != null) {
+            androidx.recyclerview.widget.RecyclerView rv = prefsFragment.getListView();
+            android.view.View f = rv.getFocusedChild();
+            if (f != null) {
+                pos = rv.getChildAdapterPosition(f);
+            }
+        }
+        PreferenceManager.getDefaultSharedPreferences(this).edit()
+                .putInt(KEY_LAST_TAB, duoTab).putInt(KEY_LAST_POS, pos).apply();
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -338,8 +384,29 @@ public class StreamSettings extends AppCompatActivity {
             if (old != duoTab && prefsFragment.getListView() != null) {
                 androidx.recyclerview.widget.RecyclerView rv = prefsFragment.getListView();
                 rv.scrollToPosition(0);
-                com.limelight.duo.DuoMotion.slideIn(rv, Integer.signum(duoTab - old));
-                rv.post(() -> com.limelight.duo.DuoMotion.stagger(rv, 10));
+                // Calm swap: the new tab glides in from its side, rows settle one after another.
+                float d = getResources().getDisplayMetrics().density;
+                int dir = Integer.signum(duoTab - old);
+                rv.animate().cancel();
+                rv.setAlpha(0f);
+                rv.setTranslationX(dir * 44 * d);
+                rv.animate().alpha(1f).translationX(0f).setDuration(520)
+                        .setInterpolator(com.limelight.duo.DuoMotion.EASE).start();
+                rv.post(() -> {
+                    int n = Math.min(rv.getChildCount(), 10);
+                    for (int i = 0; i < n; i++) {
+                        android.view.View c = rv.getChildAt(i);
+                        c.setAlpha(0f);
+                        c.setTranslationY(10 * d);
+                        c.animate().alpha(1f).translationY(0f).setStartDelay(60 + i * 40L).setDuration(420)
+                                .setInterpolator(com.limelight.duo.DuoMotion.EASE).start();
+                    }
+                    // The controller lands on the first setting of the new tab.
+                    android.view.View first = duoFirstRow();
+                    if (first != null && com.limelight.duo.DuoPadNav.hasGamepad()) {
+                        first.requestFocusFromTouch();
+                    }
+                });
             }
         }
     }
