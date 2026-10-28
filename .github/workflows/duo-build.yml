@@ -3,6 +3,7 @@ name: Artemide Duo APK
 on:
   push:
     branches: [duo]
+    paths-ignore: ["**.md"]
   workflow_dispatch:
 
 permissions:
