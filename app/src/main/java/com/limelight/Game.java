@@ -586,6 +586,7 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         // Listen for non-touch events on the game surface
         streamContainer = findViewById(R.id.streamContainer);
         streamContainer.init(this, prefConfig);
+        ((com.limelight.ui.StreamCornerMask) findViewById(R.id.streamCornerMask)).attach(streamContainer, prefConfig.width);
 
         streamContainer.setOnGenericMotionListener(this);
         streamContainer.setOnKeyListener(this);

@@ -23,6 +23,14 @@
     <requestFocus />
     </com.limelight.ui.StreamContainer>
 
+    <!-- Rounded stream corners like a macOS window (follows streamContainer). -->
+    <com.limelight.ui.StreamCornerMask
+        android:id="@+id/streamCornerMask"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="false"
+        android:focusable="false" />
+
     <!--
         Opt-in Android TV compatibility layer. Some TV firmware becomes unstable
         when the video SurfaceView is the only visible layer. Game controls its

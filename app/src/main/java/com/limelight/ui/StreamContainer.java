@@ -2,10 +2,6 @@ package com.limelight.ui;
 
 import android.content.Context;
 import android.graphics.PixelFormat;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
@@ -58,14 +54,6 @@ public class StreamContainer extends FrameLayout implements SurfaceHolder.Callba
     private boolean fillDisplay = false;
 
     private boolean isSurfaceReady = false;
-
-    // Rounded stream corners like a macOS window: black masks drawn over the video's corners.
-    // The radius is given in stream pixels (a macOS window corner on a 2x Retina desktop), so it
-    // scales with the stream and matches the window corners in the picture.
-    private static final float CORNER_RADIUS_STREAM_PX = 24f;
-    private final Paint cornerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Path cornerPath = new Path();
-    private int cornerPathWidth, cornerPathHeight;
 
     public StreamContainer(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -159,31 +147,6 @@ public class StreamContainer extends FrameLayout implements SurfaceHolder.Callba
         int childWidthMeasureSpec = MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.EXACTLY);
         int childHeightMeasureSpec = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.EXACTLY);
         measureChildren(childWidthMeasureSpec, childHeightMeasureSpec);
-    }
-
-    @Override
-    protected void dispatchDraw(Canvas canvas) {
-        super.dispatchDraw(canvas);
-        drawRoundedCorners(canvas);
-    }
-
-    private void drawRoundedCorners(Canvas canvas) {
-        int w = getWidth();
-        int h = getHeight();
-        if (w <= 0 || h <= 0 || prefConfig == null || prefConfig.width <= 0) {
-            return;
-        }
-        if (w != cornerPathWidth || h != cornerPathHeight) {
-            float r = CORNER_RADIUS_STREAM_PX * w / prefConfig.width;
-            cornerPath.reset();
-            cornerPath.setFillType(Path.FillType.EVEN_ODD);
-            cornerPath.addRect(0, 0, w, h, Path.Direction.CW);
-            cornerPath.addRoundRect(0, 0, w, h, r, r, Path.Direction.CW);
-            cornerPathWidth = w;
-            cornerPathHeight = h;
-        }
-        cornerPaint.setColor(Color.BLACK);
-        canvas.drawPath(cornerPath, cornerPaint);
     }
 
     public void setInputCallbacks(InputCallbacks callbacks) {

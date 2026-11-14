@@ -1,3 +1,8 @@
+## Artemide Duo v0.37
+
+### Stream
+- Rounded stream corners now really show: drawn by their own layer above the video (v0.35 painted them where the video covered them).
+
 ## Artemide Duo v0.36
 
 ### Microphone
