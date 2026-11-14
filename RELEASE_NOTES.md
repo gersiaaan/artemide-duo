@@ -1,3 +1,8 @@
+## Artemide Duo v0.36
+
+### Microphone
+- Automatic gain is off: no more pumped-up noise in pauses and less clipping when you speak loudly. MacShine now filters the noise with Apple's voice isolation and sets the level.
+
 ## Artemide Duo v0.35
 
 ### Stream

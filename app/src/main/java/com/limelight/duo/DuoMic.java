@@ -120,10 +120,12 @@ public final class DuoMic {
         int session = record.getAudioSessionId();
         AcousticEchoCanceler aec = AcousticEchoCanceler.isAvailable() ? AcousticEchoCanceler.create(session) : null;
         NoiseSuppressor ns = NoiseSuppressor.isAvailable() ? NoiseSuppressor.create(session) : null;
+        // Automatic gain stays off: it pumps up the noise in pauses and clips loud speech.
+        // The Mac filters the noise (voice isolation) and sets the level itself.
         AutomaticGainControl agc = AutomaticGainControl.isAvailable() ? AutomaticGainControl.create(session) : null;
         if (aec != null) aec.setEnabled(true);
         if (ns != null) ns.setEnabled(true);
-        if (agc != null) agc.setEnabled(true);
+        if (agc != null) agc.setEnabled(false);
 
         short[] frame = new short[FRAME_SAMPLES];
         boolean unsupported = false;
