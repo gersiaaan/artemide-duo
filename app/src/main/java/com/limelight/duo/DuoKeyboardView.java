@@ -614,7 +614,10 @@ public class DuoKeyboardView extends DuoTouchSurface {
             }
         }
 
-        if (phoneMode) {
+        if (split) {
+            canvas.drawText("Tap free space = click · swipe = mouse · 2 fingers: right click / scroll / zoom · 3 fingers: drag",
+                    getWidth() / 2f, keysBottom + 14 * density, hintPaint);
+        } else if (phoneMode) {
             canvas.drawText("Tap free space = click · swipe = mouse · 2 fingers: click / scroll / zoom · 3 fingers: right click / drag",
                     getWidth() / 2f, keysBottom + 14 * density, hintPaint);
         } else if (layout == LAYOUT_FULL) {
@@ -622,8 +625,15 @@ public class DuoKeyboardView extends DuoTouchSurface {
                     getWidth() / 2f, keysBottom + 14 * density, hintPaint);
         }
 
-        // Long-press popup above the key (Gboard style).
-        if (held != null && held.longLabel != null) {
+        // Long-press popup above the key (Gboard style). While it shows, the keyboard is lifted
+        // above the suggestion bar (a later sibling), so the popup is drawn in front of it.
+        // Only then: otherwise the transparent keyboard would take the suggestion bar's taps.
+        boolean popupShown = held != null && held.longLabel != null;
+        float wantZ = popupShown ? 1f : 0f;
+        if (getTranslationZ() != wantZ) {
+            post(() -> setTranslationZ(wantZ));
+        }
+        if (popupShown) {
             boolean upper = modState[VK_LSHIFT] > 0;
             String t = upper ? held.longLabel.toUpperCase() : held.longLabel;
             float w = Math.max(held.rect.width(), 48 * density);
@@ -916,12 +926,16 @@ public class DuoKeyboardView extends DuoTouchSurface {
 
     @Override
     protected void onTwoFingerTap() {
-        click(MouseButtonPacket.BUTTON_LEFT);
+        // Split (Keyboard 4): two thumbs tapping = right click, like a laptop trackpad.
+        click(split ? MouseButtonPacket.BUTTON_RIGHT : MouseButtonPacket.BUTTON_LEFT);
     }
 
     @Override
     protected void onThreeFingerTap() {
-        click(MouseButtonPacket.BUTTON_RIGHT);
+        // Split: three fingers only drag, a tap does nothing.
+        if (!split) {
+            click(MouseButtonPacket.BUTTON_RIGHT);
+        }
     }
 
     private void click(byte button) {

@@ -1,3 +1,12 @@
+## Artemide Duo v0.35
+
+### Stream
+- Rounded stream corners like a macOS window, edge to edge: the corners scale with the stream, so they match the window corners in the picture.
+
+### Keyboard
+- Long-press popup (ä, ö, ü …) now shows in front of the suggestion bar instead of behind it.
+- Split (Keyboard 4): two-finger tap = right click, three fingers only drag; hint text updated.
+
 ## Artemide Duo v0.34
 
 ### Microphone
