@@ -1,3 +1,9 @@
+## Artemide Duo v0.39
+
+### Stream
+- When a stream ends (you quit, or the host ends or drops it), Artemide goes straight back to the overview, without the "Connection terminated / error code" dialog. A dialog only shows when a stream never worked (blocked ports, no video).
+- Rounded corners: the radius now follows the stream view's width, so they also show with native resolution (where they stayed invisible before).
+
 ## Artemide Duo v0.38
 
 ### Microphone

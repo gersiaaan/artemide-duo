@@ -3,4 +3,4 @@
 ## Offen
 
 ## Letzter Build
-- v0.38
+- v0.39

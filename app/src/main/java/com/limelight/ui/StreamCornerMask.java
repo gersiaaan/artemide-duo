@@ -11,16 +11,16 @@ import android.view.View;
 /**
  * Rounded stream corners like a macOS window. A transparent view above the stream that paints
  * black over the four corners of the video, following the stream container's position and size.
- * It never takes touches. The radius is given in stream pixels (a macOS window corner on a 2x
- * Retina desktop), so it scales with the stream and matches the window corners in the picture.
+ * It never takes touches. The radius is a fixed share of the stream's width, so it scales with the
+ * stream and matches the window corners in the picture.
  */
 public class StreamCornerMask extends View {
-    private static final float CORNER_RADIUS_STREAM_PX = 24f;
+    // A macOS window corner (about 12 pt on a 2x Retina desktop) is ~1.35 % of a 1800 px wide stream.
+    private static final float CORNER_RADIUS_FRACTION_OF_WIDTH = 24f / 1800f;
 
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path path = new Path();
     private View target;
-    private int streamWidth;
 
     public StreamCornerMask(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -30,10 +30,9 @@ public class StreamCornerMask extends View {
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
     }
 
-    /** Follows {@code view} (a sibling) and rounds its corners; {@code streamWidth} is the stream's width in pixels. */
-    public void attach(View view, int streamWidth) {
+    /** Follows {@code view} (a sibling) and rounds its corners. */
+    public void attach(View view) {
         this.target = view;
-        this.streamWidth = streamWidth;
         view.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> invalidate());
         invalidate();
     }
@@ -41,7 +40,7 @@ public class StreamCornerMask extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (target == null || streamWidth <= 0 || target.getVisibility() != VISIBLE) {
+        if (target == null || target.getVisibility() != VISIBLE) {
             return;
         }
         float left = target.getX();
@@ -51,7 +50,7 @@ public class StreamCornerMask extends View {
         if (w <= 0 || h <= 0) {
             return;
         }
-        float r = CORNER_RADIUS_STREAM_PX * w / streamWidth;
+        float r = CORNER_RADIUS_FRACTION_OF_WIDTH * w;
         path.reset();
         path.setFillType(Path.FillType.EVEN_ODD);
         path.addRect(left, top, left + w, top + h, Path.Direction.CW);

@@ -586,7 +586,7 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         // Listen for non-touch events on the game surface
         streamContainer = findViewById(R.id.streamContainer);
         streamContainer.init(this, prefConfig);
-        ((com.limelight.ui.StreamCornerMask) findViewById(R.id.streamCornerMask)).attach(streamContainer, prefConfig.width);
+        ((com.limelight.ui.StreamCornerMask) findViewById(R.id.streamCornerMask)).attach(streamContainer);
 
         streamContainer.setOnGenericMotionListener(this);
         streamContainer.setOnKeyListener(this);
@@ -4076,9 +4076,13 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
                     LimeLog.severe("Connection terminated: " + errorCode);
                     stopConnection();
 
-                    // Display the error dialog if it was an unexpected termination.
-                    // Otherwise, just finish the activity immediately.
-                    if (errorCode != MoonBridge.ML_ERROR_GRACEFUL_TERMINATION) {
+                    // Duo: a stream that ends (quit here, or ended or dropped by the host) goes straight
+                    // back to the overview. A dialog only explains streams that never worked: blocked
+                    // ports or no video at all.
+                    boolean blocked = portTestResult != MoonBridge.ML_TEST_RESULT_INCONCLUSIVE && portTestResult != 0;
+                    boolean neverWorked = errorCode == MoonBridge.ML_ERROR_NO_VIDEO_TRAFFIC
+                            || errorCode == MoonBridge.ML_ERROR_NO_VIDEO_FRAME;
+                    if (errorCode != MoonBridge.ML_ERROR_GRACEFUL_TERMINATION && (blocked || neverWorked)) {
                         String message;
 
                         if (portTestResult != MoonBridge.ML_TEST_RESULT_INCONCLUSIVE && portTestResult != 0) {
