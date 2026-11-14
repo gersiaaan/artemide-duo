@@ -363,6 +363,9 @@ public class MoonBridge {
 
     public static native boolean startMicrophone(int bitrate);
 
+    /** Whether the host reported a locked screen (MacShine extension; false for other hosts). */
+    public static native boolean isHostScreenLocked();
+
     /** One 20 ms frame of 960 mono 48 kHz samples. Returns 0, or a negative error (-5501 = unsupported). */
     public static native int sendMicrophoneFrame(short[] pcm);
 

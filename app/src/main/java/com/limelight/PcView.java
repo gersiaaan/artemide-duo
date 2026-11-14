@@ -548,6 +548,11 @@ public class PcView extends AppCompatActivity implements AdapterFragmentCallback
     protected void onResume() {
         super.onResume();
 
+        // Back from another app while a stream was running: open the stream again, not the overview.
+        if (com.limelight.duo.DuoResume.resumeFrom(this)) {
+            return;
+        }
+
         // Display a decoder crash notification if we've returned after a crash
         UiHelper.showDecoderCrashDialog(this);
 

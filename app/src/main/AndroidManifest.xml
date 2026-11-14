@@ -243,6 +243,10 @@
             android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
 
         <service
+            android:name=".duo.DuoResume$TaskWatcher"
+            android:exported="false"
+            android:stopWithTask="false" />
+        <service
             android:name=".discovery.DiscoveryService"
             android:label="mDNS PC Auto-Discovery Service" />
         <service

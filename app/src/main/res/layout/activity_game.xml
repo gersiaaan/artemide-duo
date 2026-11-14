@@ -31,6 +31,12 @@
         android:clickable="false"
         android:focusable="false" />
 
+    <!-- PIN pad beside the login while the host is locked (MacShine). -->
+    <com.limelight.duo.DuoPinPad
+        android:id="@+id/duoPinPad"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <!--
         Opt-in Android TV compatibility layer. Some TV firmware becomes unstable
         when the video SurfaceView is the only visible layer. Game controls its

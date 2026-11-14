@@ -587,6 +587,8 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
         streamContainer = findViewById(R.id.streamContainer);
         streamContainer.init(this, prefConfig);
         ((com.limelight.ui.StreamCornerMask) findViewById(R.id.streamCornerMask)).attach(streamContainer);
+        duoPinPad = findViewById(R.id.duoPinPad);
+        duoPinPad.attach(streamContainer, createDuoInputSink());
 
         streamContainer.setOnGenericMotionListener(this);
         streamContainer.setOnKeyListener(this);
@@ -2084,6 +2086,7 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
 
             @Override
             public void disconnect() {
+        com.limelight.duo.DuoResume.clear();
                 runOnUiThread(Game.this::disconnect);
             }
 
@@ -2139,6 +2142,11 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
 
     @Override
     protected void onStop() {
+        // Left while streaming (another app on top), not ended by the user or the host: come back to it.
+        if (connected && !isFinishing() && !duoClosing && !quitOnStop) {
+            com.limelight.duo.DuoResume.remember(getIntent());
+        }
+
         if (duoController != null) {
             duoController.stop();
         }
@@ -4185,6 +4193,9 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
 
                 connected = true;
                 connecting = false;
+                lockPollHandler.removeCallbacks(lockPoll);
+                lockPollHandler.post(lockPoll);
+                com.limelight.duo.DuoResume.watchTask(Game.this);
                 updatePipAutoEnter();
                 // Ensure frame-rate hint is applied when streaming starts (some devices need a re-apply)
                 applySurfaceFrameRateHintIfPossible();
@@ -4790,6 +4801,21 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
     }
 
     private boolean duoClosing;
+
+    private com.limelight.duo.DuoPinPad duoPinPad;
+    private final Handler lockPollHandler = new Handler(Looper.getMainLooper());
+    /** Shows the PIN pad while the host (MacShine) reports a locked screen. */
+    private final Runnable lockPoll = new Runnable() {
+        @Override
+        public void run() {
+            if (duoPinPad != null) {
+                duoPinPad.setLocked(connected && MoonBridge.isHostScreenLocked());
+            }
+            if (connected) {
+                lockPollHandler.postDelayed(this, 400);
+            }
+        }
+    };
 
     public void disconnect() {
         if (prefConfig.smartClipboardSync) {

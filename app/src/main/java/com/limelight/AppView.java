@@ -438,6 +438,11 @@ public class AppView extends AppCompatActivity implements AdapterFragmentCallbac
     protected void onResume() {
         super.onResume();
 
+        // Back from another app while a stream was running: open the stream again, not the overview.
+        if (com.limelight.duo.DuoResume.resumeFrom(this)) {
+            return;
+        }
+
         if (duoStreamStarted) {
             // Session closed: back to the host overview.
             duoStreamStarted = false;

@@ -19,6 +19,11 @@ Java_com_limelight_nvstream_jni_MoonBridge_isMicrophoneSupported(JNIEnv *env, jc
 }
 
 JNIEXPORT jboolean JNICALL
+Java_com_limelight_nvstream_jni_MoonBridge_isHostScreenLocked(JNIEnv *env, jclass clazz) {
+    return LiGetHostScreenLocked() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL
 Java_com_limelight_nvstream_jni_MoonBridge_startMicrophone(JNIEnv *env, jclass clazz, jint bitrate) {
     int err;
 

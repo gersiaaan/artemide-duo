@@ -1,3 +1,12 @@
+## Artemide Duo v0.40
+
+### Stream
+- Rounded corners in Apple style: continuous (squircle) corners instead of quarter circles, so the edge flows into the curve like a macOS window.
+- Back to the stream instead of the overview: if Artemide was left while streaming (another app on top, Claude swiped up over it), returning to Artemide opens the stream again right away. Swiping Artemide away in the recent apps ends it for good.
+
+### Lock screen
+- PIN pad on the lock screen: while the Mac is locked (MacShine tells Artemide), a small number pad floats to the right of the login, as wide as the password field. Digits, ⌫ and ↵ go straight to the Mac; the pad disappears once it is unlocked. Needs the latest MacShine.
+
 ## Artemide Duo v0.39
 
 ### Stream
