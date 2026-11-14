@@ -1,3 +1,8 @@
+## Artemide Duo v0.38
+
+### Microphone
+- Stream sound no longer gets thin or clipped while the microphone is on: the Duo records without switching into call mode. Noise filtering is done on the Mac (Apple voice isolation).
+
 ## Artemide Duo v0.37
 
 ### Stream

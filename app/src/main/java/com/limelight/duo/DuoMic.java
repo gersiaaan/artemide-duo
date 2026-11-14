@@ -25,8 +25,8 @@ import com.limelight.nvstream.jni.MoonBridge;
  * Sends the Duo's microphone to the host while a stream runs (MacShine extension).
  * The host plays it into its "MacShine" input device, so apps on the Mac (Claude, Zoom, ...) hear the Duo.
  *
- * Audio: 48 kHz mono, 20 ms frames, Opus with in-band FEC, voice-call source with echo
- * cancellation so the stream audio from the speaker does not loop back.
+ * Audio: 48 kHz mono, 20 ms frames, Opus with in-band FEC, speech-recognition source (no call
+ * mode, so the stream's sound stays untouched); the Mac filters the voice with Apple's voice isolation.
  */
 public final class DuoMic {
     private DuoMic() {}
@@ -94,7 +94,10 @@ public final class DuoMic {
         int minBuffer = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
         final AudioRecord record;
         try {
-            record = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION, SAMPLE_RATE,
+            // VOICE_RECOGNITION, not VOICE_COMMUNICATION: the voice-call source switches Android into
+            // call mode, which runs the stream's sound through call processing (thin, pumping,
+            // clipping). The Mac cleans the voice up itself (Apple voice isolation).
+            record = new AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, SAMPLE_RATE,
                     AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT,
                     Math.max(minBuffer, FRAME_SAMPLES * 2 * 4));
         } catch (RuntimeException e) {
@@ -124,7 +127,7 @@ public final class DuoMic {
         // The Mac filters the noise (voice isolation) and sets the level itself.
         AutomaticGainControl agc = AutomaticGainControl.isAvailable() ? AutomaticGainControl.create(session) : null;
         if (aec != null) aec.setEnabled(true);
-        if (ns != null) ns.setEnabled(true);
+        if (ns != null) ns.setEnabled(false);
         if (agc != null) agc.setEnabled(false);
 
         short[] frame = new short[FRAME_SAMPLES];
