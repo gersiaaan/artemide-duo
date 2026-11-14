@@ -128,6 +128,19 @@ public class DuoInputPanel extends LinearLayout implements DuoBridge.SpeedListen
         });
         addBarView(bar, perf, dp(44), true);
 
+        // Microphone to the host (MacShine): grey = off, green = the Mac hears the Duo.
+        final ImageButton mic = iconButton(context.getDrawable(R.drawable.ic_duo_mic), "Microphone to the host on/off");
+        final Runnable paintMic = () -> mic.setImageDrawable(context.getDrawable(
+                DuoMic.isOn() ? R.drawable.ic_duo_mic_on : R.drawable.ic_duo_mic));
+        mic.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            DuoMic.toggle(getContext());
+            paintMic.run();
+        });
+        paintMic.run();
+        DuoMic.setListener(paintMic);
+        addBarView(bar, mic, dp(44), true);
+
         // Controller mode for desktop / remote streams: G = gamepad, D = desktop (mouse).
         if (DuoGamepadMouse.available()) {
             FrameLayout pad = new FrameLayout(context);

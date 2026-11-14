@@ -1,3 +1,4 @@
 [submodule "app/src/main/jni/moonlight-core/moonlight-common-c"]
 	path = app/src/main/jni/moonlight-core/moonlight-common-c
-	url = https://github.com/derflacco/moonlight-common-c
+	url = https://github.com/gersiaaan/moonlight-common-c
+	branch = macshine-mic

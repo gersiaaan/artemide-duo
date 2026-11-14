@@ -1,3 +1,9 @@
+## Artemide Duo v0.34
+
+### Microphone
+- **New: microphone to the Mac.** Mic button in the top bar: green = the Mac hears the Duo. Needs MacShine on the Mac; there the Duo shows up as the input device "MacShine" (Claude, Siri, Zoom … just work). Echo and noise suppression are on; headphones sound best.
+- The first tap asks for the microphone permission, tap again after allowing it.
+
 ## Artemide Duo v0.33
 
 ### Keyboard

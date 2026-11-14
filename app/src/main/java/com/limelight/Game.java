@@ -3913,6 +3913,8 @@ public class Game extends AppCompatActivity implements SurfaceHolder.Callback,
     }
 
     private void stopConnection() {
+        // Tell the host the microphone is off while the connection is still up.
+        com.limelight.duo.DuoMic.stop();
         if (connecting || connected) {
             connecting = connected = false;
             updatePipAutoEnter();

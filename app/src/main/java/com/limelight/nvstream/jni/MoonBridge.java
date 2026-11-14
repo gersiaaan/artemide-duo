@@ -358,6 +358,16 @@ public class MoonBridge {
 
     public static native void sendEmptyPayload();
 
+    // Client microphone upstream (MacShine extension), see mic.c
+    public static native boolean isMicrophoneSupported();
+
+    public static native boolean startMicrophone(int bitrate);
+
+    /** One 20 ms frame of 960 mono 48 kHz samples. Returns 0, or a negative error (-5501 = unsupported). */
+    public static native int sendMicrophoneFrame(short[] pcm);
+
+    public static native void stopMicrophone();
+
     public static native void sendMouseMove(short deltaX, short deltaY);
 
     public static native void sendMousePosition(short x, short y, short referenceWidth, short referenceHeight);
